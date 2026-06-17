@@ -305,6 +305,40 @@
             </a>
 
             <nav class="top-actions" aria-label="Liên kết nhanh">
+                <!-- ==================== CỤM CHUÔNG THÔNG BÁO (TUẦN 2) ==================== -->
+                <div class="dropdown d-inline-block me-2">
+                    <button type="button" class="btn btn-link position-relative text-decoration-none p-2 border-0" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: var(--brand-blue); font-size: 1.2rem;">
+                        <span class="brand-mark" style="width: 36px; height: 36px; font-size: 16px; background: #eef7ff; color: var(--brand-blue);">🔔</span>
+                        <!-- Ký hiệu số lượng thông báo mới -->
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25em 0.5em; margin-top: 5px; margin-left: -5px;">
+                            3
+                        </span>
+                    </button>
+                    
+                    <!-- Menu danh sách thông báo xổ xuống khi click -->
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 mt-2" aria-labelledby="page-header-notifications-dropdown" style="width: 320px; z-index: 1050;">
+                        <div class="p-3 text-white rounded-top" style="background: var(--brand-blue);">
+                            <h6 class="m-0 text-white fw-bold">Thông báo mới nhất</h6>
+                        </div>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <!-- Thông báo mẫu 1 -->
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-success">📌 Công việc mới được giao</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Bạn vừa được giao task: "Thiết kế giao diện tĩnh tuần 2".</p>
+                            </a>
+                            <!-- Thông báo mẫu 2 -->
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                        </div>
+                        <div class="p-2 text-center border-top bg-light">
+                            <a class="text-primary fw-bold text-decoration-none small" href="#">Xem tất cả</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- ======================================================================= -->
+
                 <a class="btn btn-outline-primary" href="{{ url('admin/nhanvien/hoso') }}">Hồ sơ nhân sự</a>
                 <a class="btn btn-primary" href="{{ url('admin/nhanvien/danhsach') }}">Vào quản lý</a>
             </nav>
@@ -375,6 +409,37 @@
             </a>
         </section>
 
+        <!-- ==================== BẢNG TRUNG TÂM THÔNG BÁO TĨNH (TUẦN 2) ==================== -->
+        <h2 class="section-title">Thông báo hệ thống</h2>
+        <section class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+            <div class="card-header bg-white py-3 border-bottom" style="border-color: var(--line) !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark fs-5">💬 Cập nhật hoạt động mới nhất</span>
+                    <span class="badge bg-danger rounded-pill px-2.5 py-1" style="font-size: 12px;">2 thông báo chưa đọc</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <!-- Item 1 -->
+                    <div class="list-group-item p-3 border-bottom" style="background: #fbfdff;">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 text-success fw-bold">📌 Kế hoạch kiểm thử Tuần 2</h6>
+                            <small class="text-muted">Vừa xong</small>
+                        </div>
+                        <p class="mb-0 text-secondary small">QA Leader đã tạo khung Master Test Plan trên Notion. Thành viên vui lòng vào bổ sung 20 Test Cases trước Chủ Nhật.</p>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="list-group-item p-3">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 text-primary fw-bold">📁 Đồng bộ Cơ sở dữ liệu thành công</h6>
+                            <small class="text-muted">15 phút trước</small>
+                        </div>
+                        <p class="mb-0 text-secondary small">Nhánh dữ liệu `long/db-profiles-documents` đã được tích hợp thành công vào hệ thống chính quản lý nhân sự.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="info-row">
             <div class="info-card">
                 <h2>Giao diện tập trung</h2>
@@ -386,5 +451,6 @@
             </div>
         </section>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
