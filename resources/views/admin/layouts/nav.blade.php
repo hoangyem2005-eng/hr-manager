@@ -28,6 +28,10 @@
                     Danh sách nhân viên
                 </a>
 
+                <a href="{{ url('admin/nhanvien/hoso') }}">
+                    Hồ sơ nhân sự
+                </a>
+
                 <a href="{{ url('admin/nhanvien/them') }}">
                     Thêm nhân viên
                 </a>
