@@ -6,13 +6,29 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgotPasswordController; 
 
-// Trang chủ: Tự động điều hướng sang trang Login
+// Trang chủ: Tự động điều hướng sang WorkHub
 Route::get('/', function () {
-    return redirect('/login');
+    return view('app');
 });
 
+// ==================== REACT APP ====================
+Route::get('/workhub', function () {
+    return view('app');
+});
+
+Route::get('/workhub/dashboard', function () {
+    return view('app');
+});
+
+// Catch-all route cho React Router (SPA)
+Route::get('/workhub/{any}', function () {
+    return view('app');
+})->where('any', '.*');
+
 // ==================== MODULE AUTHENTICATION ====================
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/login', function () {
+    return redirect('/workhub/dashboard');
+})->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/register', [AuthController::class, 'showRegister']);
@@ -21,8 +37,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
 Route::get('/dashboard', function () {
-    return view('welcome');
-})->middleware('auth');
+    return redirect('/workhub/dashboard');
+});
 
 // ==================== MODULE QUÊN MẬT KHẨU ====================
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
@@ -44,7 +60,7 @@ Route::prefix('admin/nhanvien')->group(function () {
 
     // Trang thêm mới nhân viên
     Route::get('them', [NhanVienController::class, 'create'])->name('nhanvien.them');
-    Route::post('luu', [NhanVienController::class, 'store']); 
+    Route::post('luu', [NhanVienController::class, 'store'])->name('nhanvien.luu'); 
 
     // Trang sửa và xóa nhân viên
     Route::get('sua/{id}', [NhanVienController::class, 'edit']);

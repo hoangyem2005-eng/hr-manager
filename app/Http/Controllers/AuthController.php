@@ -64,7 +64,7 @@ return redirect('/login')
 
             $request->session()->regenerate();
 
-            return redirect('/dashboard');
+            return redirect('/workhub/dashboard');
         }
 
         return back()->with(

@@ -4,7 +4,6 @@
 
 <div class="container" style="margin-top:20px;">
 
-```
 <h3>NHÂN VIÊN <small class="text-muted">Thêm</small></h3>
 <hr>
 
@@ -22,22 +21,8 @@
     </div>
 @endif
 
-<form action="them" method="post">
+<form action="{{ route('nhanvien.luu') }}" method="post">
     @csrf
-
-    <div class="form-group row">
-        <label class="col-sm-2 col-form-label">
-            Mã nhân viên :
-        </label>
-
-        <div class="col-sm-10">
-            <input type="text"
-                   name="manv"
-                   class="form-control"
-                   placeholder="Nhập mã nhân viên"
-                   value="{{ old('manv') }}">
-        </div>
-    </div>
 
     <div class="form-group row">
         <label class="col-sm-2 col-form-label">
@@ -46,10 +31,24 @@
 
         <div class="col-sm-10">
             <input type="text"
-                   name="hoten"
+                   name="name"
                    class="form-control"
                    placeholder="Nhập họ tên nhân viên"
-                   value="{{ old('hoten') }}">
+                   value="{{ old('name') }}">
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">
+            Email :
+        </label>
+
+        <div class="col-sm-10">
+            <input type="text"
+                   name="email"
+                   class="form-control"
+                   placeholder="Nhập email nhân viên"
+                   value="{{ old('email') }}">
         </div>
     </div>
 
@@ -76,14 +75,14 @@
 
     <div class="form-group row">
         <label class="col-sm-2 col-form-label">
-            Ngày sinh :
+            Mật khẩu :
         </label>
 
         <div class="col-sm-10">
-            <input type="date"
-                   name="ngaysinh"
+            <input type="password"
+                   name="password"
                    class="form-control"
-                   value="{{ old('ngaysinh') }}">
+                   placeholder="Nhập mật khẩu">
         </div>
     </div>
 
@@ -94,17 +93,17 @@
 
         <div class="col-sm-10">
 
-            <select name="id_phongban"
+            <select name="department_id"
                     class="form-control">
 
                 <option value="">
                     -- Chọn phòng ban --
                 </option>
 
-                @foreach($phongban as $item)
+                @foreach($departments as $item)
 
-                    <option value="{{ $item->ID }}">
-                        {{ $item->TENPHONG }}
+                    <option value="{{ $item->id }}">
+                        {{ $item->TENPHONG ?? $item->name ?? ('Phong ban #' . $item->id) }}
                     </option>
 
                 @endforeach
@@ -134,7 +133,6 @@
     </div>
 
 </form>
-```
 
 </div>
 @endsection

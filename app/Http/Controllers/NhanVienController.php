@@ -100,7 +100,9 @@ class NhanVienController extends Controller
      */
     public function create() {
         $departments = \App\Models\Department::all();
-        return view('admin.layouts.nhanvien.them', compact('departments'));
+        $phongban = $departments;
+
+        return view('admin.layouts.nhanvien.them', compact('departments', 'phongban'));
     }
 
     public function store(Request $request) {
