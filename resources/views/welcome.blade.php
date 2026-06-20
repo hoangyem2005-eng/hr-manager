@@ -14,6 +14,15 @@
             --muted: #667085;
             --line: #dce8f1;
             --page: #f3f8fb;
+            --text-contrast: #556075;
+        }
+        .dropdown-menu .dropdown-item {
+            transition: background-color 0.15s ease-in-out; /* Giúp hiệu ứng chuyển màu mượt mà */
+        }
+
+        .dropdown-menu .dropdown-item:hover {
+            background-color: #f8f9fa !important; /* Đổi sang màu xám nhạt khi rà chuột */
+            color: inherit; /* Giữ nguyên màu chữ gốc */
         }
 
         * {
@@ -71,6 +80,25 @@
             flex-wrap: wrap;
             justify-content: flex-end;
         }
+
+        /* ==================== HIỆU ỨNG HOVER CHUÔNG THÔNG BÁO TỐI ƯU ==================== */
+        .btn-bell-hover {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer !important;
+            border-radius: 8px;
+        }
+
+        .btn-bell-hover:hover {
+            background-color: #f0f7ff !important;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 91, 172, 0.15);
+        }
+
+        .btn-bell-hover:hover .brand-mark-bell {
+            background: var(--brand-blue) !important;
+            color: #fff !important;
+        }
+        /* ============================================================================== */
 
         .home-wrap {
             max-width: 1180px;
@@ -307,12 +335,12 @@
             <nav class="top-actions" aria-label="Liên kết nhanh">
                 <!-- ==================== CỤM CHUÔNG THÔNG BÁO (TUẦN 2) ==================== -->
                 <div class="dropdown d-inline-block me-2">
-                    <button type="button" class="btn btn-link position-relative text-decoration-none p-2 border-0" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: var(--brand-blue); font-size: 1.2rem;">
-                        <span class="brand-mark" style="width: 36px; height: 36px; font-size: 16px; background: #eef7ff; color: var(--brand-blue);">🔔</span>
+                    <button type="button" class="btn btn-link position-relative text-decoration-none p-2 border-0 btn-bell-hover" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: var(--brand-blue); font-size: 1.2rem;">
+                        <span class="brand-mark" style="width: 36px; height: 36px; font-size: 16px; background: #eef7ff; color: var(--brand-blue); transition: all 0.2s;">🔔</span>
                         <!-- Ký hiệu số lượng thông báo mới -->
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25em 0.5em; margin-top: 5px; margin-left: -5px;">
+                        {{-- <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25em 0.5em; margin-top: 5px; margin-left: -5px;">
                             3
-                        </span>
+                        </span> --}}
                     </button>
                     
                     <!-- Menu danh sách thông báo xổ xuống khi click -->
@@ -322,8 +350,10 @@
                         </div>
                         <div style="max-height: 250px; overflow-y: auto;">
                             <!-- Thông báo mẫu 1 -->
-                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
-                                <h6 class="mb-1 small fw-bold text-success">📌 Công việc mới được giao</h6>
+                            <<a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-success" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    📌 THONG_BAO_SIEU_DAI_KHOONG_KHOANG_TRANG_ABC_XYZ_123456789_A_B_C_D_E_F_G_H_I_J_K_L_M_N_O_P_Q_R_S_T_U_V_W_X_Y_Z_MOBI_FONE_CA_MAU_HRM_PROJECT_TEST_CASE_NOTI_17_TRUNCATION_TESTING_LONG_STRING_WITHOUT_SPACE
+                                </h6>
                                 <p class="mb-0 text-muted" style="font-size: 13px;">Bạn vừa được giao task: "Thiết kế giao diện tĩnh tuần 2".</p>
                             </a>
                             <!-- Thông báo mẫu 2 -->
@@ -331,9 +361,41 @@
                                 <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
                                 <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
                             </a>
+                            <!-- Copy đoạn này và dán liên tiếp dưới nhau 8 lần -->
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                            <!-- Copy đoạn này và dán liên tiếp dưới nhau 8 lần -->
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+
+                            <!-- Copy đoạn này và dán liên tiếp dưới nhau 8 lần -->
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
+                            <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
+                                <h6 class="mb-1 small fw-bold text-primary">📁 Tài liệu mới cập nhật</h6>
+                                <p class="mb-0 text-muted" style="font-size: 13px;">Long vừa tải lên tệp tài liệu: "CV_UngVien.pdf".</p>
+                            </a>
                         </div>
                         <div class="p-2 text-center border-top bg-light">
-                            <a class="text-primary fw-bold text-decoration-none small" href="#">Xem tất cả</a>
+                            <a class="text-primary fw-bold text-decoration-none small" href="#thong-bao-he-thong">Xem tất cả</a>
                         </div>
                     </div>
                 </div>
@@ -411,7 +473,7 @@
 
         <!-- ==================== BẢNG TRUNG TÂM THÔNG BÁO TĨNH (TUẦN 2) ==================== -->
         <h2 class="section-title">Thông báo hệ thống</h2>
-        <section class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+        <section id="thong-bao-he-thong" class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
             <div class="card-header bg-white py-3 border-bottom" style="border-color: var(--line) !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-dark fs-5">💬 Cập nhật hoạt động mới nhất</span>

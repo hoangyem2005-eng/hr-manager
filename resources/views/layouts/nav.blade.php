@@ -1,73 +1,211 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 py-2 mb-4 shadow-sm d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center">
-        <a class="navbar-brand fw-bold text-primary fs-4" href="/dashboard">
-            <i class="fas fa-user-shield me-2"></i>HR Manager
-        </a>
-    </div>
+```html
+<style>
+    .navbar-custom {
+        background: #ffffff;
+        border-bottom: 1px solid #e9ecef;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
 
+    .mobifone-logo {
+        text-decoration: none;
+    }
+
+    .mobifone-logo .mobi {
+        color: #0066cc;
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .mobifone-logo .fone {
+        color: #e60012;
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .mobifone-logo .sub-title {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: -5px;
+    }
+
+    .notification-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: none;
+        background: #f8f9fa;
+        transition: all 0.3s;
+    }
+
+    .notification-btn:hover {
+        background: #e9ecef;
+    }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0066cc, #0099ff);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dropdown-menu {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .notification-header {
+        background: linear-gradient(135deg, #0066cc, #0099ff);
+    }
+</style>
+
+<nav class="navbar navbar-expand-lg navbar-custom px-4 py-3 mb-4">
+
+    
+    <a class="navbar-brand mobifone-logo d-flex align-items-center" href="/dashboard">
+
+        <div>
+            <div>
+                <span class="mobi">Mobi</span><span class="fone">Fone</span>
+            </div>
+
+            <div class="sub-title">
+                Human Resource Management System
+            </div>
+        </div>
+    </a>
+
+    <!-- RIGHT -->
     <div class="d-flex align-items-center gap-3">
+
         
         <div class="dropdown">
-            <button type="button" class="btn btn-light position-relative rounded-circle p-2" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="width: 40px; height: 40px;">
+            <button type="button"
+                    class="notification-btn position-relative"
+                    data-bs-toggle="dropdown">
+
                 <i class="fas fa-bell text-secondary"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
+
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                     3
                 </span>
             </button>
-            
-            <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 mt-2" aria-labelledby="page-header-notifications-dropdown" style="width: 320px;">
-                <div class="p-3 bg-primary text-white rounded-top">
-                    <h6 class="m-0 text-white fw-bold"><i class="fas fa-envelope-open-text me-2"></i>Thông báo mới nhất</h6>
+
+            <div class="dropdown-menu dropdown-menu-end shadow-lg mt-2"
+                 style="width:350px;">
+
+                <div class="p-3 text-white notification-header">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-bell me-2"></i>
+                        Thông báo mới nhất
+                    </h6>
                 </div>
-                <div style="max-height: 250px; overflow-y: auto;">
-                    <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
-                        <div class="d-flex align-items-start">
-                            <div class="bg-light p-2 rounded-circle me-3 text-success">
-                                <i class="fas fa-tasks"></i>
+
+                <div style="max-height:300px; overflow-y:auto;">
+
+                    <a href="#" class="dropdown-item p-3 border-bottom">
+
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-tasks text-success fs-5"></i>
                             </div>
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1 fs-6 fw-bold text-dark">📌 Công việc mới được giao</h6>
-                                <p class="mb-0 small text-muted">Bạn vừa được giao task: "Thiết kế giao diện tĩnh tuần 2".</p>
+
+                            <div>
+                                <strong>Công việc mới được giao</strong>
+                                <div class="small text-muted">
+                                    Bạn vừa được giao task:
+                                    "Thiết kế giao diện tuần 2"
+                                </div>
                             </div>
                         </div>
+
                     </a>
-                    <a href="#" class="dropdown-item text-wrap p-3 border-bottom d-block">
-                        <div class="d-flex align-items-start">
-                            <div class="bg-light p-2 rounded-circle me-3 text-primary">
-                                <i class="fas fa-file-alt"></i>
+
+                    <a href="#" class="dropdown-item p-3 border-bottom">
+
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-file-alt text-primary fs-5"></i>
                             </div>
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1 fs-6 fw-bold text-dark">📁 Tài liệu mới cập nhật</h6>
-                                <p class="mb-0 small text-muted">Long vừa tải lên tệp tài liệu: "CV_UngVien_NguyenVanA.pdf".</p>
+
+                            <div>
+                                <strong>Tài liệu mới cập nhật</strong>
+                                <div class="small text-muted">
+                                    Long vừa tải lên:
+                                    CV_UngVien_NguyenVanA.pdf
+                                </div>
                             </div>
                         </div>
+
                     </a>
+
                 </div>
-                <div class="p-2 text-center border-top">
-                    <a class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" href="javascript:void(0)">
+
+                <div class="text-center p-2">
+                    <a href="#" class="text-decoration-none fw-bold">
                         Xem tất cả thông báo
                     </a>
                 </div>
+
             </div>
         </div>
+
+        <!-- USER -->
         <div class="dropdown">
-            <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border-0" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+
+            <button class="btn btn-light d-flex align-items-center gap-2 border-0 shadow-sm"
+                    data-bs-toggle="dropdown">
+
+                <div class="user-avatar">
                     <i class="fas fa-user"></i>
                 </div>
-                <span class="fw-semibold text-dark small">HOANG YEM</span>
+
+                <span class="fw-semibold">
+                    HOANG YEM
+                </span>
+
+                <i class="fas fa-chevron-down small"></i>
+
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userMenuDropdown">
-                <li><a class="dropdown-item small" href="#"><i class="fas fa-user-cog me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
-                <li><hr class="dropdown-divider"></li>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg mt-2">
+
                 <li>
-                    <form action="/logout" method="POST" class="d-inline">
-                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="dropdown-item small text-danger"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</button>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-user-cog me-2"></i>
+                        Hồ sơ cá nhân
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <form action="/logout" method="POST">
+                        @csrf
+
+                        <button type="submit"
+                                class="dropdown-item text-danger">
+
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Đăng xuất
+
+                        </button>
                     </form>
                 </li>
+
             </ul>
+
         </div>
 
     </div>
+
 </nav>
+```

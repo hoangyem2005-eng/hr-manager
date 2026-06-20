@@ -21,7 +21,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
 Route::get('/dashboard', function () {
-    return view('auth.dashboard');
+    return view('welcome');
 })->middleware('auth');
 
 // ==================== MODULE QUÊN MẬT KHẨU ====================

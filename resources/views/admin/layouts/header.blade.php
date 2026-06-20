@@ -22,7 +22,7 @@
         font-size: 15px;
         opacity: 0.9;
     ">
-        Hệ thống quản lý nhân viên
+        Hệ thống quản lý nhân su
     </p>
 
     <div style="
