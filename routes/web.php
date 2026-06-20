@@ -4,14 +4,20 @@ use App\Http\Controllers\NhanVienController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ForgotPasswordController; 
 
 // Trang chủ: Tự động điều hướng sang trang Login
 Route::get('/', function () {
     return redirect('/login');
 });
 
+<<<<<<< HEAD
 // ==================== MODULE AUTHENTICATION ====================
 Route::get('/login', [AuthController::class, 'showLogin']);
+=======
+
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+>>>>>>> e2cf03273774ff86755ac4fb2a79323e85bd7f40
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/register', [AuthController::class, 'showRegister']);
@@ -20,6 +26,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
 Route::get('/dashboard', function () {
+<<<<<<< HEAD
     return view('welcome');
 
 })->middleware('auth');
@@ -52,3 +59,16 @@ Route::prefix('admin/nhanvien')->group(function () {
 
 // Khai báo nhóm Route CRUD theo chuẩn Resource cho Profile nhân viên
 Route::resource('admin/nhanvien', ProfileController::class);
+=======
+    return view('auth.dashboard');
+})->middleware('auth');
+
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
+
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+
+Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+
+Route::post('/reset-password', [ForgotPasswordController::class, 'updatePassword'])->name('password.update');
+>>>>>>> e2cf03273774ff86755ac4fb2a79323e85bd7f40
