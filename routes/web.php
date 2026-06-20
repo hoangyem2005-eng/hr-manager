@@ -4,6 +4,7 @@ use App\Http\Controllers\NhanVienController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ForgotPasswordController; 
 
 // Trang chủ: Tự động điều hướng sang trang Login
 Route::get('/', function () {
@@ -11,7 +12,7 @@ Route::get('/', function () {
 });
 
 // ==================== MODULE AUTHENTICATION ====================
-Route::get('/login', [AuthController::class, 'showLogin']);
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/register', [AuthController::class, 'showRegister']);
@@ -20,10 +21,14 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
 Route::get('/dashboard', function () {
-    return view('welcome');
-
+    return view('auth.dashboard');
 })->middleware('auth');
 
+// ==================== MODULE QUÊN MẬT KHẨU ====================
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ForgotPasswordController::class, 'updatePassword'])->name('password.update');
 
 // ==================== MODULE QUẢN LÝ NHÂN VIÊN ====================
 Route::prefix('admin/nhanvien')->group(function () {

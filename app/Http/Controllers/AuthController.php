@@ -44,7 +44,7 @@ User::create([
     'department_id' => $request->department_id,
 ]);
 
-return redirect('/register')
+return redirect('/login')
     ->with('success', 'Đăng ký tài khoản thành công!');
 
 

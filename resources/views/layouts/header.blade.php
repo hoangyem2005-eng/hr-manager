@@ -45,7 +45,7 @@
             color:#6c757d;
             font-size:14px;
         ">
-            Hệ thống Quản lý Nhân sự
+            demo 
         </p>
 
     </div>
