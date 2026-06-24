@@ -5,13 +5,9 @@
         "build": "vite build"
     },
     "dependencies": {
-        "lucide-react": "^0.263.1",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "recharts": "^2.10.0"
+        "lucide-react": "^0.263.1"
     },
     "devDependencies": {
-        "@vitejs/plugin-react": "^4.0.0",
         "autoprefixer": "^10.5.0",
         "axios": "^1.1.2",
         "laravel-vite-plugin": "^0.7.2",

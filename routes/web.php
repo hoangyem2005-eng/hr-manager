@@ -1,44 +1,21 @@
 <?php
 
-use App\Http\Controllers\NhanVienController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ForgotPasswordController; 
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Dashboard\DashboardController;
 
-// Trang chủ: Tự động điều hướng sang WorkHub
-Route::get('/', function () {
-    return view('app');
-});
-
-// ==================== REACT APP ====================
-Route::get('/workhub', function () {
-    return view('app');
-});
-
-Route::get('/workhub/dashboard', function () {
-    return view('app');
-});
-
-// Catch-all route cho React Router (SPA)
-Route::get('/workhub/{any}', function () {
-    return view('app');
-})->where('any', '.*');
+// ==================== FRONTEND LANDING PAGE ====================
+Route::get('/', [DashboardController::class, 'landing'])->name('landing');
 
 // ==================== MODULE AUTHENTICATION ====================
-Route::get('/login', function () {
-    return redirect('/workhub/dashboard');
-})->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/register', [AuthController::class, 'showRegister']);
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 
-Route::post('/logout', [AuthController::class, 'logout']);
-
-Route::get('/dashboard', function () {
-    return redirect('/workhub/dashboard');
-});
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ==================== MODULE QUÊN MẬT KHẨU ====================
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
@@ -46,30 +23,25 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink
 Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [ForgotPasswordController::class, 'updatePassword'])->name('password.update');
 
-// ==================== MODULE QUẢN LÝ NHÂN VIÊN ====================
-Route::prefix('admin/nhanvien')->group(function () {
-    // Trang hồ sơ nhân sự (Upload/Download)
-    Route::get('hoso', [NhanVienController::class, 'hoso'])->name('nhanvien.hoso');
-    Route::post('hoso/upload', [NhanVienController::class, 'uploadHoso'])->name('nhanvien.hoso.upload');
-    Route::get('hoso/download/{filename}', [NhanVienController::class, 'downloadHoso'])
-        ->where('filename', '.*')
-        ->name('nhanvien.hoso.download');
+// ==================== WORKHUB DASHBOARD (PURE BLADE) ====================
+Route::middleware(['auth'])->prefix('dashboard')->group(function () {
+    // 1. Trang tổng quan KPI
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // Trang danh sách (có kèm tìm kiếm)
-    Route::get('danhsach', [NhanVienController::class, 'index'])->name('nhanvien.danhsach');
+    // 2. Phân hệ Quản lý công việc (Kanban & List)
+    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('dashboard.tasks');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
 
-    // Trang thêm mới nhân viên
-    Route::get('them', [NhanVienController::class, 'create'])->name('nhanvien.them');
-    Route::post('luu', [NhanVienController::class, 'store'])->name('nhanvien.luu'); 
+    // 3. Phân hệ Quản lý thành viên
+    Route::get('/members', [DashboardController::class, 'members'])->name('dashboard.members');
+    Route::post('/members/save', [DashboardController::class, 'saveMember'])->name('dashboard.members.save');
 
-    // Trang sửa và xóa nhân viên
-    Route::get('sua/{id}', [NhanVienController::class, 'edit']);
-    Route::post('capnhat/{id}', [NhanVienController::class, 'update']); 
-    Route::get('xoa/{id}', [NhanVienController::class, 'destroy']);
+    // 4. Phân hệ Báo cáo & Thống kê (ApexCharts)
+    Route::get('/reports', [DashboardController::class, 'reports'])->name('dashboard.reports');
 
-    // Trang thống kê biểu đồ
-    Route::get('thongke', [NhanVienController::class, 'thongke'])->name('nhanvien.thongke');
+    // 5. Phân hệ Phân quyền chi tiết
+    Route::get('/roles', [DashboardController::class, 'roles'])->name('dashboard.roles');
+
+    // 6. Phân hệ Thông báo & Cấu hình email
+    Route::get('/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
 });
-
-// Khai báo nhóm Route CRUD theo chuẩn Resource cho Profile nhân viên
-Route::resource('admin/nhanvien', ProfileController::class);

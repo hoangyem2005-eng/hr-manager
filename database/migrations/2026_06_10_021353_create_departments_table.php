@@ -15,6 +15,8 @@ return new class extends Migration
     {
         Schema::create('departments', function (Blueprint $table) {
             $table->id();
+            $table->string('TENPHONG')->nullable(); // Tên phòng ban tiếng Việt
+            $table->string('name')->nullable(); // Tên phòng ban tiếng Anh
             $table->timestamps();
         });
     }
