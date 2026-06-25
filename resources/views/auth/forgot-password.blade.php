@@ -231,7 +231,7 @@
 
 <div class="forgot-container">
     <div class="brand-title">mobi<span>fone</span></div>
-    <div class="form-desc">Nhập email của bạn để nhận liên kết thiết lập lại mật khẩu hệ thống.</div>
+    <div class="form-desc">Nhập email của bạn để nhận mã xác thực (OTP) đặt lại mật khẩu hệ thống.</div>
     
     @if (session('status'))
         <div class="alert-success">
@@ -260,7 +260,7 @@
             @enderror
         </div>
 
-        <button type="submit" class="btn-submit">GỬI YÊU CẦU</button>
+        <button type="submit" class="btn-submit">GỬI MÃ XÁC THỰC</button>
     </form>
 
     <a href="{{ route('login') }}" class="back-to-login">

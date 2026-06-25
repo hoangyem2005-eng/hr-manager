@@ -161,11 +161,50 @@
     <div class="brand-title">mobi<span>fone</span></div>
     <div class="title">Đặt lại mật khẩu mới cho tài khoản</div>
     
+    @if (session('status'))
+        <div style="background-color: #f0fdf4; color: #166534; padding: 14px; border-radius: 8px; font-size: 14px; margin-bottom: 24px; text-align: left; border: 1px solid #bbf7d0; line-height: 1.5;">
+            ✨ {{ session('status') }}
+        </div>
+    @endif
+    
     <form action="{{ route('password.update') }}" method="POST" autocomplete="off">
         @csrf
         
-        <input type="hidden" name="token" value="{{ $token }}">
-        <input type="hidden" name="email" value="{{ $email }}">
+        <div class="group">
+            <label for="email">Địa chỉ Email</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="control" 
+                style="padding-right: 16px;"
+                required 
+                placeholder="ten.nguyen@mobifone.vn"
+                value="{{ old('email', $email) }}"
+            >
+            @error('email') 
+                <div class="error">⚠️ {{ $message }}</div> 
+            @enderror
+        </div>
+
+        <div class="group">
+            <label for="token">Mã xác thực (OTP)</label>
+            <input 
+                type="text" 
+                id="token" 
+                name="token" 
+                class="control" 
+                style="padding-right: 16px; font-weight: 700; letter-spacing: 2px; text-align: center;"
+                required 
+                placeholder="6 chữ số"
+                maxlength="6"
+                pattern="\d{6}"
+                value="{{ old('token') }}"
+            >
+            @error('token') 
+                <div class="error">⚠️ {{ $message }}</div> 
+            @enderror
+        </div>
 
         <div class="group">
             <label for="password">Mật khẩu mới</label>
@@ -202,6 +241,10 @@
 
         <button type="submit" class="btn">CẬP NHẬT MẬT KHẨU</button>
     </form>
+    
+    <a href="{{ route('login') }}" style="display: flex; align-items: center; justify-content: center; margin-top: 25px; font-size: 14px; color: #64748b; text-decoration: none; font-weight: 500; transition: color 0.2s ease;">
+        Quay lại trang đăng nhập
+    </a>
 </div>
 
 <script>

@@ -80,11 +80,19 @@
                 $menuItems = [
                     ['route' => 'dashboard.index', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
                     ['route' => 'dashboard.tasks', 'label' => 'Công việc', 'icon' => 'check-square'],
-                    ['route' => 'dashboard.members', 'label' => 'Thành viên', 'icon' => 'users'],
-                    ['route' => 'dashboard.reports', 'label' => 'Báo cáo', 'icon' => 'bar-chart-2'],
-                    ['route' => 'dashboard.notifications', 'label' => 'Thông báo', 'icon' => 'bell', 'badge' => 2],
-                    ['route' => 'dashboard.roles', 'label' => 'Phân quyền', 'icon' => 'shield'],
                 ];
+
+                // Chỉ Trưởng phòng (role_id = 1) mới thấy menu Thành viên và Phân quyền
+                if (Auth::user() && Auth::user()->role_id == 1) {
+                    $menuItems[] = ['route' => 'dashboard.members', 'label' => 'Thành viên', 'icon' => 'users'];
+                }
+
+                $menuItems[] = ['route' => 'dashboard.reports', 'label' => 'Báo cáo', 'icon' => 'bar-chart-2'];
+                $menuItems[] = ['route' => 'dashboard.notifications', 'label' => 'Thông báo', 'icon' => 'bell', 'badge' => $unreadNotificationsCount ?? 0];
+
+                if (Auth::user() && Auth::user()->role_id == 1) {
+                    $menuItems[] = ['route' => 'dashboard.roles', 'label' => 'Phân quyền', 'icon' => 'shield'];
+                }
             @endphp
 
             @foreach($menuItems as $item)
@@ -110,7 +118,15 @@
                 </div>
                 <div class="flex-1 min-w-0 user-info">
                     <div class="text-white text-xs font-bold truncate">{{ Auth::user()->name ?? 'Hoàng Thị Em' }}</div>
-                    <div class="text-blue-300 text-[10px]">{{ Auth::user()->role_id == 1 ? 'Admin' : 'Quản lý' }}</div>
+                    <div class="text-blue-300 text-[10px]">
+                        @if(Auth::user()->role_id == 1)
+                            Trưởng phòng
+                        @elseif(Auth::user()->role_id == 2)
+                            Phó phòng
+                        @else
+                            Chuyên viên
+                        @endif
+                    </div>
                 </div>
                 <!-- Logout form link -->
                 <form action="{{ route('logout') }}" method="POST" id="logout-form" class="inline">
@@ -151,7 +167,9 @@
             <div class="flex items-center gap-3">
                 <a href="{{ route('dashboard.notifications') }}" class="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors">
                     <i data-lucide="bell" class="w-[18px] h-[18px] text-gray-700"></i>
-                    <span class="absolute top-1 right-1 w-4 h-4 bg-[#E4002B] text-white flex items-center justify-center font-bold rounded-full text-[9px]">2</span>
+                    @if(isset($unreadNotificationsCount) && $unreadNotificationsCount > 0)
+                        <span class="absolute top-1 right-1 w-4 h-4 bg-[#E4002B] text-white flex items-center justify-center font-bold rounded-full text-[9px]">{{ $unreadNotificationsCount }}</span>
+                    @endif
                 </a>
                 <button class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors">
                     <i data-lucide="calendar" class="w-[18px] h-[18px] text-gray-700"></i>
@@ -164,6 +182,19 @@
 
         <!-- MAIN CONTENT AREA -->
         <main class="flex-1 overflow-y-auto p-8 bg-[#F8F9FA]">
+            @if(session('success'))
+                <div class="mb-5 p-4 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2.5 shadow-sm animate-fade-in">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                    <span class="font-medium">{{ session('success') }}</span>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-5 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2.5 shadow-sm animate-fade-in">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+                    <span class="font-medium">{{ session('error') }}</span>
+                </div>
+            @endif
+
             @yield('content')
         </main>
     </div>

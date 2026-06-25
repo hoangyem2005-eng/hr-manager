@@ -391,13 +391,29 @@ class DashboardController extends Controller
 
     public function notifications()
     {
-        // Tạo một số thông báo giả lập
-        $notifications = [
-            ['id' => 1, 'type' => 'task', 'title' => 'Bạn được giao công việc mới', 'desc' => 'WH-006: Phân tích dữ liệu nhân sự Q2', 'time' => '5 phút trước', 'read' => false],
-            ['id' => 2, 'type' => 'overdue', 'title' => 'Công việc quá hạn', 'desc' => 'WH-002 đã quá hạn 3 ngày', 'time' => '2 giờ trước', 'read' => false],
-            ['id' => 3, 'type' => 'deadline', 'title' => 'Nhắc nhở deadline', 'desc' => 'WH-001 còn 2 ngày nữa đến hạn', 'time' => 'Hôm qua', 'read' => true],
-            ['id' => 4, 'type' => 'complete', 'title' => 'Công việc hoàn thành', 'desc' => 'WH-005 đã được đánh dấu hoàn thành', 'time' => '2 ngày trước', 'read' => true]
-        ];
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($n) {
+                $type = 'task';
+                $titleLower = mb_strtolower($n->title);
+                if (str_contains($titleLower, 'quá hạn')) {
+                    $type = 'overdue';
+                } elseif (str_contains($titleLower, 'deadline') || str_contains($titleLower, 'hạn chót') || str_contains($titleLower, 'nhắc nhở')) {
+                    $type = 'deadline';
+                } elseif (str_contains($titleLower, 'hoàn thành')) {
+                    $type = 'complete';
+                }
+
+                return [
+                    'id' => $n->id,
+                    'type' => $type,
+                    'title' => $n->title,
+                    'desc' => $n->message,
+                    'time' => $n->created_at ? $n->created_at->diffForHumans() : 'Vừa xong',
+                    'read' => (bool)$n->is_read,
+                ];
+            });
 
         return view('dashboard.notifications', compact('notifications'));
     }
