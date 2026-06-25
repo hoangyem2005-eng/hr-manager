@@ -33,7 +33,6 @@
             position: relative;
         }
 
-        /* Vệt màu đỏ tinh tế chuẩn nhận diện MobiFone */
         .box::before {
             content: "";
             position: absolute;
@@ -59,7 +58,7 @@
             text-transform: lowercase; 
             font-weight: 700;
         }
-
+ 
         .title { 
             color: #475569; 
             font-size: 15px; 
@@ -83,7 +82,7 @@
         
         .control { 
             width: 100%; 
-            padding: 13px 60px 13px 16px; /* Chừa khoảng trống bên phải cho nút Hiện/Ẩn */
+            padding: 13px 60px 13px 16px; 
             border: 1.5px solid #cbd5e1; 
             border-radius: 8px; 
             font-size: 15px; 

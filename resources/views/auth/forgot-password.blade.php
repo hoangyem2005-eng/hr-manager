@@ -33,7 +33,6 @@
             position: relative;
         }
 
-        /* Thêm vệt màu đỏ tinh tế ở góc trên bên phải để làm nổi bật nhận diện thương hiệu */
         .forgot-container::before {
             content: "";
             position: absolute;
@@ -122,7 +121,7 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(0, 84, 166, 0.25);
         }
-
+        
         .btn-submit:active {
             transform: translateY(0);
         }
@@ -139,7 +138,6 @@
             line-height: 1.5;
         }
 
-        /* Khung hiển thị Link debug phục vụ kiểm thử nhanh */
         .debug-link-box {
             background-color: #f8fafc;
             border: 1.5px dashed #0054A6;
@@ -239,25 +237,6 @@
         <div class="alert-success">
             ✨ {{ session('status') }}
         </div>
-
-        @if (session('reset_link'))
-            <div class="debug-link-box">
-                <div class="debug-title">🔗 ĐƯỜNG DẪN THỬ NGHIỆM ĐỔI MẬT KHẨU:</div>
-                
-                <input 
-                    type="text" 
-                    value="{{ session('reset_link') }}" 
-                    class="debug-input" 
-                    readonly 
-                    title="Click để tự động sao chép"
-                    onclick="this.select(); document.execCommand('copy'); alert('Đã sao chép liên kết đổi mật khẩu thành công!');"
-                >
-                
-                <a href="{{ session('reset_link') }}" target="_blank" class="debug-btn-test">
-                    TIẾN HÀNH THỬ NGHIỆM NGAY →
-                </a>
-            </div>
-        @endif
     @endif
 
     <form action="{{ route('password.email') }}" method="POST" autocomplete="off">
