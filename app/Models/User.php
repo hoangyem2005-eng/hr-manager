@@ -11,6 +11,10 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 1;
+    public const ROLE_MANAGER = 2;
+    public const ROLE_EMPLOYEE = 3;
+
     protected $fillable = [
         'name',
         'email',
@@ -28,14 +32,60 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    // Quan hệ với bảng roles
-     public function role()
-{
-    return $this->belongsTo(\App\Models\Role::class);
-}
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
 
-public function department()
-{
-    return $this->belongsTo(\App\Models\Department::class);
-}
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    public function createdTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_by');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    public function isDirector(): bool
+    {
+        if ((int) $this->role_id === self::ROLE_ADMIN) {
+            return true;
+        }
+
+        $roleName = mb_strtolower($this->role->name ?? '');
+
+        return str_contains($roleName, 'admin')
+            || str_contains($roleName, 'giam doc')
+            || str_contains($roleName, 'giám đốc');
+    }
+
+    public function isLeader(): bool
+    {
+        if ((int) $this->role_id === self::ROLE_MANAGER) {
+            return true;
+        }
+
+        $roleName = mb_strtolower($this->role->name ?? '');
+
+        return str_contains($roleName, 'quan ly')
+            || str_contains($roleName, 'quản lý')
+            || str_contains($roleName, 'truong phong')
+            || str_contains($roleName, 'trưởng phòng');
+    }
+
+    public function isEmployee(): bool
+    {
+        return (int) $this->role_id === self::ROLE_EMPLOYEE;
+    }
 }

@@ -9,36 +9,82 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'task_name',
+        'description',
+        'assigned_by',
+        'assigned_to',
+        'deadline',
+        'status',
+        'progress',
+    ];
 
-    // Quan hệ: người phân công công việc
+    protected $casts = [
+        'deadline' => 'date',
+        'progress' => 'integer',
+    ];
+
+    // ==================== QUAN HỆ ====================
+
+    /** Người tạo / giao công việc */
     public function creator()
     {
         return $this->belongsTo(User::class, 'assigned_by');
     }
 
-    // Quan hệ: người nhận công việc
+    /** Alias cho creator (dùng trong DashboardController) */
+    public function assigner()
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    /** Người nhận công việc */
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    // Bắt sự kiện tự động khi Task được tạo
-    protected static function booted()
+    /** File đính kèm của công việc */
+    public function documents()
     {
-        static::created(function ($task) {
-            if ($task->assigned_to) {
-                // Lấy thông tin người tạo công việc để đưa vào nội dung thông báo
-                $creatorName = $task->creator ? $task->creator->name : 'Quản lý';
-                
-                Notification::create([
-                    'user_id' => $task->assigned_to,
-                    'task_id' => $task->id,
-                    'title' => 'Bạn được giao công việc mới',
-                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name . ' (Được giao bởi ' . $creatorName . ')',
-                    'is_read' => false,
-                ]);
-            }
-        });
+        return $this->hasMany(Document::class);
     }
+
+    // ==================== ACCESSORS ====================
+
+    /** Nhãn tiếng Việt của trạng thái */
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'Todo'        => 'Chờ thực hiện',
+            'In Progress' => 'Đang thực hiện',
+            'Done'        => 'Hoàn thành',
+            'Overdue'     => 'Quá hạn',
+            default       => $this->status,
+        };
+    }
+
+    /** CSS class badge tương ứng với trạng thái */
+    public function getStatusBadgeAttribute(): string
+    {
+        return match ($this->status) {
+            'Todo'        => 'badge-secondary',
+            'In Progress' => 'badge-info',
+            'Done'        => 'badge-success',
+            'Overdue'     => 'badge-danger',
+            default       => 'badge-light',
+        };
+    }
+
+    /** Màu thanh tiến độ */
+    public function getProgressColorAttribute(): string
+    {
+        if ($this->progress >= 100) return 'bg-success';
+        if ($this->progress >= 70)  return 'bg-info';
+        if ($this->progress >= 40)  return 'bg-warning';
+        return 'bg-danger';
+    }
+
+    // Notification KHÔNG được tạo ở đây (không dùng booted()).
+    // Xem TaskController::notifyAssignee() để biết logic gửi thông báo.
 }

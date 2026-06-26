@@ -40,7 +40,7 @@ class DashboardController extends Controller
                 'id' => 1,
                 'name' => 'Hoàng Thị Em',
                 'email' => 'em.hoang@mobifone.vn',
-                'password' => bcrypt('123456'),
+                'password' => bcrypt(env('DEFAULT_DIRECTOR_PASSWORD', 'change-me')),
                 'role_id' => 1, // Admin
                 'department_id' => 1 // Nhân sự
             ]);
@@ -50,7 +50,7 @@ class DashboardController extends Controller
                 'id' => 2,
                 'name' => 'Nguyễn Văn An',
                 'email' => 'an.nguyen@mobifone.vn',
-                'password' => bcrypt('123456'),
+                'password' => bcrypt(env('DEFAULT_USER_PASSWORD', 'change-me')),
                 'role_id' => 2, // Quản lý
                 'department_id' => 1 // Nhân sự
             ]);
@@ -58,7 +58,7 @@ class DashboardController extends Controller
                 'id' => 3,
                 'name' => 'Trần Thị Bích',
                 'email' => 'bich.tran@mobifone.vn',
-                'password' => bcrypt('123456'),
+                'password' => bcrypt(env('DEFAULT_USER_PASSWORD', 'change-me')),
                 'role_id' => 3, // Nhân viên
                 'department_id' => 1 // Nhân sự
             ]);
@@ -66,7 +66,7 @@ class DashboardController extends Controller
                 'id' => 4,
                 'name' => 'Lê Minh Châu',
                 'email' => 'chau.le@mobifone.vn',
-                'password' => bcrypt('123456'),
+                'password' => bcrypt(env('DEFAULT_USER_PASSWORD', 'change-me')),
                 'role_id' => 3, // Nhân viên
                 'department_id' => 2 // Đào tạo
             ]);
@@ -74,7 +74,7 @@ class DashboardController extends Controller
                 'id' => 5,
                 'name' => 'Phạm Quốc Dũng',
                 'email' => 'dung.pham@mobifone.vn',
-                'password' => bcrypt('123456'),
+                'password' => bcrypt(env('DEFAULT_USER_PASSWORD', 'change-me')),
                 'role_id' => 3, // Nhân viên
                 'department_id' => 3 // Pháp chế
             ]);
@@ -297,8 +297,8 @@ class DashboardController extends Controller
                 'name' => $u->name,
                 'email' => $u->email,
                 'dept' => $u->department->TENPHONG ?? 'Chưa xếp phòng',
-                'position' => $u->role_id == 1 ? 'Trưởng phòng' : ($u->role_id == 2 ? 'Phó phòng' : 'Chuyên viên'),
-                'role' => $u->role_id == 1 ? 'Admin' : ($u->role_id == 2 ? 'Quản lý' : 'Nhân viên'),
+                'position' => $u->role_id == User::ROLE_ADMIN ? 'Admin' : ($u->role_id == User::ROLE_MANAGER ? 'Quản lý' : 'Nhân viên'),
+                'role' => $u->role_id == User::ROLE_ADMIN ? 'Admin' : ($u->role_id == User::ROLE_MANAGER ? 'Quản lý' : 'Nhân viên'),
                 'tasks' => $taskCount,
                 'joined' => $u->created_at ? $u->created_at->format('d/m/Y') : '15/03/2022',
                 'status' => 'active',
