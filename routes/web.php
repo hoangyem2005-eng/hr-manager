@@ -85,6 +85,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     // 6. Phân hệ Thông báo & Cấu hình email
     Route::get('/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
+    Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('dashboard.notifications.read');
 });
 
 // ==================== MODULE CÔNG VIỆC (TASK CRUD) ====================

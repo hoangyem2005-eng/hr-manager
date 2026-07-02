@@ -8,10 +8,12 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-[#001F5B]">Quản lý Công việc</h1>
-        <button id="open-task-modal"
-                class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8] hover:shadow-lg transition-all active:scale-95">
-            <i data-lucide="plus" class="w-4 h-4"></i> Tạo công việc mới
-        </button>
+        @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
+            <button id="open-task-modal"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8] hover:shadow-lg transition-all active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4"></i> Tạo công việc mới
+            </button>
+        @endif
     </div>
 
     <!-- Toolbar: View Switcher and Filters -->
@@ -19,11 +21,11 @@
         <div class="flex items-center gap-3 flex-wrap">
             <!-- View Switcher -->
             <div class="flex rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter]) }}"
+                <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'kanban' ? 'bg-[#003DA5] text-white' : 'text-gray-700 hover:bg-gray-50' }}">
                     <i data-lucide="columns" class="w-3.5 h-3.5"></i> Kanban
                 </a>
-                <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter]) }}"
+                <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'list' ? 'bg-[#003DA5] text-white' : 'text-gray-700 hover:bg-gray-50' }}">
                     <i data-lucide="list" class="w-3.5 h-3.5"></i> Danh sách
                 </a>
@@ -32,12 +34,31 @@
             <!-- Filters -->
             <div class="flex gap-2">
                 @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $f)
-                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f]) }}"
+                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f, 'assignee_id' => request('assignee_id')]) }}"
                        class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all {{ $filter == $f ? 'bg-[#003DA5] text-white border-[#003DA5]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
                         {{ $f }}
                     </a>
                 @endforeach
             </div>
+
+            <!-- Assignee Dropdown -->
+            <form action="{{ route('dashboard.tasks') }}" method="GET" class="flex items-center gap-2">
+                <input type="hidden" name="view" value="{{ $viewType }}">
+                <input type="hidden" name="filter" value="{{ $filter }}">
+                <select name="assignee_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-700 outline-none focus:border-[#003DA5] transition-all">
+                    <option value="">Lọc theo nhân viên phụ trách</option>
+                    @foreach($allUsers as $u)
+                        <option value="{{ $u->id }}" {{ request('assignee_id') == $u->id ? 'selected' : '' }}>
+                            {{ $u->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @if(request('assignee_id'))
+                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $filter]) }}" class="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1">
+                        <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Xóa lọc
+                    </a>
+                @endif
+            </form>
         </div>
 
         @if(session('success'))
@@ -106,9 +127,11 @@
                             <div class="text-center py-8 text-xs text-gray-400 border border-dashed border-gray-300/40 rounded-xl">Chưa có tác vụ.</div>
                         @endforelse
 
-                        <button onclick="openModalForStatus('{{ $col['label'] }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#003DA5] hover:text-[#003DA5] transition-all bg-white/40">
-                            + Thêm công việc
-                        </button>
+                        @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
+                            <button onclick="openModalForStatus('{{ $col['label'] }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#003DA5] hover:text-[#003DA5] transition-all bg-white/40">
+                                + Thêm công việc
+                            </button>
+                        @endif
                     </div>
                 </div>
             @endforeach

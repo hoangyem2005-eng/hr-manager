@@ -39,7 +39,7 @@
                         <div class="flex gap-4 p-4 hover:bg-gray-50/70 transition-colors cursor-pointer notif-item {{ !$n['read'] ? 'bg-[#E8F0FE]/40' : '' }}" 
                              data-type="{{ $n['type'] }}" 
                              data-read="{{ $n['read'] ? 'true' : 'false' }}"
-                             onclick="markAsRead(this)">
+                             onclick="location.href='{{ route('dashboard.notifications.read', $n['id']) }}'">
                             <!-- Icon Circle -->
                             <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: {{ $c['bg'] }}; color: {{ $c['text'] }};">
                                 <i data-lucide="{{ $c['icon'] }}" class="w-5.5 h-5.5"></i>

@@ -156,6 +156,11 @@ class DocumentController extends Controller
     public function download(int $documentId)
     {
         $doc = Document::findOrFail($documentId);
+        $user = Auth::user();
+
+        if (!$this->canAccessFile($doc, $user)) {
+            abort(403, 'Bạn không có quyền tải xuống tệp này.');
+        }
 
         $disk = $doc->disk ?? 'public';
 
@@ -172,6 +177,12 @@ class DocumentController extends Controller
     public function preview(int $documentId)
     {
         $doc  = Document::findOrFail($documentId);
+        $user = Auth::user();
+
+        if (!$this->canAccessFile($doc, $user)) {
+            abort(403, 'Bạn không có quyền xem tệp này.');
+        }
+
         $disk = $doc->disk ?? 'public';
 
         if (!Storage::disk($disk)->exists($doc->file_path)) {
@@ -282,5 +293,45 @@ class DocumentController extends Controller
         }
 
         return $doc->user_id === $user->id;
+    }
+
+    /**
+     * Kiểm tra người dùng có liên quan và được phép truy cập tệp không.
+     */
+    private function canAccessFile(Document $doc, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // 1. Giám đốc có toàn quyền
+        if ($user->isDirector()) {
+            return true;
+        }
+
+        // 2. Người tải lên tệp có quyền
+        if ($doc->user_id === $user->id) {
+            return true;
+        }
+
+        // 3. Người giao việc hoặc người nhận việc của Task liên quan
+        $task = $doc->task;
+        if ($task) {
+            if ($task->assigned_by === $user->id || $task->assigned_to === $user->id) {
+                return true;
+            }
+
+            // 4. Trưởng phòng thuộc bộ phận của người giao việc hoặc người nhận việc
+            if ($user->isLeader()) {
+                $creator = $task->creator;
+                $assignee = $task->assignee;
+                if (($creator && $creator->department_id === $user->department_id) ||
+                    ($assignee && $assignee->department_id === $user->department_id)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
