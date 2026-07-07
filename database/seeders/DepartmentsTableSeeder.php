@@ -21,35 +21,27 @@ class DepartmentsTableSeeder extends Seeder
         \DB::table('departments')->insert(array (
             0 => 
             array (
-                'id' => '1',
-                'TENPHONG' => 'Ban Giám đốc',
-                'name' => 'Director Board',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'id' => 1,
+                'TENPHONG' => 'Nhân sự',
+                'name' => 'Human Resources',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-07-02 13:04:44',
             ),
             1 => 
             array (
-                'id' => '2',
-                'TENPHONG' => 'Phòng Nhân sự',
-                'name' => 'Human Resources',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'id' => 2,
+                'TENPHONG' => 'Đào tạo',
+                'name' => 'Training',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-07-02 13:04:44',
             ),
             2 => 
             array (
-                'id' => '3',
-                'TENPHONG' => 'Phòng Kỹ thuật',
-                'name' => 'Technical Department',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
-            ),
-            3 => 
-            array (
-                'id' => '4',
-                'TENPHONG' => 'Phòng Kinh doanh',
-                'name' => 'Sales Department',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'id' => 3,
+                'TENPHONG' => 'Pháp chế',
+                'name' => 'Legal',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-07-02 13:04:44',
             ),
         ));
         
