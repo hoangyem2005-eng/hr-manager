@@ -24,7 +24,10 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Bạn có thể nhắc Yếm giữ lại các seeder cũ của nhóm ở bên dưới dòng này (nếu có)
-        // $this->call([ ... ]);
+        $this->call([
+            RolesTableSeeder::class,
+            DepartmentsTableSeeder::class,
+            UsersTableSeeder::class,
+        ]);
     }
 }
