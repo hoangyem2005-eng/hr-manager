@@ -11,58 +11,33 @@
     <!-- Tailwind CSS (via Vite) -->
     @vite(['resources/css/app.css'])
 
-    <style>
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-        }
-
-        @keyframes floatOrb {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-18px);
-            }
-        }
-
-        .orb {
-            animation: floatOrb 3.5s ease-in-out infinite alternate;
-        }
-    </style>
 </head>
 <body class="bg-gray-50 flex h-screen w-full overflow-hidden">
 
     <!-- LEFT PANEL: Brand Info & Visual Elements -->
-    <div class="relative hidden lg:flex flex-col items-center justify-center w-[55%] h-full overflow-hidden bg-gradient-to-br from-[#001F5B] to-[#0057C8]">
-        <!-- Radial Dot Matrix -->
-        <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, white 1.5px, transparent 1.5px); background-size: 30px 30px;"></div>
-
-        <!-- Floating Orbs -->
-        <div class="orb absolute rounded-full bg-white/5" style="width: 80px; height: 80px; top: 8%; left: 6%; animation-duration: 3s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 50px; height: 50px; top: 20%; left: 80%; animation-duration: 4s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 30px; height: 30px; top: 60%; left: 5%; animation-duration: 3.5s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 60px; height: 60px; top: 75%; left: 75%; animation-duration: 5s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 20px; height: 20px; top: 45%; left: 90%; animation-duration: 2.5s;"></div>
-
+    <div class="mf-signal-panel hidden lg:flex flex-col items-center justify-center w-[55%] h-full">
         <!-- Main Card Brand -->
         <div class="relative z-10 flex flex-col items-center gap-6 px-16 text-center">
             <div class="flex items-center gap-4 mb-2">
-                <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                    <span class="text-white font-black text-2xl">M</span>
+                <div class="w-14 h-14 rounded-[8px] bg-white flex items-center justify-center text-[#003DA5]" style="box-shadow: inset 5px 0 0 #E4002B;">
+                    <span class="font-black text-2xl">M</span>
                 </div>
                 <div class="text-left">
                     <div class="text-white text-2xl font-bold tracking-tight">MobiFone</div>
-                    <div class="text-blue-300 text-xs font-semibold tracking-[0.2em] uppercase">WorkHub</div>
+                    <div class="text-blue-200 text-xs font-semibold tracking-[0.2em] uppercase">WorkHub</div>
                 </div>
             </div>
 
-            <p class="text-blue-200 text-lg font-light leading-relaxed max-w-xs">
-                Hệ thống Quản lý Công việc Nội bộ
+            <p class="text-blue-100 text-lg font-medium leading-relaxed max-w-sm">
+                Trung tâm điều phối nhân sự và công việc nội bộ
             </p>
 
             <!-- Dashboard Preview Widget -->
-            <div class="w-80 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 p-5 text-left mt-2 shadow-2xl">
-                <p class="text-blue-300 text-[10px] font-semibold mb-3 uppercase tracking-wider">Dashboard Overview</p>
+            <div class="w-96 rounded-[8px] bg-white/10 backdrop-blur-sm border border-white/15 p-5 text-left mt-2 shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <p class="text-blue-200 text-[10px] font-semibold uppercase tracking-wider">Operations snapshot</p>
+                    <span class="px-2 py-1 rounded-full bg-[#16A34A]/20 text-[#BBF7D0] text-[10px] font-bold">Online</span>
+                </div>
                 <div class="grid grid-cols-2 gap-2 mb-4">
                     @php
                         $kpis = [
@@ -73,7 +48,7 @@
                         ];
                     @endphp
                     @foreach($kpis as $kpi)
-                        <div class="rounded-xl p-3 bg-white/5">
+                        <div class="rounded-[8px] p-3 bg-white/8 border border-white/10">
                             <div class="text-xl font-bold text-white">{{ $kpi[1] }}</div>
                             <div class="text-[10px] text-blue-200 mt-0.5">{{ $kpi[0] }}</div>
                             <div class="h-1 rounded-full mt-2 bg-white/10">
@@ -83,7 +58,7 @@
                     @endforeach
                 </div>
                 <div class="text-xs text-blue-200 flex items-center justify-between">
-                    <span>Tiến độ tháng 6/2025</span>
+                    <span>Hiệu suất vận hành tháng</span>
                     <span class="font-semibold text-white">72%</span>
                 </div>
                 <div class="h-1.5 rounded-full mt-1.5 bg-white/20">
@@ -95,10 +70,10 @@
 
     <!-- RIGHT PANEL: Login Form -->
     <div class="flex items-center justify-center w-full lg:w-[45%] h-full bg-white px-8 md:px-16">
-        <div class="w-full max-w-sm">
+        <div class="mf-login-card">
             <!-- Header Form -->
             <div class="flex flex-col items-center mb-8">
-                <div class="p-3.5 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-[#003DA5]/20 bg-[#003DA5]/5 text-[#003DA5]">
+                <div class="p-3.5 rounded-[8px] flex items-center justify-center mb-4 shadow-sm border border-[#003DA5]/20 bg-[#003DA5]/5 text-[#003DA5]">
                     <i data-lucide="users" class="w-8 h-8"></i>
                 </div>
                 <h1 class="text-2xl md:text-3xl font-bold mb-2 tracking-tight text-[#001F5B]">
@@ -111,21 +86,21 @@
 
             <!-- Notification Messages -->
             @if(session('error'))
-                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-[8px] flex items-center gap-2">
                     <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
                     <span>{{ session('error') }}</span>
                 </div>
             @endif
 
             @if(session('success'))
-                <div class="p-3 mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                <div class="p-3 mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-[8px] flex items-center gap-2">
                     <i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0"></i>
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
 
             @if(count($errors) > 0)
-                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl space-y-1">
+                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-[8px] space-y-1">
                     @foreach($errors->all() as $err)
                         <div class="flex items-center gap-2">
                             <i data-lucide="x" class="w-3.5 h-3.5 flex-shrink-0"></i>
@@ -146,7 +121,7 @@
                         <input
                             type="email" name="email" value="{{ old('email') }}"
                             placeholder="ten.nguyen@mobifone.vn" required
-                            class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
                         />
                     </div>
                 </div>
@@ -158,7 +133,7 @@
                         <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
                         <input
                             type="password" name="password" id="password" placeholder="••••••••" required
-                            class="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
+                            class="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-[8px] text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
                         />
                         <button type="button" id="toggle-password" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                             <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
@@ -177,14 +152,14 @@
                 <!-- Submit buttons -->
                 <button
                     type="submit"
-                    class="w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-[#003DA5] to-[#0057C8] hover:shadow-lg hover:shadow-[#003DA5]/20 active:scale-[0.98] transition-all"
+                    class="w-full py-3.5 rounded-[8px] text-white font-semibold flex items-center justify-center gap-2 bg-[#003DA5] hover:bg-[#0057C8] active:scale-[0.98] transition-all"
                 >
                     Đăng nhập <i data-lucide="arrow-right" class="w-[18px] h-[18px]"></i>
                 </button>
 
                 <a
                     href="{{ route('landing') }}"
-                    class="w-full py-3 rounded-xl border border-gray-200 text-sm font-medium flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all mt-2"
+                    class="w-full py-3 rounded-[8px] border border-gray-200 text-sm font-medium flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all mt-2"
                 >
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
                     Quay lại trang chủ

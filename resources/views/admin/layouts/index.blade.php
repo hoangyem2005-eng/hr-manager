@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Giám đốc - MobiFone HR')</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { min-height: 100vh; font-family: Inter, sans-serif; background: #F5F7FB; color: #111827; }
+        .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0,1fr); }
+        .admin-side { background: #09111F; color: #fff; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 8px 6px 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .brand-mark { width: 38px; height: 38px; border-radius: 8px; background: #E4002B; display: grid; place-items: center; font-weight: 900; }
+        .brand strong { display: block; font-size: 14px; }
+        .brand span { color: #93A4BB; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+        .nav { display: grid; gap: 6px; }
+        .nav a { height: 40px; border-radius: 8px; display: flex; align-items: center; gap: 10px; color: #B6C2D2; text-decoration: none; padding: 0 10px; font-size: 13px; font-weight: 800; }
+        .nav a:hover, .nav a.active { color: #fff; background: rgba(228,0,43,.18); }
+        .nav i { width: 17px; height: 17px; }
+        .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding-top: 14px; color: #93A4BB; font-size: 12px; line-height: 1.5; }
+        .admin-main { min-width: 0; display: flex; flex-direction: column; }
+        .topbar { height: 64px; background: #fff; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+        .crumb { color: #6B7280; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+        .top-title { color: #111827; font-size: 18px; font-weight: 900; margin-top: 3px; }
+        .top-actions { display: flex; align-items: center; gap: 10px; }
+        .icon-btn { width: 38px; height: 38px; border-radius: 8px; border: 1px solid #E5E7EB; background: #fff; color: #374151; display: grid; place-items: center; cursor: pointer; }
+        .content { padding: 24px; display: grid; gap: 18px; }
+        .module-hero { background: #fff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+        .module-kicker { color: #E4002B; font-size: 11px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+        .module-title { color: #111827; font-size: 26px; font-weight: 900; margin-top: 6px; }
+        .module-desc { color: #6B7280; font-size: 13px; line-height: 1.6; margin-top: 6px; max-width: 720px; }
+        .btn { min-height: 38px; border-radius: 8px; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 13px; text-decoration: none; font-family: inherit; font-size: 13px; font-weight: 900; cursor: pointer; }
+        .btn.primary { background: #E4002B; color: #fff; }
+        .btn.secondary { background: #fff; border-color: #D1D5DB; color: #374151; }
+        .btn.danger { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+        .panel { background: #fff; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; }
+        .panel-head { min-height: 54px; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .panel-title { font-size: 14px; font-weight: 900; color: #111827; display: flex; align-items: center; gap: 8px; }
+        .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .input, .select, .textarea { border: 1px solid #D1D5DB; border-radius: 8px; padding: 0 11px; min-height: 40px; font-family: inherit; font-size: 13px; background: #fff; color: #111827; }
+        .textarea { min-height: 96px; padding-top: 10px; resize: vertical; }
+        .table-wrap { overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table th { background: #F9FAFB; color: #6B7280; text-align: left; padding: 12px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+        .table td { padding: 14px; border-top: 1px solid #F3F4F6; vertical-align: middle; color: #374151; }
+        .code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; color: #9CA3AF; font-size: 12px; }
+        .status { display: inline-flex; align-items: center; min-height: 22px; border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 900; background: #F3F4F6; color: #4B5563; }
+        .status.done { background: #F0FDF4; color: #15803D; }
+        .status.doing { background: #FFFBEB; color: #B45309; }
+        .status.overdue { background: #FEF2F2; color: #B91C1C; }
+        .status.review { background: #EFF6FF; color: #1D4ED8; }
+        .grid-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; padding: 18px; }
+        .field.full { grid-column: 1 / -1; }
+        .field label { display: block; color: #374151; font-size: 12px; font-weight: 900; margin-bottom: 6px; }
+        .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #E5E7EB; padding-top: 16px; }
+        .flash { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 800; }
+        .flash.success { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+        .flash.error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+        .empty { padding: 28px; color: #9CA3AF; text-align: center; }
+        @media (max-width: 900px) { .admin-shell { grid-template-columns: 1fr; } .admin-side { position: static; } .module-hero { align-items: flex-start; flex-direction: column; } .grid-form { grid-template-columns: 1fr; } }
+    </style>
+    @yield('head_extra')
+</head>
+<body>
+@php $routeName = Route::currentRouteName(); @endphp
+<div class="admin-shell">
+    <aside class="admin-side">
+        <div class="brand">
+            <div class="brand-mark">GĐ</div>
+            <div><strong>MobiFone HR</strong><span>Director console</span></div>
+        </div>
+        <nav class="nav">
+            <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+            <a class="{{ request()->routeIs('congviec.*') ? 'active' : '' }}" href="{{ route('congviec.danhsach') }}"><i data-lucide="clipboard-list"></i>Công việc</a>
+            <a class="{{ request()->routeIs('phongban.*') ? 'active' : '' }}" href="{{ route('phongban.danhsach') }}"><i data-lucide="building-2"></i>Phòng ban</a>
+            <a class="{{ request()->routeIs('tiendo.*') ? 'active' : '' }}" href="{{ route('tiendo.index') }}"><i data-lucide="activity"></i>Tiến độ</a>
+            <a href="{{ route('dashboard.notifications') }}"><i data-lucide="bell"></i>Thông báo</a>
+        </nav>
+        <div class="side-foot">
+            <strong>{{ Auth::user()->name ?? 'Giám đốc' }}</strong><br>
+            Phiên điều hành Giám đốc
+        </div>
+    </aside>
+    <section class="admin-main">
+        <header class="topbar">
+            <div><div class="crumb">Giám đốc / Điều hành</div><div class="top-title">@yield('page_title', 'Quản trị')</div></div>
+            <div class="top-actions">
+                <a class="icon-btn" href="{{ route('dashboard.notifications') }}" title="Thông báo"><i data-lucide="bell"></i></a>
+                <form action="{{ route('logout') }}" method="POST">@csrf<button class="icon-btn" type="submit" title="Đăng xuất"><i data-lucide="log-out"></i></button></form>
+            </div>
+        </header>
+        <main class="content">
+            @if(session('thongbao') || session('success'))
+                <div class="flash success">{{ session('thongbao') ?? session('success') }}</div>
+            @endif
+            @if(session('error'))
+                <div class="flash error">{{ session('error') }}</div>
+            @endif
+            @yield('content')
+        </main>
+    </section>
+</div>
+<script>lucide.createIcons();</script>
+@yield('scripts')
+</body>
+</html>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use App\Models\Document;
 use App\Models\User;
 use App\Models\Task;
 use App\Models\Department;
@@ -61,7 +63,7 @@ class ManagerController extends Controller
             });
 
         // Công việc trong phòng mình đã giao (assigned_by = tôi)
-        $myAssignedTasks = Task::with('assignee')
+        $myAssignedTasks = Task::with(['assignee', 'documents'])
             ->where('assigned_by', $user->id)
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -74,6 +76,24 @@ class ManagerController extends Controller
                 'status'   => $t->status,
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
                 'progress' => $t->progress ?? 0,
+                'documents_count' => $t->documents->count(),
+            ]);
+
+        $incomingTasks = Task::with('assigner')
+            ->where('assigned_to', $user->id)
+            ->where('assigned_by', '!=', $user->id)
+            ->whereNotIn('status', ['Hoàn thành'])
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get()
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
+                'name' => $t->task_name,
+                'assigner' => $t->assigner->name ?? 'Giám đốc',
+                'status' => $t->status,
+                'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
+                'description' => $t->description,
             ]);
 
         // Công việc được giao cho nhân viên trong phòng
@@ -88,7 +108,7 @@ class ManagerController extends Controller
         $roles = Role::all();
 
         return view('manager.dashboard', compact(
-            'myTeam', 'myAssignedTasks',
+            'myTeam', 'myAssignedTasks', 'incomingTasks',
             'pendingCount', 'doingCount', 'doneCount', 'overdueCount',
             'department', 'allTeamMembers', 'roles'
         ));
@@ -107,7 +127,7 @@ class ManagerController extends Controller
             'password' => 'required|min:6',
         ]);
 
-        User::create([
+        $newUser = User::create([
             'name'          => $request->name,
             'email'         => $request->email,
             'password'      => Hash::make($request->password),
@@ -115,9 +135,33 @@ class ManagerController extends Controller
             'department_id' => $manager->department_id, // Bị lock theo phòng của Trưởng phòng
         ]);
 
+        // Backfill thông báo chung (broadcast) mà user mới chưa nhận được
+        $referenceUserId = User::where('id', '!=', $newUser->id)->min('id');
+        if ($referenceUserId) {
+            $broadcastNotifs = Notification::where('user_id', $referenceUserId)
+                ->whereNull('task_id')
+                ->get();
+
+            if ($broadcastNotifs->isNotEmpty()) {
+                $now  = now();
+                $rows = $broadcastNotifs->map(fn ($n) => [
+                    'user_id'    => $newUser->id,
+                    'task_id'    => null,
+                    'title'      => $n->title,
+                    'message'    => $n->message,
+                    'is_read'    => false,
+                    'created_at' => $n->created_at,
+                    'updated_at' => $now,
+                ])->all();
+
+                Notification::insert($rows);
+            }
+        }
+
         return redirect()->route('manager.dashboard')
             ->with('success', "Đã thêm nhân viên {$request->name} vào phòng của bạn!");
     }
+
 
     /**
      * Giao công việc cho cấp dưới trong phòng.
@@ -155,7 +199,84 @@ class ManagerController extends Controller
             ->with('success', "Đã giao công việc cho {$assignee->name}!");
     }
 
+    public function delegateIncomingTask(Request $request, Task $task)
+    {
+        $manager = Auth::user();
+
+        if ((int) $task->assigned_to !== (int) $manager->id) {
+            return back()->with('error', 'Bạn chỉ có thể phân công công việc đang được giao cho mình.');
+        }
+
+        $request->validate([
+            'assigned_to' => 'required|exists:users,id',
+        ]);
+
+        $assignee = User::findOrFail($request->assigned_to);
+
+        if ((int) $assignee->department_id !== (int) $manager->department_id || !$assignee->isEmployee()) {
+            return back()->with('error', 'Bạn chỉ có thể phân công cho nhân viên trong phòng của mình.');
+        }
+
+        $task->update([
+            'assigned_by' => $manager->id,
+            'assigned_to' => $assignee->id,
+            'status' => 'Chờ xử lý',
+            'progress' => 0,
+        ]);
+
+        Notification::create([
+            'user_id' => $assignee->id,
+            'task_id' => $task->id,
+            'title' => 'Bạn vừa được phân công công việc mới',
+            'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name
+                . ' (Người giao: ' . $manager->name . ')',
+            'is_read' => false,
+        ]);
+
+        return redirect()->route('manager.dashboard')
+            ->with('success', "Đã phân công {$task->task_name} cho {$assignee->name}.");
+    }
+
+    public function forwardDocumentToDirector(Document $document)
+    {
+        $manager = Auth::user();
+        $document->loadMissing(['task.assignee', 'uploader']);
+
+        if (!$this->canManageDocument($document, $manager)) {
+            abort(403, 'Bạn không có quyền chuyển file này lên Giám đốc.');
+        }
+
+        $document->update([
+            'review_status' => Document::STATUS_DIRECTOR_VISIBLE,
+            'forwarded_by' => $manager->id,
+            'forwarded_at' => now(),
+        ]);
+
+        $directors = User::where('role_id', User::ROLE_ADMIN)->get();
+        foreach ($directors as $director) {
+            Notification::create([
+                'user_id' => $director->id,
+                'task_id' => $document->task_id,
+                'title' => 'Trưởng phòng đã chuyển file lên Giám đốc',
+                'message' => 'WH-' . str_pad($document->task_id, 3, '0', STR_PAD_LEFT)
+                    . ': ' . ($document->task->task_name ?? 'Công việc')
+                    . ' - ' . $document->file_name,
+                'is_read' => false,
+            ]);
+        }
+
+        return back()->with('success', 'Đã chuyển file lên Giám đốc.');
+    }
+
     // ===================== Helper =====================
+    private function canManageDocument(Document $document, User $manager): bool
+    {
+        return (int) optional($document->task?->assignee)->department_id === (int) $manager->department_id
+            || (int) optional($document->uploader)->department_id === (int) $manager->department_id
+            || (int) optional($document->task)->assigned_by === (int) $manager->id
+            || (int) optional($document->task)->assigned_to === (int) $manager->id;
+    }
+
     private function getInitials(string $name): string
     {
         $words = explode(' ', $name);

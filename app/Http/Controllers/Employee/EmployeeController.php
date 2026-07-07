@@ -70,14 +70,15 @@ class EmployeeController extends Controller
                 : null,
         ]);
 
-        // Thông báo chưa đọc
+        // Hiển thị đầy đủ thông báo gần đây, không chỉ thông báo chưa đọc.
         $notifications = Notification::where('user_id', $user->id)
-            ->where('is_read', 0)
             ->orderBy('created_at', 'desc')
-            ->take(5)
+            ->take(10)
             ->get();
 
-        $unreadCount = $notifications->count();
+        $unreadCount = Notification::where('user_id', $user->id)
+            ->where('is_read', 0)
+            ->count();
 
         return view('employee.dashboard', compact(
             'total', 'done', 'doing', 'overdue', 'pending',
@@ -85,6 +86,23 @@ class EmployeeController extends Controller
             'tasksTodo', 'tasksDoing', 'tasksDone', 'tasksOverdue',
             'notifications', 'unreadCount'
         ));
+    }
+
+    /**
+     * Nhân viên xem chi tiết task được giao cho họ.
+     * Luôn dùng view employee.task-detail, không bao giờ dùng layout admin.
+     */
+    public function taskDetail($id)
+    {
+        $user = Auth::user();
+        $task = Task::with(['assignee', 'creator', 'documents.uploader'])
+            ->where(function ($q) use ($user) {
+                $q->where('assigned_to', $user->id)
+                  ->orWhere('assigned_by', $user->id);
+            })
+            ->findOrFail($id);
+
+        return view('employee.task-detail', compact('task'));
     }
 
     /**
@@ -113,5 +131,72 @@ class EmployeeController extends Controller
 
         return redirect()->route('employee.dashboard')
             ->with('success', "Đã cập nhật tiến độ: {$task->task_name}");
+    }
+
+    /**
+     * Nhân viên upload file đính kèm cho task được giao.
+     */
+    public function uploadFile(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        // Chỉ cho phép upload nếu task được giao cho nhân viên này
+        $task = Task::where('id', $id)
+            ->where(function ($q) use ($user) {
+                $q->where('assigned_to', $user->id)
+                  ->orWhere('assigned_by', $user->id);
+            })
+            ->firstOrFail();
+
+        $request->validate([
+            'attachments'   => 'required|array|max:5',
+            'attachments.*' => [
+                'required', 'file', 'max:20480',
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,zip,rar,txt',
+            ],
+        ], [
+            'attachments.required'  => 'Vui lòng chọn ít nhất một tệp.',
+            'attachments.*.max'     => 'Mỗi tệp không được vượt quá 20 MB.',
+            'attachments.*.mimes'   => 'Định dạng không được hỗ trợ. Cho phép: PDF, Word, Excel, ảnh, ZIP...',
+        ]);
+
+        foreach ($request->file('attachments') as $file) {
+            $ext      = strtolower($file->getClientOriginalExtension());
+            $origName = $file->getClientOriginalName();
+            $stored   = $file->store("tasks/{$task->id}", 'public');
+
+            \App\Models\Document::create([
+                'task_id'        => $task->id,
+                'user_id'        => $user->id,
+                'file_name'      => $origName,
+                'file_path'      => $stored,
+                'file_type'      => $ext,
+                'disk'           => 'public',
+                'review_status'  => \App\Models\Document::STATUS_MANAGER_REVIEW,
+            ]);
+        }
+
+        return redirect()
+            ->route('employee.task.detail', $id)
+            ->with('success', 'Tải lên file đính kèm thành công.');
+    }
+
+    /**
+     * Nhân viên xóa file do chính họ tải lên.
+     */
+    public function deleteFile($documentId)
+    {
+        $user = Auth::user();
+        $doc  = \App\Models\Document::where('id', $documentId)
+            ->where('user_id', $user->id)   // Chỉ xóa file của chính mình
+            ->firstOrFail();
+
+        \Illuminate\Support\Facades\Storage::disk($doc->disk ?? 'public')->delete($doc->file_path);
+        $taskId = $doc->task_id;
+        $doc->delete();
+
+        return redirect()
+            ->route('employee.task.detail', $taskId)
+            ->with('success', 'Đã xóa file đính kèm.');
     }
 }

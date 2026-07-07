@@ -16,6 +16,9 @@ class Document extends Model
 {
     use HasFactory;
 
+    public const STATUS_MANAGER_REVIEW = 'manager_review';
+    public const STATUS_DIRECTOR_VISIBLE = 'director_visible';
+
     protected $table = 'documents';
 
     protected $fillable = [
@@ -25,6 +28,13 @@ class Document extends Model
         'file_path',   // Đường dẫn lưu trên disk (tasks/1/uuid.pdf)
         'file_type',   // Phần mở rộng (pdf, docx, ...)
         'disk',        // Disk lưu trữ ('public', 'local', 's3')
+        'review_status',
+        'forwarded_by',
+        'forwarded_at',
+    ];
+
+    protected $casts = [
+        'forwarded_at' => 'datetime',
     ];
 
     // ==================== QUAN HỆ ====================
@@ -39,6 +49,11 @@ class Document extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function forwarder()
+    {
+        return $this->belongsTo(User::class, 'forwarded_by');
     }
 
     // ==================== ACCESSORS ====================

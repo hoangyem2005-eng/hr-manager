@@ -16,6 +16,10 @@ class Notification extends Model
         'is_read',
     ];
 
+    protected $casts = [
+        'is_read' => 'boolean',
+    ];
+
     // Mối quan hệ: Một thông báo thuộc về 1 User
     public function user()
     {

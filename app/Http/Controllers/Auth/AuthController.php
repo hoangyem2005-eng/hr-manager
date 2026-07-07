@@ -92,6 +92,12 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => $request->password,
         ])) {
+            if (!Auth::user()->is_active) {
+                Auth::logout();
+
+                return back()->with('error', 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản lý.');
+            }
+
             $request->session()->regenerate();
 
             return $this->redirectToRoleDashboard(Auth::user());
@@ -149,6 +155,7 @@ class AuthController extends Controller
                 'password' => bcrypt(env('DEFAULT_DIRECTOR_PASSWORD', 'change-me')),
                 'role_id' => User::ROLE_ADMIN,
                 'department_id' => 1,
+                'is_active' => true,
             ]);
         }
     }
