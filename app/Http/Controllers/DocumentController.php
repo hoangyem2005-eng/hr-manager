@@ -321,7 +321,6 @@ class DocumentController extends Controller
 
         return false;
     }
-
     private function initialStatus(): string
     {
         $user = Auth::user();

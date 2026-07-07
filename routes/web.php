@@ -100,6 +100,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::post('/notifications/broadcast', [DashboardController::class, 'broadcastNotification'])->name('dashboard.notifications.broadcast');
     Route::post('/notifications/mark-all-read', [DashboardController::class, 'markAllNotificationsAsRead'])->name('dashboard.notifications.markAllRead');
     Route::post('/notifications/{notification}/open', [DashboardController::class, 'openNotification'])->name('dashboard.notifications.open');
+    Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('dashboard.notifications.read');
 });
 
 // ==================== MODULE CÔNG VIỆC (TASK CRUD) ====================

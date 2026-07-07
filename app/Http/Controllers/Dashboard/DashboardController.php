@@ -334,7 +334,19 @@ class DashboardController extends Controller
         if ($filter === 'Của tôi') {
             $query->where('assigned_to', $currentUser->id);
         } elseif ($filter === 'Quá hạn') {
-            $query->where('status', 'Quá hạn');
+            $query->where(function ($q) {
+                $q->where('status', 'Quá hạn')
+                  ->orWhere(function ($sub) {
+                      $sub->where('status', '!=', 'Hoàn thành')
+                          ->where('deadline', '<', Carbon::now());
+                  });
+            });
+        }
+
+        // Lọc theo nhân viên phụ trách
+        $assigneeId = $request->query('assignee_id');
+        if ($assigneeId) {
+            $query->where('assigned_to', $assigneeId);
         }
 
         $allTasks = $query->orderBy('created_at', 'desc')->get();
@@ -838,6 +850,22 @@ class DashboardController extends Controller
             ->with('success', 'Đã đánh dấu tất cả thông báo là đã đọc.');
     }
 
+    public function readNotification($id)
+    {
+        $notif = Notification::findOrFail($id);
+        
+        if ($notif->user_id === Auth::id()) {
+            $notif->update(['is_read' => 1]);
+        }
+
+        if ($notif->task_id) {
+            return redirect()->route('congviec.chitiet', $notif->task_id);
+        }
+
+        return redirect()->route('dashboard.notifications');
+    }
+
+    // Helper tạo chữ viết tắt Avatar
     protected function getInitials($name)
     {
         $name = $this->cleanVietnameseText($name);

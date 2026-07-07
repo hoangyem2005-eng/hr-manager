@@ -125,12 +125,12 @@
     <section class="flex items-center gap-3 flex-wrap justify-between">
         <div class="flex items-center gap-3 flex-wrap">
             <div class="flex rounded-[8px] border border-gray-200 bg-white overflow-hidden">
-                <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter]) }}"
+                <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'kanban' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
                    style="{{ $viewType == 'kanban' ? 'background-color: '.$page['accent'] : '' }}">
                     <i data-lucide="columns-3" class="w-3.5 h-3.5"></i> Kanban
                 </a>
-                <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter]) }}"
+                <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'list' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
                    style="{{ $viewType == 'list' ? 'background-color: '.$page['accent'] : '' }}">
                     <i data-lucide="list" class="w-3.5 h-3.5"></i> Danh sách
@@ -139,13 +139,32 @@
 
             <div class="flex gap-2">
                 @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $f)
-                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f]) }}"
+                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f, 'assignee_id' => request('assignee_id')]) }}"
                        class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all {{ $filter == $f ? 'text-white' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}"
                        style="{{ $filter == $f ? 'background-color: '.$page['accent'].'; border-color: '.$page['accent'] : '' }}">
                         {{ $f }}
                     </a>
                 @endforeach
             </div>
+
+            <!-- Assignee Dropdown -->
+            <form action="{{ route('dashboard.tasks') }}" method="GET" class="flex items-center gap-2">
+                <input type="hidden" name="view" value="{{ $viewType }}">
+                <input type="hidden" name="filter" value="{{ $filter }}">
+                <select name="assignee_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-700 outline-none focus:border-[#003DA5] transition-all">
+                    <option value="">Lọc theo nhân viên phụ trách</option>
+                    @foreach($allUsers as $u)
+                        <option value="{{ $u->id }}" {{ request('assignee_id') == $u->id ? 'selected' : '' }}>
+                            {{ $u->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @if(request('assignee_id'))
+                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $filter]) }}" class="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1">
+                        <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Xóa lọc
+                    </a>
+                @endif
+            </form>
         </div>
     </section>
 
