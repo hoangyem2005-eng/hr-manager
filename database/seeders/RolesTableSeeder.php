@@ -21,24 +21,24 @@ class RolesTableSeeder extends Seeder
         \DB::table('roles')->insert(array (
             0 => 
             array (
-                'id' => '1',
-                'name' => 'Giám đốc',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'id' => 1,
+                'name' => 'Giám đốc / Phó Giám đốc',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-07-02 13:04:44',
             ),
             1 => 
             array (
-                'id' => '2',
-                'name' => 'Tổ trưởng',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'id' => 2,
+                'name' => 'Trưởng phòng / Tổ trưởng',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-07-02 13:04:44',
             ),
             2 => 
             array (
-                'id' => '3',
+                'id' => 3,
                 'name' => 'Nhân viên',
-                'created_at' => '2026-07-07 02:55:44',
-                'updated_at' => '2026-07-07 02:55:44',
+                'created_at' => '2026-06-22 05:59:49',
+                'updated_at' => '2026-06-22 05:59:49',
             ),
         ));
         
