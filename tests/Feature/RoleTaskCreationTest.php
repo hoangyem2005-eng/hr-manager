@@ -205,8 +205,8 @@ class RoleTaskCreationTest extends TestCase
         $this->actingAs($employee)
             ->get(route('employee.dashboard'))
             ->assertOk()
-            ->assertSee('Personal execution')
-            ->assertSee('My Workbench');
+            ->assertSee('Personal Execution')
+            ->assertSee('Danh sách công việc cá nhân');
     }
 
     public function test_manager_can_update_member_information_from_actions(): void

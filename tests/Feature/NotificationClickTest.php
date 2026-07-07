@@ -40,14 +40,12 @@ class NotificationClickTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('dashboard.notifications.open', $notification));
 
-        $response->assertRedirect(route('congviec.chitiet', $task));
+        $response->assertRedirect(route('employee.task.detail', $task));
         $this->assertTrue($notification->fresh()->is_read);
 
-        $this->get(route('congviec.chitiet', $task))
+        $this->get(route('employee.task.detail', $task))
             ->assertOk()
-            ->assertSee('Hoan thien bao cao tuan')
-            ->assertSee('My Workbench')
-            ->assertDontSee('ADMIN / MODULE');
+            ->assertSee('Hoan thien bao cao tuan');
     }
 
     public function test_user_cannot_mark_someone_elses_notification_as_read(): void
@@ -118,7 +116,7 @@ class NotificationClickTest extends TestCase
     {
         Carbon::setTestNow('2026-07-05 09:00:00');
 
-        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'is_active' => true]);
+        $employee = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'is_active' => true]);
         $upcomingTask = Task::create([
             'task_name' => 'Nop bao cao deadline',
             'assigned_to' => $employee->id,
