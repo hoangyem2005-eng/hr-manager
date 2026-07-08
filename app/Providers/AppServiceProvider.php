@@ -29,8 +29,15 @@ class AppServiceProvider extends ServiceProvider
                     ->where('is_read', false)
                     ->count();
                 $view->with('unreadNotificationsCount', $unreadCount);
+
+                $recentNotifications = \App\Models\Notification::where('user_id', auth()->id())
+                    ->orderBy('created_at', 'desc')
+                    ->take(5)
+                    ->get();
+                $view->with('recentNotifications', $recentNotifications);
             } else {
                 $view->with('unreadNotificationsCount', 0);
+                $view->with('recentNotifications', collect());
             }
         });
     }

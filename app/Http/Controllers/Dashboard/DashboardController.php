@@ -9,6 +9,10 @@ use App\Models\Department;
 use App\Models\Role;
 use App\Models\Notification;
 use App\Models\HrDocument;
+use App\Models\Document;
+use App\Events\TaskCreated;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -140,20 +144,20 @@ class DashboardController extends Controller
         $overdueTasks = Task::where('status', 'Quá hạn')->count();
 
         // 2. Lấy danh sách công việc gần đây
-        $tasks = Task::orderBy('updated_at', 'desc')->take(5)->get();
+        $tasks = Task::with('assignee')->orderBy('updated_at', 'desc')->take(5)->get();
 
-        // Map thông tin giả lập cho phù hợp giao diện view
+        // Map thông tin thực tế từ database
         $mappedTasks = $tasks->map(function ($t) {
-            $user = User::find($t->assigned_to) ?? Auth::user();
+            $user = $t->assignee ?? Auth::user();
             return [
                 'id' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                 'name' => $t->task_name,
-                'assignee' => $user->name,
-                'avatar' => $this->getInitials($user->name),
-                'priority' => $t->id % 3 == 0 ? 'Cao' : ($t->id % 3 == 1 ? 'Trung bình' : 'Thấp'),
+                'assignee' => $user->name ?? 'Chưa giao',
+                'avatar' => $this->getInitials($user->name ?? 'CG'),
+                'priority' => $t->priority ?? 'Trung bình',
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'status' => $t->status,
-                'progress' => $t->status == 'Hoàn thành' ? 100 : ($t->status == 'Đang làm' ? 65 : ($t->status == 'Đang review' ? 80 : 0))
+                'progress' => $t->progress ?? ($t->status == 'Hoàn thành' ? 100 : ($t->status == 'Đang làm' ? 65 : ($t->status == 'Đang review' ? 80 : 0)))
             ];
         });
 
@@ -175,7 +179,7 @@ class DashboardController extends Controller
             ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count()],
             ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count()],
             ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count()],
-            ['name' => 'Chờ xử lý', 'value' => Task::where('status', 'Chờ xử lý')->count()],
+            ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Todo'])->count()],
         ];
 
         return view('dashboard.index', compact(
@@ -211,7 +215,7 @@ class DashboardController extends Controller
             $query->where('assigned_to', $assigneeId);
         }
 
-        $allTasks = $query->orderBy('created_at', 'desc')->get();
+        $allTasks = $query->with('documents.uploader')->orderBy('created_at', 'desc')->get();
 
         // Phân loại task theo cột Kanban
         $cols = [
@@ -225,17 +229,33 @@ class DashboardController extends Controller
 
         foreach ($allTasks as $t) {
             $user = User::find($t->assigned_to) ?? Auth::user();
+            
+            $attachments = $t->documents->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'file_name' => $doc->file_name,
+                    'file_type' => $doc->file_type,
+                    'download_url' => route('document.download', $doc->id),
+                    'preview_url' => route('document.preview', $doc->id),
+                    'uploader' => $doc->uploader->name ?? 'Không rõ',
+                    'created_at' => $doc->created_at ? $doc->created_at->format('d/m/Y H:i') : ''
+                ];
+            })->toArray();
+
             $mapped = [
                 'id' => $t->id,
                 'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                 'name' => $t->task_name,
                 'description' => $t->description,
                 'assignee' => $user->name,
+                'assignee_id' => $t->assigned_to,
                 'avatar' => $this->getInitials($user->name),
-                'priority' => $t->id % 3 == 0 ? 'Cao' : ($t->id % 3 == 1 ? 'Trung bình' : 'Thấp'),
+                'priority' => $t->priority ?? ($t->id % 3 == 0 ? 'Cao' : ($t->id % 3 == 1 ? 'Trung bình' : 'Thấp')),
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
+                'deadline_raw' => $t->deadline ? Carbon::parse($t->deadline)->format('Y-m-d') : '',
                 'status' => $t->status,
-                'progress' => $t->status == 'Hoàn thành' ? 100 : ($t->status == 'Đang làm' ? 65 : ($t->status == 'Đang review' ? 80 : 0))
+                'progress' => $t->progress ?? ($t->status == 'Hoàn thành' ? 100 : ($t->status == 'Đang làm' ? 65 : ($t->status == 'Đang review' ? 80 : 0))),
+                'attachments' => $attachments
             ];
 
             $mappedTasksList[] = $mapped;
@@ -249,7 +269,7 @@ class DashboardController extends Controller
             } elseif ($t->status == 'Hoàn thành') {
                 $cols['done']['tasks'][] = $mapped;
             } else {
-                // Mặc định hoặc Quá hạn cho vào Đang làm hoặc cột riêng, tạm cho vào Đang làm
+                // Cho việc quá hạn vào cột Đang làm hoặc cột phù hợp
                 $cols['doing']['tasks'][] = $mapped;
             }
         }
@@ -263,20 +283,131 @@ class DashboardController extends Controller
     {
         $request->validate([
             'task_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'deadline' => 'required|date',
-            'assigned_to' => 'required|exists:users,id'
+            'assigned_to' => 'required|exists:users,id',
+            'priority' => 'required|string|in:Thấp,Trung bình,Cao',
+            'status' => 'nullable|string',
+            'attachments'   => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,zip,rar,txt,csv',
         ]);
 
-        Task::create([
+        $task = Task::create([
             'task_name' => $request->task_name,
             'description' => $request->description,
             'assigned_by' => Auth::id(),
             'assigned_to' => $request->assigned_to,
             'deadline' => $request->deadline,
-            'status' => $request->status ?? 'Chờ xử lý'
+            'priority' => $request->priority ?? 'Trung bình',
+            'status' => $request->status ?? 'Chờ xử lý',
+            'progress' => $request->status === 'Hoàn thành' ? 100 : 0,
         ]);
 
+        if ($request->hasFile('attachments')) {
+            $this->handleFileUploads($request->file('attachments'), $task);
+        }
+
+        event(new TaskCreated($task));
+
         return redirect()->route('dashboard.tasks')->with('success', 'Tạo công việc thành công!');
+    }
+
+    public function updateTask(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+
+        $request->validate([
+            'task_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'deadline' => 'required|date',
+            'assigned_to' => 'required|exists:users,id',
+            'priority' => 'required|string|in:Thấp,Trung bình,Cao',
+            'status' => 'required|string',
+            'progress' => 'nullable|integer|min:0|max:100',
+            'attachments'   => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,zip,rar,txt,csv',
+            'delete_attachments' => 'nullable|array',
+            'delete_attachments.*' => 'integer|exists:documents,id',
+        ]);
+
+        $oldAssignee = $task->assigned_to;
+        $progress = $request->input('progress');
+        if ($request->input('status') === 'Hoàn thành') {
+            $progress = 100;
+        }
+
+        $task->update([
+            'task_name' => $request->task_name,
+            'description' => $request->description,
+            'deadline' => $request->deadline,
+            'assigned_to' => $request->assigned_to,
+            'priority' => $request->priority,
+            'status' => $request->status,
+            'progress' => $progress ?? $task->progress,
+        ]);
+
+        if ($request->has('delete_attachments')) {
+            foreach ($request->input('delete_attachments') as $docId) {
+                $doc = Document::where('task_id', $task->id)->find($docId);
+                if ($doc) {
+                    if (Storage::disk('public')->exists($doc->file_path)) {
+                        Storage::disk('public')->delete($doc->file_path);
+                    }
+                    $doc->delete();
+                }
+            }
+        }
+
+        if ($request->hasFile('attachments')) {
+            $this->handleFileUploads($request->file('attachments'), $task);
+        }
+
+        if ($task->assigned_to && $task->assigned_to !== $oldAssignee) {
+            event(new TaskCreated($task));
+        }
+
+        return redirect()->route('dashboard.tasks')->with('success', 'Cập nhật công việc thành công!');
+    }
+
+    public function deleteTask($id)
+    {
+        $task = Task::with('documents')->findOrFail($id);
+
+        foreach ($task->documents as $doc) {
+            if (Storage::disk('public')->exists($doc->file_path)) {
+                Storage::disk('public')->delete($doc->file_path);
+            }
+            $doc->delete();
+        }
+
+        $task->delete();
+
+        return redirect()->route('dashboard.tasks')->with('success', 'Xóa công việc thành công!');
+    }
+
+    private function handleFileUploads(array $files, Task $task): void
+    {
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                continue;
+            }
+
+            $originalName = $file->getClientOriginalName();
+            $extension    = strtolower($file->getClientOriginalExtension());
+            $storedName   = Str::uuid() . '.' . $extension;
+            $directory    = 'tasks/' . $task->id;
+
+            $storedPath   = $file->storeAs($directory, $storedName, 'public');
+
+            Document::create([
+                'task_id'   => $task->id,
+                'user_id'   => Auth::id(),
+                'file_name' => $originalName,
+                'file_path' => $storedPath,
+                'file_type' => $extension,
+                'disk'      => 'public',
+            ]);
+        }
     }
 
     public function members(Request $request)
@@ -355,28 +486,35 @@ class DashboardController extends Controller
         $doneRate = $total > 0 ? round((Task::where('status', 'Hoàn thành')->count() / $total) * 100) : 0;
         $overdueRate = $total > 0 ? round((Task::where('status', 'Quá hạn')->count() / $total) * 100) : 0;
 
-        // 2. Mock dữ liệu tiến độ hàng tuần
-        $lineData = [
-            ['week' => 'T1', 'assigned' => 18, 'completed' => 12],
-            ['week' => 'T2', 'assigned' => 25, 'completed' => 20],
-            ['week' => 'T3', 'assigned' => 22, 'completed' => 18],
-            ['week' => 'T4', 'assigned' => 30, 'completed' => 25],
-            ['week' => 'T5', 'assigned' => 28, 'completed' => 22],
-            ['week' => 'T6', 'assigned' => 35, 'completed' => 30],
-            ['week' => 'T7', 'assigned' => 32, 'completed' => 28]
-        ];
+        // 2. Tính toán dữ liệu tiến độ 7 tuần gần đây
+        $lineData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $startOfWeek = Carbon::now()->subWeeks($i)->startOfWeek();
+            $endOfWeek = Carbon::now()->subWeeks($i)->endOfWeek();
+            
+            $assigned = Task::whereBetween('created_at', [$startOfWeek, $endOfWeek])->count();
+            $completed = Task::where('status', 'Hoàn thành')
+                ->whereBetween('updated_at', [$startOfWeek, $endOfWeek])
+                ->count();
+                
+            $lineData[] = [
+                'week' => 'T. ' . Carbon::now()->subWeeks($i)->weekOfYear,
+                'assigned' => $assigned,
+                'completed' => $completed
+            ];
+        }
 
-        // 3. Thống kê theo ưu tiên
+        // 3. Thống kê theo ưu tiên thực tế từ DB
         $priorityDistribution = [
-            ['priority' => 'Cao', 'value' => 45],
-            ['priority' => 'Trung bình', 'value' => 62],
-            ['priority' => 'Thấp', 'value' => 35]
+            ['priority' => 'Cao', 'value' => Task::where('priority', 'Cao')->count()],
+            ['priority' => 'Trung bình', 'value' => Task::where('priority', 'Trung bình')->count()],
+            ['priority' => 'Thấp', 'value' => Task::where('priority', 'Thấp')->count()],
         ];
 
-        // 4. Hiệu suất theo thành viên
-        $perfData = User::take(5)->get()->map(function($u) {
+        // 4. Hiệu suất thực tế theo thành viên có nhận việc
+        $perfData = User::whereHas('assignedTasks')->take(5)->get()->map(function($u) {
             $totalUserTasks = Task::where('assigned_to', $u->id)->count();
-            $done = $totalUserTasks > 0 ? round((Task::where('assigned_to', $u->id)->where('status', 'Hoàn thành')->count() / $totalUserTasks) * 100) : 60;
+            $done = $totalUserTasks > 0 ? round((Task::where('assigned_to', $u->id)->where('status', 'Hoàn thành')->count() / $totalUserTasks) * 100) : 0;
             $overdue = 100 - $done;
             return [
                 'name' => $u->name,
@@ -385,12 +523,22 @@ class DashboardController extends Controller
             ];
         });
 
-        // 5. Trạng thái phân bổ donut
+        if ($perfData->isEmpty()) {
+            $perfData = User::take(5)->get()->map(function($u) {
+                return [
+                    'name' => $u->name,
+                    'completion' => 0,
+                    'overdue' => 0
+                ];
+            });
+        }
+
+        // 5. Trạng thái phân bổ donut từ DB
         $pieData = [
-            ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count() ?: 58, 'color' => '#16A34A'],
-            ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count() ?: 42, 'color' => '#D97706'],
-            ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count() ?: 22, 'color' => '#003DA5'],
-            ['name' => 'Chờ xử lý', 'value' => Task::where('status', 'Chờ xử lý')->count() ?: 20, 'color' => '#6B7280'],
+            ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count(), 'color' => '#16A34A'],
+            ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count(), 'color' => '#D97706'],
+            ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count(), 'color' => '#003DA5'],
+            ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Todo'])->count(), 'color' => '#6B7280'],
         ];
 
         return view('dashboard.reports', compact('total', 'doneRate', 'overdueRate', 'lineData', 'priorityDistribution', 'perfData', 'pieData'));
@@ -439,10 +587,37 @@ class DashboardController extends Controller
         }
 
         if ($notif->task_id) {
-            return redirect()->route('congviec.chitiet', $notif->task_id);
+            $user = Auth::user();
+            if ($user && $user->role_id == 3) {
+                return redirect()->route('employee.dashboard', ['task_id' => $notif->task_id]);
+            }
+            return redirect()->route('dashboard.tasks', ['task_id' => $notif->task_id]);
         }
 
         return redirect()->route('dashboard.notifications');
+    }
+
+    public function pollNotifications()
+    {
+        if (!Auth::check()) {
+            return response()->json(['unread_count' => 0, 'new_notifications' => []]);
+        }
+
+        $unreadCount = Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->count();
+
+        // Lấy thông báo mới tạo trong vòng 10 giây qua
+        $newNotifications = Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->where('created_at', '>=', now()->subSeconds(10))
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'unread_count' => $unreadCount,
+            'new_notifications' => $newNotifications
+        ]);
     }
 
     // Helper tạo chữ viết tắt Avatar

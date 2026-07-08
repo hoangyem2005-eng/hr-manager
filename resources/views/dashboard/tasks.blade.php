@@ -219,7 +219,7 @@
             </button>
         </div>
 
-        <form action="{{ route('dashboard.tasks.save') }}" method="POST" class="p-6 space-y-5">
+        <form id="task-form" action="{{ route('dashboard.tasks.save') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
             @csrf
             <!-- Task Name -->
             <div>
@@ -278,6 +278,20 @@
                 </div>
             </div>
 
+            <!-- File Upload -->
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Tài liệu đính kèm (Tối đa 5 file, < 20MB/file)</label>
+                <input type="file" name="attachments[]" multiple class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5] bg-gray-50/50" />
+            </div>
+
+            <!-- Current attachments list to delete (for edit mode) -->
+            <div id="edit-attachments-container" class="hidden">
+                <label class="block text-xs font-bold mb-1.5 text-red-600">Tài liệu hiện tại (Chọn để xóa):</label>
+                <div id="edit-attachments-list" class="space-y-1.5 max-h-32 overflow-y-auto p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50">
+                    <!-- Dynamic rendering -->
+                </div>
+            </div>
+
             <!-- Email Notification toggle -->
             <div class="flex items-center justify-between p-4 rounded-xl bg-[#E8F0FE]">
                 <div>
@@ -293,7 +307,7 @@
             <!-- Buttons -->
             <div class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3">
                 <button type="button" id="cancel-task-modal" class="px-5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">Hủy</button>
-                <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8]">Tạo công việc</button>
+                <button type="submit" id="task-submit-btn" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8]">Tạo công việc</button>
             </div>
         </form>
     </div>
@@ -311,7 +325,7 @@
             </button>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-5">
             <h2 class="text-2xl font-bold text-[#001F5B]" id="detail-name"></h2>
             
             <div class="flex items-center gap-4">
@@ -337,6 +351,30 @@
                     <div class="text-sm font-bold text-[#003DA5]" id="detail-progress"></div>
                 </div>
             </div>
+
+            <!-- Documents Attachments list -->
+            <div id="detail-attachments-box" class="hidden">
+                <p class="text-xs text-gray-400 font-semibold mb-1.5">TÀI LIỆU ĐÍNH KÈM</p>
+                <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar" id="detail-attachments-list">
+                    <!-- Dynamic list items -->
+                </div>
+            </div>
+
+            <!-- Admin/Manager Action Buttons -->
+            @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
+                <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 mt-2" id="detail-actions">
+                    <button type="button" id="edit-task-btn" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all">
+                        <i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa
+                    </button>
+                    <form id="delete-task-form" action="" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa công việc này không?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-all">
+                            <i class="fa-solid fa-trash-can"></i> Xóa việc
+                        </button>
+                    </form>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -345,24 +383,56 @@
 
 @section('scripts')
 <script>
+    // Serialize mapped tasks list from server to client
+    const mappedTasks = @json($mappedTasksList);
+
+    function getFileIconClass(type) {
+        type = (type || '').toLowerCase();
+        if (type === 'pdf') return 'fa-solid fa-file-pdf text-red-500';
+        if (['doc', 'docx'].includes(type)) return 'fa-solid fa-file-word text-blue-500';
+        if (['xls', 'xlsx'].includes(type)) return 'fa-solid fa-file-excel text-green-600';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return 'fa-solid fa-file-image text-purple-500';
+        if (['zip', 'rar'].includes(type)) return 'fa-solid fa-file-zip text-amber-500';
+        return 'fa-solid fa-file text-gray-400';
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const modal = document.getElementById('task-modal');
         const openBtn = document.getElementById('open-task-modal');
         const closeBtn = document.getElementById('close-task-modal');
         const cancelBtn = document.getElementById('cancel-task-modal');
+        
+        const form = document.getElementById('task-form');
+        const modalTitle = document.getElementById('modal-title');
+        const submitBtn = document.getElementById('task-submit-btn');
         const statusSelect = document.getElementById('task-status');
+
+        let currentTask = null;
 
         // Toggle modal
         const toggleModal = () => modal.classList.toggle('hidden');
 
-        openBtn.addEventListener('click', () => {
+        // Reset form to Create mode
+        const setCreateMode = () => {
+            modalTitle.innerText = "Tạo công việc mới";
+            submitBtn.innerText = "Tạo công việc";
+            form.action = "{{ route('dashboard.tasks.save') }}";
+            form.reset();
             statusSelect.value = 'Chờ xử lý';
-            toggleModal();
-        });
+            document.getElementById('edit-attachments-container').classList.add('hidden');
+        };
+
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                setCreateMode();
+                toggleModal();
+            });
+        }
         closeBtn.addEventListener('click', toggleModal);
         cancelBtn.addEventListener('click', toggleModal);
 
         window.openModalForStatus = (label) => {
+            setCreateMode();
             if (label.includes('Chờ xử lý')) statusSelect.value = 'Chờ xử lý';
             else if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
             else if (label.includes('Đang review')) statusSelect.value = 'Đang review';
@@ -375,6 +445,8 @@
         const closeDetailBtn = document.getElementById('close-detail-modal');
 
         window.openTaskDetail = (task) => {
+            currentTask = task;
+            
             document.getElementById('detail-code').innerText = task.code || ('WH-' + String(task.id).padStart(3, '0'));
             document.getElementById('detail-name').innerText = task.name;
             document.getElementById('detail-desc').innerText = task.description || 'Không có mô tả chi tiết.';
@@ -395,12 +467,105 @@
                 badge.classList.add('bg-blue-100', 'text-blue-700');
             }
 
+            // Render attachments in detail modal
+            const attachBox = document.getElementById('detail-attachments-box');
+            const attachList = document.getElementById('detail-attachments-list');
+            attachList.innerHTML = '';
+            
+            if (task.attachments && task.attachments.length > 0) {
+                attachBox.classList.remove('hidden');
+                task.attachments.forEach(att => {
+                    const inlinePreview = ['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(att.file_type) 
+                        ? `<a href="${att.preview_url}" class="text-[10px] text-emerald-600 hover:underline font-bold" target="_blank">Xem</a>` 
+                        : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-2 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-gray-400"><i class="${getFileIconClass(att.file_type)}"></i></span>
+                            <span class="text-xs text-gray-700 font-semibold truncate max-w-[240px]" title="${att.file_name}">${att.file_name}</span>
+                            <span class="text-[9px] text-gray-400 font-mono">(${att.uploader})</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="${att.download_url}" class="text-[10px] text-[#003DA5] hover:underline font-bold" target="_blank">Tải về</a>
+                            ${inlinePreview}
+                        </div>
+                    `;
+                    attachList.appendChild(div);
+                });
+            } else {
+                attachBox.classList.add('hidden');
+            }
+
+            // Bind Delete Form Action
+            const deleteForm = document.getElementById('delete-task-form');
+            if (deleteForm) {
+                deleteForm.action = `/dashboard/tasks/${task.id}/delete`;
+            }
+
             detailModal.classList.remove('hidden');
         };
 
         closeDetailBtn.addEventListener('click', () => {
             detailModal.classList.add('hidden');
         });
+
+        // Edit button click flow
+        const editBtn = document.getElementById('edit-task-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                if (!currentTask) return;
+                
+                // Hide details, open edit modal
+                detailModal.classList.add('hidden');
+                
+                modalTitle.innerText = "Chỉnh sửa công việc";
+                submitBtn.innerText = "Cập nhật";
+                form.action = `/dashboard/tasks/${currentTask.id}/update`;
+                
+                // Populate inputs
+                form.querySelector('[name="task_name"]').value = currentTask.name;
+                form.querySelector('[name="description"]').value = currentTask.description || '';
+                form.querySelector('[name="priority"]').value = currentTask.priority;
+                form.querySelector('[name="status"]').value = currentTask.status;
+                form.querySelector('[name="assigned_to"]').value = currentTask.assignee_id || '';
+                form.querySelector('[name="deadline"]').value = currentTask.deadline_raw || '';
+                
+                // Populate attachments list for deletion
+                const editAttachContainer = document.getElementById('edit-attachments-container');
+                const editAttachList = document.getElementById('edit-attachments-list');
+                editAttachList.innerHTML = '';
+                
+                if (currentTask.attachments && currentTask.attachments.length > 0) {
+                    editAttachContainer.classList.remove('hidden');
+                    currentTask.attachments.forEach(att => {
+                        const lbl = document.createElement('label');
+                        lbl.className = "flex items-center gap-2 p-1.5 hover:bg-white rounded-lg cursor-pointer text-xs font-semibold text-gray-700";
+                        lbl.innerHTML = `
+                            <input type="checkbox" name="delete_attachments[]" value="${att.id}" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            <span class="text-red-500"><i class="fa-solid fa-trash-can text-[10px]"></i></span>
+                            <span class="truncate max-w-[200px]">${att.file_name}</span>
+                        `;
+                        editAttachList.appendChild(lbl);
+                    });
+                } else {
+                    editAttachContainer.classList.add('hidden');
+                }
+                
+                modal.classList.remove('hidden');
+            });
+        }
+
+        // Auto open task detail if task_id is present in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskIdParam = urlParams.get('task_id');
+        if (taskIdParam) {
+            const foundTask = mappedTasks.find(t => String(t.id) === taskIdParam);
+            if (foundTask) {
+                openTaskDetail(foundTask);
+            }
+        }
     });
 </script>
 @endsection

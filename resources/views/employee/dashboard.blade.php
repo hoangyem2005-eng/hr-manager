@@ -707,6 +707,24 @@
 
         // Re-render chart
         renderDonutChart();
+
+        // Auto-scroll and highlight task row if task_id is present in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskIdParam = urlParams.get('task_id');
+        if (taskIdParam) {
+            const row = document.getElementById('task-row-' + taskIdParam);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.style.transition = 'background-color 0.5s ease';
+                row.style.backgroundColor = '#E8F0FE';
+                setTimeout(() => {
+                    row.style.backgroundColor = '#EFF6FF';
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 1000);
+                }, 2000);
+            }
+        }
     }
 
     function showToast(msg) {

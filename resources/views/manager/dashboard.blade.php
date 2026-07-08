@@ -309,13 +309,13 @@
 </div>
 
 <!-- ===== MODAL: Giao công việc ===== -->
-<div id="giao-viec" class="modal-overlay" id="assignTaskModal">
+<div class="modal-overlay" id="assignTaskModal">
     <div class="modal">
         <div class="modal-title">
             <i data-lucide="clipboard-list" style="width:18px;height:18px;color:#2563EB;vertical-align:middle;margin-right:8px"></i>
             Giao công việc mới
         </div>
-        <form action="{{ route('manager.task.assign') }}" method="POST">
+        <form action="{{ route('manager.task.assign') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="form-group">
                 <label class="form-label">Tên công việc *</label>
@@ -346,6 +346,10 @@
             <div class="form-group">
                 <label class="form-label">Mô tả thêm</label>
                 <textarea name="description" class="form-input" style="height:80px;padding-top:10px;resize:vertical" placeholder="Chi tiết yêu cầu..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tài liệu đính kèm (Tối đa 5 file, < 20MB/file)</label>
+                <input type="file" name="attachments[]" class="form-input" style="padding-top:8px" multiple />
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-ghost" onclick="closeModal('assignTaskModal')">Hủy</button>

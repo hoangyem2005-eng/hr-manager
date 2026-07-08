@@ -52,6 +52,9 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'updatePassword
 // ==================== WORKHUB DASHBOARD (PURE BLADE) ====================
 Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
+    // Poll unread notifications
+    Route::get('/notifications/poll', [DashboardController::class, 'pollNotifications'])->name('dashboard.notifications.poll');
+
     // 1. Trang tổng quan KPI
     Route::get('/', function () {
         $user = Auth::user();
@@ -69,7 +72,13 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     // 2. Phân hệ Quản lý công việc (Kanban & List)
     Route::get('/tasks', [DashboardController::class, 'tasks'])->name('dashboard.tasks');
-    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
+
+    // Thao tác quản trị công việc (Chỉ dành cho Trưởng phòng/Giám đốc)
+    Route::middleware(['role:1,2'])->group(function () {
+        Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
+        Route::post('/tasks/{id}/update', [DashboardController::class, 'updateTask'])->name('dashboard.tasks.update');
+        Route::delete('/tasks/{id}/delete', [DashboardController::class, 'deleteTask'])->name('dashboard.tasks.delete');
+    });
 
     // 3. Phân hệ Quản lý thành viên (Chỉ dành cho Trưởng phòng - role:1)
     Route::middleware(['role:1,2'])->group(function () {

@@ -133,6 +133,7 @@ class ManagerController extends Controller
             'deadline'    => 'required|date',
             'description' => 'nullable|string',
             'status'      => 'nullable|string',
+            'attachments.*' => 'nullable|file|max:20480', // Max 20MB per file
         ]);
 
         // Verify: người được giao phải trong phòng của mình
@@ -141,7 +142,7 @@ class ManagerController extends Controller
             return back()->with('error', 'Bạn chỉ có thể giao việc cho nhân viên trong phòng của mình!');
         }
 
-        Task::create([
+        $task = Task::create([
             'task_name'   => $request->task_name,
             'description' => $request->description,
             'assigned_by' => $manager->id,
@@ -151,8 +152,34 @@ class ManagerController extends Controller
             'progress'    => 0,
         ]);
 
+        // Xử lý tệp đính kèm
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                if ($file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $extension    = strtolower($file->getClientOriginalExtension());
+                    $storedName   = time() . '_' . uniqid() . '.' . $extension;
+                    $directory    = 'tasks/' . $task->id;
+
+                    $storedPath   = $file->storeAs($directory, $storedName, 'public');
+
+                    \App\Models\Document::create([
+                        'task_id'   => $task->id,
+                        'user_id'   => Auth::id(),
+                        'file_name' => $originalName,
+                        'file_path' => $storedPath,
+                        'file_type' => $extension,
+                        'disk'      => 'public',
+                    ]);
+                }
+            }
+        }
+
+        // Bắn event thông báo
+        event(new \App\Events\TaskCreated($task));
+
         return redirect()->route('manager.dashboard')
-            ->with('success', "Đã giao công việc cho {$assignee->name}!");
+            ->with('success', "Đã giao công việc và gửi tài liệu cho {$assignee->name}!");
     }
 
     // ===================== Helper =====================
