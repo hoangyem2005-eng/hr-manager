@@ -1,6 +1,6 @@
 @extends('admin.layouts.index')
 
-@section('title', 'Chi tiết công việc - Admin Module')
+@section('title', 'Chi tiết công việc - Giám đốc')
 @section('page_title', 'Chi tiết công việc')
 
 @section('content')

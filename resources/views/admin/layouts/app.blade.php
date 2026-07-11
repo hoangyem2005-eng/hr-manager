@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin — MobiFone HR')</title>
+    <title>@yield('title', 'Giám đốc - MobiFone HR')</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -16,10 +16,15 @@
     @yield('head_extra')
 </head>
 <body class="mf-app">
+@php
+    $authUser = Auth::user();
+    $authRoleName = $authUser->role_display_name ?? 'Giám đốc';
+@endphp
 
 <!-- ============ SIDEBAR ============ -->
 <aside class="mf-sidebar" id="sidebar">
     <div class="mf-brand">
+        <div class="mf-logo-mark" aria-hidden="true">M</div>
         <div class="s-logo-text logo-text">
             <div class="mf-logo-lockup" aria-label="MobiFone">
                 <span class="mf-logo-blue">Mobi</span><span class="mf-logo-red">Fone</span>
@@ -36,17 +41,19 @@
         </a>
 
         <span class="mf-nav-section s-label">Nhân sự</span>
+        @if(false)
         <a href="{{ route('admin.dashboard') }}#nhan-su" class="mf-nav-item">
             <i data-lucide="users" style="width:17px;height:17px"></i>
             <span class="s-label">Tất cả nhân viên</span>
         </a>
+        @endif
         <a href="{{ route('phongban.danhsach') }}" class="mf-nav-item {{ request()->routeIs('phongban.*') ? 'active' : '' }}">
             <i data-lucide="building-2" style="width:17px;height:17px"></i>
             <span class="s-label">Phòng ban</span>
         </a>
 
         <span class="mf-nav-section s-label">Vận hành</span>
-        <a href="{{ route('dashboard.index') }}" class="mf-nav-item">
+        <a href="{{ route('dashboard.tasks') }}" class="mf-nav-item {{ request()->routeIs('dashboard.tasks') ? 'active' : '' }}">
             <i data-lucide="kanban" style="width:17px;height:17px"></i>
             <span class="s-label">Công việc</span>
         </a>
@@ -65,10 +72,10 @@
 
     <div class="mf-sidebar-footer">
         <div class="mf-user-card">
-            <div class="mf-avatar">{{ substr(Auth::user()->name ?? 'GĐ', 0, 2) }}</div>
+            <div class="mf-avatar">{{ substr($authUser->name ?? 'GĐ', 0, 2) }}</div>
             <div class="s-user-info">
-                <div class="mf-user-name">{{ Auth::user()->name ?? 'Giám đốc' }}</div>
-                <div class="mf-user-role">Giám đốc</div>
+                <div class="mf-user-name">{{ $authUser->name ?? 'Giám đốc' }}</div>
+                <div class="mf-user-role">{{ $authRoleName }}</div>
             </div>
         </div>
         <form action="{{ route('logout') }}" method="POST" style="margin-top:8px">
@@ -103,7 +110,7 @@
             </a>
             <div class="mf-role-pill">
                 <i data-lucide="shield-check" style="width:13px;height:13px"></i>
-                Giám đốc
+                {{ $authRoleName }}
             </div>
         </div>
     </header>

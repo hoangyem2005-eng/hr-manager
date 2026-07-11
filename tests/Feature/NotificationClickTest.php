@@ -153,6 +153,21 @@ class NotificationClickTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_director_sidebar_keeps_director_role_on_notifications_page(): void
+    {
+        $director = User::factory()->create([
+            'name' => 'Tuan Anh',
+            'role_id' => User::ROLE_ADMIN,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($director)
+            ->get(route('dashboard.notifications'))
+            ->assertOk()
+            ->assertSee('Giám đốc')
+            ->assertDontSee('Trưởng phòng');
+    }
+
     public function test_employee_workbench_shows_recent_notifications_even_after_they_are_read(): void
     {
         $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE]);

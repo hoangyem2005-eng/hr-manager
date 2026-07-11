@@ -1,6 +1,6 @@
 @extends('admin.layouts.index')
 
-@section('title', ($title ?? 'Công việc') . ' - Admin Module')
+@section('title', ($title ?? 'Công việc') . ' - Giám đốc')
 @section('page_title', $title ?? 'Công việc')
 
 @section('content')

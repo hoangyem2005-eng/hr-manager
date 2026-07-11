@@ -6,53 +6,60 @@
 @section('head_extra')
 <style>
     .team-shell { display: grid; gap: 18px; }
-    .team-hero { background: #F0FDFA; border: 1px solid #99F6E4; border-radius: 8px; padding: 24px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
-    .team-kicker { color: #0F766E; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 900; }
-    .team-title { color: #0F172A; font-size: 30px; line-height: 1.1; font-weight: 900; margin-top: 8px; }
+    .team-hero { background: linear-gradient(135deg, #F6FAFF 0%, #E8F0FE 100%); border: 1px solid #B9CDF5; border-radius: 8px; padding: 24px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; box-shadow: inset 4px 0 0 #E4002B; }
+    .team-kicker { color: #003DA5; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 900; }
+    .team-title { color: #001F5B; font-size: 30px; line-height: 1.1; font-weight: 900; margin-top: 8px; }
     .team-copy { color: #475569; font-size: 14px; margin-top: 10px; max-width: 680px; line-height: 1.7; }
     .team-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    .team-btn { height: 40px; border-radius: 8px; border: 1px solid #0F766E; background: #0F766E; color: #fff; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 13px; font-weight: 900; cursor: pointer; text-decoration: none; }
-    .team-btn.light { background: #fff; color: #0F766E; }
-    .team-meter { width: 190px; background: #fff; border: 1px solid #CCFBF1; border-radius: 8px; padding: 16px; }
-    .team-meter strong { display: block; font-size: 34px; color: #0F766E; line-height: 1; }
+    .team-btn { height: 40px; border-radius: 8px; border: 1px solid #003DA5; background: #003DA5; color: #fff; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 13px; font-weight: 900; cursor: pointer; text-decoration: none; }
+    .team-btn:hover { background: #0057C8; border-color: #0057C8; }
+    .team-btn.light { background: #fff; color: #003DA5; border-color: #B9CDF5; }
+    .team-btn.light:hover { background: #E8F0FE; border-color: #003DA5; }
+    .team-meter { width: 190px; background: #fff; border: 1px solid #D8E4F5; border-radius: 8px; padding: 16px; }
+    .team-meter strong { display: block; font-size: 34px; color: #003DA5; line-height: 1; }
     .team-meter span { display: block; color: #64748B; font-size: 12px; margin-top: 8px; }
     .ops-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-    .ops-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; }
+    .ops-card { background: #fff; border: 1px solid #D8E4F5; border-radius: 8px; padding: 16px; }
     .ops-card span { display: block; color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 900; }
-    .ops-card strong { display: block; color: #0F172A; font-size: 28px; margin-top: 8px; line-height: 1; }
+    .ops-card strong { display: block; color: #001F5B; font-size: 28px; margin-top: 8px; line-height: 1; }
     .workbench { display: grid; grid-template-columns: .95fr 1.05fr; gap: 18px; }
-    .team-panel { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; }
-    .panel-head { height: 54px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
-    .panel-title { color: #0F172A; font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+    .team-panel { background: #fff; border: 1px solid #D8E4F5; border-radius: 8px; overflow: hidden; }
+    .panel-head { height: 54px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E6EDF8; }
+    .panel-title { color: #001F5B; font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
     .member-list { display: grid; gap: 0; }
     .member-row { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; border-top: 1px solid #F1F5F9; }
-    .member-avatar { width: 40px; height: 40px; border-radius: 8px; background: #0F766E; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; }
-    .member-name { color: #0F172A; font-size: 13px; font-weight: 900; }
+    .member-avatar { width: 40px; height: 40px; border-radius: 8px; background: #003DA5; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; box-shadow: inset 4px 0 0 #E4002B; }
+    .member-name { color: #001F5B; font-size: 13px; font-weight: 900; }
     .member-sub { color: #64748B; font-size: 11px; margin-top: 3px; }
-    .rate { width: 54px; text-align: right; color: #0F766E; font-weight: 900; }
+    .rate { width: 54px; text-align: right; color: #003DA5; font-weight: 900; }
     .task-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .task-table th { background: #F8FAFC; text-align: left; color: #64748B; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 12px; }
     .task-table td { padding: 13px 12px; border-top: 1px solid #F1F5F9; color: #334155; }
     .status-pill { display: inline-flex; align-items: center; height: 22px; border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 800; background: #F1F5F9; color: #475569; }
     .incoming-list { display: grid; gap: 10px; padding: 14px; }
-    .incoming-card { border: 1px solid #CCFBF1; background: #F0FDFA; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
+    .incoming-card { border: 1px solid #B9CDF5; background: #F6FAFF; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
     .incoming-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-    .incoming-code { color: #0F766E; font-size: 11px; font-weight: 900; font-family: monospace; }
-    .incoming-title { color: #0F172A; font-size: 14px; font-weight: 900; margin-top: 4px; }
+    .incoming-code { color: #003DA5; font-size: 11px; font-weight: 900; font-family: monospace; }
+    .incoming-title { color: #001F5B; font-size: 14px; font-weight: 900; margin-top: 4px; }
     .incoming-meta { color: #64748B; font-size: 12px; margin-top: 5px; }
     .delegate-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-    .delegate-form select { min-height: 38px; border: 1px solid #99F6E4; border-radius: 8px; padding: 0 10px; font-family: inherit; color: #0F172A; background: #fff; }
+    .delegate-form select { min-height: 38px; border: 1px solid #B9CDF5; border-radius: 8px; padding: 0 10px; font-family: inherit; color: #0F172A; background: #fff; }
     .modal-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15,23,42,.45); z-index: 9999; padding: 16px; }
     .modal-overlay.open { display: flex; }
     .modal { width: min(520px, 100%); border-radius: 8px; background: #fff; overflow: hidden; }
-    .modal-head { padding: 18px; background: #0F766E; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .modal-head { padding: 18px; background: #001F5B; color: #fff; display: flex; justify-content: space-between; align-items: center; }
     .modal-body { padding: 18px; display: grid; gap: 14px; }
     .field label { display: block; margin-bottom: 6px; color: #334155; font-size: 12px; font-weight: 900; }
     .field input, .field select, .field textarea { width: 100%; border: 1px solid #CBD5E1; border-radius: 8px; padding: 0 11px; min-height: 40px; font-family: inherit; font-size: 13px; }
+    .password-field { position: relative; }
+    .password-field input { padding-right: 42px; }
+    .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; background: transparent; color: #64748B; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .password-toggle:hover { background: #E8F0FE; color: #003DA5; }
+    .password-toggle:focus-visible { outline: 2px solid #5EEAD4; outline-offset: 2px; }
     .field textarea { min-height: 82px; padding-top: 10px; resize: vertical; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .modal-actions { border-top: 1px solid #E2E8F0; padding: 16px 18px; display: flex; justify-content: flex-end; gap: 10px; }
-    .note { border: 1px solid #99F6E4; background: #F0FDFA; color: #0F766E; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+    .note { border: 1px solid #B9CDF5; background: #F6FAFF; color: #003DA5; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
     @media (max-width: 1100px) { .team-hero, .workbench { grid-template-columns: 1fr; } .ops-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .team-meter { width: auto; } }
     @media (max-width: 640px) { .ops-grid, .form-grid, .delegate-form { grid-template-columns: 1fr; } .team-title { font-size: 24px; } }
 </style>
@@ -168,7 +175,7 @@
                 <div class="note">Nhân viên mới tự động thuộc phòng {{ $department->TENPHONG ?? $department->name ?? 'hiện tại' }} và có vai trò Nhân viên.</div>
                 <div class="field"><label>Họ tên</label><input name="name" required></div>
                 <div class="field"><label>Email</label><input type="email" name="email" required></div>
-                <div class="field"><label>Mật khẩu</label><input type="password" name="password" required></div>
+                <div class="field"><label>Mật khẩu</label><div class="password-field"><input type="password" name="password" required><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button></div></div>
             </div>
             <div class="modal-actions"><button type="button" class="team-btn light" onclick="closeModal('addEmpModal')">Hủy</button><button type="submit" class="team-btn">Thêm nhân viên</button></div>
         </form>
@@ -182,7 +189,7 @@
             @csrf
             <div class="modal-body">
                 <div class="field"><label>Tên công việc</label><input name="task_name" required></div>
-                <div class="field"><label>Giao cho</label><select name="assigned_to" required><option value="">Chọn nhân viên trong phòng</option>@foreach($allTeamMembers as $m)<option value="{{ $m->id }}">{{ $m->name }}</option>@endforeach</select></div>
+                <div class="field"><label>Giao cho</label><select name="assigned_to[]" required multiple size="6">@foreach($allTeamMembers as $m)<option value="{{ $m->id }}">{{ $m->name }}</option>@endforeach</select><div style="font-size:11px;color:#64748B;margin-top:6px">Giu Ctrl/Command hoac Shift de chon nhieu nhan vien.</div></div>
                 <div class="form-grid">
                     <div class="field"><label>Deadline</label><input type="date" name="deadline" required></div>
                     <div class="field"><label>Trạng thái</label><select name="status"><option value="Chờ xử lý">Chờ xử lý</option><option value="Đang làm">Đang làm</option></select></div>
@@ -199,7 +206,21 @@
 <script>
     function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = button.closest('.password-field').querySelector('input');
+            const icon = button.querySelector('i');
+            const shouldShow = input.type === 'password';
+
+            input.type = shouldShow ? 'text' : 'password';
+            icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+            button.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            button.setAttribute('title', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            lucide.createIcons();
+        });
+    });
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); }));
     lucide.createIcons();
 </script>
 @endsection
+

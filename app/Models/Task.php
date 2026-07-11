@@ -17,11 +17,13 @@ class Task extends Model
         'deadline',
         'status',
         'progress',
+        'overdue_email_sent_at',
     ];
 
     protected $casts = [
         'deadline' => 'date',
         'progress' => 'integer',
+        'overdue_email_sent_at' => 'datetime',
     ];
 
     // ==================== QUAN HỆ ====================

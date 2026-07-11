@@ -69,6 +69,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role_id' => User::ROLE_EMPLOYEE,
             'department_id' => $request->department_id,
+            'is_active' => true,
         ]);
 
         return redirect()->route('login')
@@ -92,7 +93,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => $request->password,
         ])) {
-            if (!Auth::user()->is_active) {
+            if (Auth::user()->is_active === false) {
                 Auth::logout();
 
                 return back()->with('error', 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản lý.');
@@ -143,8 +144,8 @@ class AuthController extends Controller
             ['TENPHONG' => 'Pháp chế', 'name' => 'Legal']
         );
 
-        Role::updateOrCreate(['id' => User::ROLE_ADMIN], ['name' => 'Giám đốc / Phó Giám đốc']);
-        Role::updateOrCreate(['id' => User::ROLE_MANAGER], ['name' => 'Trưởng phòng / Tổ trưởng']);
+        Role::updateOrCreate(['id' => User::ROLE_ADMIN], ['name' => 'Giám đốc']);
+        Role::updateOrCreate(['id' => User::ROLE_MANAGER], ['name' => 'Trưởng phòng']);
         Role::updateOrCreate(['id' => User::ROLE_EMPLOYEE], ['name' => 'Nhân viên']);
 
         if (User::count() === 0) {

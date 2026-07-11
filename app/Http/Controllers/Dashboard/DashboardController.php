@@ -30,10 +30,14 @@ class DashboardController extends Controller
         }
 
         if (Role::count() == 0) {
-            Role::create(['id' => 1, 'name' => 'Admin']);
-            Role::create(['id' => 2, 'name' => 'Quản lý']);
-            Role::create(['id' => 3, 'name' => 'Nhân viên']);
+            Role::create(['id' => User::ROLE_ADMIN, 'name' => 'Giám đốc']);
+            Role::create(['id' => User::ROLE_MANAGER, 'name' => 'Trưởng phòng']);
+            Role::create(['id' => User::ROLE_EMPLOYEE, 'name' => 'Nhân viên']);
         }
+
+        Role::updateOrCreate(['id' => User::ROLE_ADMIN], ['name' => 'Giám đốc']);
+        Role::updateOrCreate(['id' => User::ROLE_MANAGER], ['name' => 'Trưởng phòng']);
+        Role::updateOrCreate(['id' => User::ROLE_EMPLOYEE], ['name' => 'Nhân viên']);
 
         if (User::count() == 0) {
             $admin = User::create([
@@ -172,7 +176,7 @@ class DashboardController extends Controller
             'NhÃ¢n sá»±' => 'Nhân sự',
             'ÄÃ o táº¡o' => 'Đào tạo',
             'PhÃ¡p cháº¿' => 'Pháp chế',
-            'Quáº£n lÃ½' => 'Quản lý',
+            'Quáº£n lÃ½' => 'Trưởng phòng',
             'NhÃ¢n viÃªn' => 'Nhân viên',
             'HoÃ ng Thá»‹ Em' => 'Hoàng Thị Em',
             'Nguyá»…n VÄƒn An' => 'Nguyễn Văn An',
@@ -319,7 +323,7 @@ class DashboardController extends Controller
         $viewType = $request->query('view', 'kanban');
         $filter = $request->query('filter', 'Tất cả');
 
-        $query = Task::query();
+        $query = Task::with(['assignee', 'documents.uploader']);
 
         if ($currentUser->isLeader() && !$currentUser->isDirector()) {
             $teamMemberIds = User::where('department_id', $currentUser->department_id)->pluck('id');
@@ -361,8 +365,29 @@ class DashboardController extends Controller
         $mappedTasksList = [];
 
         foreach ($allTasks as $t) {
-            $user = User::find($t->assigned_to) ?? $currentUser;
+            $user = $t->assignee ?? $currentUser;
             $status = $this->cleanVietnameseText($t->status);
+            $visibleDocuments = $t->documents
+                ->filter(function ($document) use ($currentUser, $t) {
+                    if ((int) $document->user_id === (int) $currentUser->id) {
+                        return true;
+                    }
+
+                    if ($currentUser->isDirector()) {
+                        return $document->review_status === \App\Models\Document::STATUS_DIRECTOR_VISIBLE;
+                    }
+
+                    if ($currentUser->isLeader()) {
+                        return (int) optional($document->uploader)->department_id === (int) $currentUser->department_id
+                            || (int) optional($t->assignee)->department_id === (int) $currentUser->department_id
+                            || (int) $t->assigned_by === (int) $currentUser->id
+                            || (int) $t->assigned_to === (int) $currentUser->id;
+                    }
+
+                    return false;
+                })
+                ->sortByDesc('created_at')
+                ->values();
 
             $mapped = [
                 'id' => $t->id,
@@ -375,6 +400,19 @@ class DashboardController extends Controller
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'status' => $status,
                 'progress' => $t->progress ?? ($status === 'Hoàn thành' ? 100 : ($status === 'Đang làm' ? 65 : ($status === 'Đang review' ? 80 : 0))),
+                'documents_count' => $visibleDocuments->count(),
+                'documents' => $visibleDocuments
+                    ->map(fn ($document) => [
+                        'id' => $document->id,
+                        'file_name' => $document->file_name,
+                        'file_type' => strtoupper($document->file_type ?? 'FILE'),
+                        'uploader' => $document->uploader?->name ?? 'Không rõ',
+                        'uploaded_at' => $document->created_at?->format('d/m/Y H:i'),
+                        'preview_url' => route('congviec.file.preview', $document->id),
+                        'download_url' => route('congviec.file.download', $document->id),
+                    ])
+                    ->values()
+                    ->all(),
             ];
 
             $mappedTasksList[] = $mapped;
@@ -413,62 +451,82 @@ class DashboardController extends Controller
     public function saveTask(Request $request)
     {
         $currentUser = Auth::user();
+        $assignedToInput = $request->input('assigned_to', []);
+        $assignedToIds = collect(is_array($assignedToInput) ? $assignedToInput : [$assignedToInput])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $request->merge(['assigned_to' => $assignedToIds]);
 
         $request->validate([
             'task_name' => 'required|string|max:255',
             'deadline' => 'required|date',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to' => 'nullable|array',
+            'assigned_to.*' => 'integer|exists:users,id',
             'description' => 'nullable|string',
             'status' => 'nullable|string|max:50',
         ]);
 
-        $assignedTo = $request->assigned_to;
         $status = $request->status ?: 'Chờ xử lý';
         $successMessage = 'Tạo công việc thành công!';
 
         if ($currentUser->isDirector()) {
-            if (!$assignedTo) {
+            if (empty($assignedToIds)) {
                 return back()->withInput()->with('error', 'Vui lòng chọn người phụ trách công việc.');
             }
             $successMessage = 'Đã giao công việc cấp công ty thành công!';
         } elseif ($currentUser->isLeader()) {
-            if (!$assignedTo) {
+            if (empty($assignedToIds)) {
                 return back()->withInput()->with('error', 'Vui lòng chọn nhân viên trong phòng.');
             }
 
-            $assignee = User::findOrFail($assignedTo);
-            if ((int) $assignee->department_id !== (int) $currentUser->department_id || !$assignee->isEmployee()) {
+            $invalidAssignee = User::whereIn('id', $assignedToIds)
+                ->get()
+                ->first(fn ($assignee) => (int) $assignee->department_id !== (int) $currentUser->department_id || !$assignee->isEmployee());
+
+            if ($invalidAssignee) {
                 return back()
                     ->withInput()
-                    ->with('error', 'Quản lý chỉ được giao việc cho nhân viên trong phòng của mình.');
+                    ->with('error', 'Trưởng phòng chỉ được giao việc cho nhân viên trong phòng của mình.');
             }
 
             $status = in_array($status, ['Chờ xử lý', 'Đang làm'], true) ? $status : 'Chờ xử lý';
             $successMessage = 'Đã giao công việc cho nhân viên trong phòng!';
         } else {
-            $assignedTo = $currentUser->id;
+            $assignedToIds = [$currentUser->id];
             $status = 'Chờ xử lý';
             $successMessage = 'Đã gửi đề xuất công việc để quản lý xem xét!';
         }
 
-        $task = Task::create([
-            'task_name' => $request->task_name,
-            'description' => $request->description,
-            'assigned_by' => $currentUser->id,
-            'assigned_to' => $assignedTo,
-            'deadline' => $request->deadline,
-            'status' => $status,
-            'progress' => 0,
-        ]);
-
-        if ((int) $assignedTo !== (int) $currentUser->id) {
-            Notification::create([
-                'user_id' => $assignedTo,
-                'task_id' => $task->id,
-                'title' => 'Bạn vừa được giao công việc mới',
-                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
-                'is_read' => false,
+        $createdTasks = collect($assignedToIds)->map(function (int $assignedTo) use ($request, $currentUser, $status) {
+            $task = Task::create([
+                'task_name' => $request->task_name,
+                'description' => $request->description,
+                'assigned_by' => $currentUser->id,
+                'assigned_to' => $assignedTo,
+                'deadline' => $request->deadline,
+                'status' => $status,
+                'progress' => 0,
             ]);
+
+            if ($assignedTo !== (int) $currentUser->id) {
+                Notification::create([
+                    'user_id' => $assignedTo,
+                    'task_id' => $task->id,
+                    'title' => 'Bạn vừa được giao công việc mới',
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
+                    'is_read' => false,
+                ]);
+            }
+
+            return $task;
+        });
+
+        if ($createdTasks->count() > 1) {
+            $successMessage .= ' (' . $createdTasks->count() . ' nhân viên)';
         }
 
         return redirect()->route('dashboard.tasks')->with('success', $successMessage);
@@ -478,15 +536,26 @@ class DashboardController extends Controller
     {
         $this->ensureMockDataExists();
 
-        $search = $request->query('search', '');
+        $search = trim((string) $request->query('search', ''));
         $deptFilter = $request->query('dept', '');
 
         $query = User::with('department');
 
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
+        if ($search !== '') {
+            $employeeId = null;
+            if (preg_match('/^NV0*(\d+)$/i', $search, $matches)) {
+                $employeeId = (int) $matches[1];
+            } elseif (ctype_digit($search)) {
+                $employeeId = (int) $search;
+            }
+
+            $query->where(function ($q) use ($search, $employeeId) {
                 $q->where('name', 'LIKE', "%{$search}%")
                     ->orWhere('email', 'LIKE', "%{$search}%");
+
+                if ($employeeId !== null) {
+                    $q->orWhere('id', $employeeId);
+                }
             });
         }
 
@@ -496,9 +565,18 @@ class DashboardController extends Controller
             });
         }
 
-        $usersList = $query->get()->map(function ($u) {
+        $usersList = $query
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        $usersList->setCollection($usersList->getCollection()->map(function ($u) {
             $taskCount = Task::where('assigned_to', $u->id)->count();
-            $roleName = $u->role_id == User::ROLE_ADMIN ? 'Admin' : ($u->role_id == User::ROLE_MANAGER ? 'Quản lý' : 'Nhân viên');
+            $roleName = match ((int) $u->role_id) {
+                User::ROLE_ADMIN => 'Giám đốc',
+                User::ROLE_MANAGER => 'Trưởng phòng',
+                default => 'Nhân viên',
+            };
 
             return [
                 'id' => 'NV' . str_pad($u->id, 3, '0', STR_PAD_LEFT),
@@ -516,7 +594,7 @@ class DashboardController extends Controller
                 'avatar' => $this->getInitials($u->name),
                 'color' => $u->role_id == 1 ? '#003DA5' : ($u->role_id == 2 ? '#001F5B' : '#7C3AED'),
             ];
-        });
+        }));
 
         $departments = Department::all();
         $roles = Role::all();

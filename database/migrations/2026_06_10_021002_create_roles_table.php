@@ -8,7 +8,7 @@ return new class extends Migration {
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Tên role: Admin, Tổ trưởng, Nhân viên
+            $table->string('name'); // Tên role: Giám đốc, Trưởng phòng, Nhân viên
             $table->timestamps();
         });
     }

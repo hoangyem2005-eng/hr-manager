@@ -115,7 +115,7 @@ button, a, input, textarea, select {
   flex-direction: column;
   color: #fff;
   background:
-    linear-gradient(180deg, rgba(0, 31, 91, 0.98), rgba(0, 47, 126, 0.98)),
+    linear-gradient(180deg, rgba(0, 31, 91, 0.99), rgba(0, 61, 165, 0.99)),
     var(--mf-navy);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   transition: width 0.22s ease;
@@ -144,32 +144,56 @@ button, a, input, textarea, select {
 .mf-brand {
   display: flex;
   align-items: center;
+  gap: 10px;
   min-height: 72px;
-  padding: 16px;
+  padding: 16px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mf-brand .logo-text,
+.mf-brand .s-logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.mf-logo-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--mf-blue);
+  box-shadow: inset 5px 0 0 var(--mf-red);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .mf-logo-lockup {
   display: inline-flex;
   align-items: baseline;
-  height: 32px;
-  padding: 3px 10px 4px;
-  border-radius: 8px;
+  height: auto;
+  padding: 4px 9px;
+  border-radius: 7px;
   background: #fff;
   font-family: Arial, 'Be Vietnam Pro', sans-serif;
-  font-size: 21px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.02em;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 18px rgba(0, 0, 0, 0.12);
+  letter-spacing: -0.03em;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
 .mf-logo-blue {
-  color: #0054a6;
+  color: var(--mf-blue);
 }
 
 .mf-logo-red {
-  color: #ed1c24;
+  color: var(--mf-red);
 }
 
 .mf-brand-subtitle {
@@ -216,25 +240,31 @@ button, a, input, textarea, select {
 }
 
 .mf-nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
 
 .mf-nav-item.active {
   background: #fff;
-  border-color: rgba(255, 255, 255, 0.18);
-  color: var(--mf-navy);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--mf-blue);
+  box-shadow: inset 3px 0 0 var(--mf-red);
 }
 
 .mf-nav-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 4px 4px 0;
-  background: var(--mf-red);
+  display: none;
+}
+
+.mf-nav-item.active svg,
+.mf-nav-item.active i {
+  color: var(--mf-blue);
+}
+
+.mf-nav-item.active .mf-badge {
+  background: #fff;
+  color: var(--mf-red);
 }
 
 .mf-badge {
@@ -501,6 +531,75 @@ button, a, input, textarea, select {
   border-color: var(--mf-blue);
   color: var(--mf-blue);
   background: #f8fbff;
+}
+
+.mf-director-task-hero {
+  background:
+    linear-gradient(135deg, rgba(0, 31, 91, 0.98) 0%, rgba(0, 61, 165, 0.96) 62%, rgba(0, 87, 200, 0.94) 100%),
+    var(--mf-navy);
+  border: 1px solid rgba(35, 166, 213, 0.22);
+  box-shadow: 0 18px 40px rgba(0, 31, 91, 0.16);
+}
+
+.mf-director-stat-card {
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mf-manager-task-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #b9cdf5;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(0, 61, 165, 0.12), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #f5f9ff 58%, #eef5ff 100%);
+  box-shadow: 0 18px 40px rgba(0, 31, 91, 0.08);
+}
+
+.mf-manager-task-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--mf-red), var(--mf-blue));
+}
+
+.mf-manager-task-hero::after {
+  content: '';
+  position: absolute;
+  right: 28px;
+  top: -72px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  border: 34px solid rgba(0, 61, 165, 0.055);
+  pointer-events: none;
+}
+
+.mf-manager-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--mf-radius);
+  border: 1px solid #d9e5f7;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.mf-manager-stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--mf-red), var(--mf-blue));
+}
+
+.mf-manager-stat-danger::before {
+  background: var(--mf-red);
+}
+
+.mf-manager-kanban-column {
+  box-shadow: 0 14px 30px rgba(0, 31, 91, 0.06);
 }
 
 .mf-signal-panel {

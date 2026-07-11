@@ -444,7 +444,7 @@ class TaskController extends Controller
             return;
         }
 
-        $creatorName = optional($task->creator)->name ?? 'Quản lý';
+        $creatorName = optional($task->creator)->name ?? 'Trưởng phòng';
 
         try {
             Notification::create([

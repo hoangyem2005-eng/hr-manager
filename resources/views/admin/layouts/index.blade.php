@@ -9,18 +9,26 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --mf-navy: #001F5B;
+            --mf-blue: #003DA5;
+            --mf-blue-light: #E8F0FE;
+            --mf-red: #E4002B;
+        }
         body { min-height: 100vh; font-family: Inter, sans-serif; background: #F5F7FB; color: #111827; }
         .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0,1fr); }
-        .admin-side { background: #09111F; color: #fff; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+        .admin-side { background: linear-gradient(180deg, var(--mf-navy), var(--mf-blue)); color: #fff; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
         .brand { display: flex; align-items: center; gap: 10px; padding: 8px 6px 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .brand-mark { width: 38px; height: 38px; border-radius: 8px; background: #E4002B; display: grid; place-items: center; font-weight: 900; }
+        .brand-mark { width: 38px; height: 38px; border-radius: 8px; background: var(--mf-red); display: grid; place-items: center; font-weight: 900; }
         .brand strong { display: block; font-size: 14px; }
-        .brand span { color: #93A4BB; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+        .brand span { color: #B9D3FF; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
         .nav { display: grid; gap: 6px; }
-        .nav a { height: 40px; border-radius: 8px; display: flex; align-items: center; gap: 10px; color: #B6C2D2; text-decoration: none; padding: 0 10px; font-size: 13px; font-weight: 800; }
-        .nav a:hover, .nav a.active { color: #fff; background: rgba(228,0,43,.18); }
+        .nav a { position: relative; height: 40px; border-radius: 8px; display: flex; align-items: center; gap: 10px; color: #D8E7FF; text-decoration: none; padding: 0 10px; font-size: 13px; font-weight: 800; border: 1px solid transparent; }
+        .nav a:hover { color: #fff; background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.12); }
+        .nav a.active { color: var(--mf-navy); background: #fff; border-color: rgba(255,255,255,.24); box-shadow: 0 10px 24px rgba(0,31,91,.18); }
+        .nav a.active::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 0 4px 4px 0; background: var(--mf-red); }
         .nav i { width: 17px; height: 17px; }
-        .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding-top: 14px; color: #93A4BB; font-size: 12px; line-height: 1.5; }
+        .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding-top: 14px; color: #B9D3FF; font-size: 12px; line-height: 1.5; }
         .admin-main { min-width: 0; display: flex; flex-direction: column; }
         .topbar { height: 64px; background: #fff; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
         .crumb { color: #6B7280; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }

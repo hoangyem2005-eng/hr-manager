@@ -53,6 +53,11 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .field label { display: block; font-size: 12px; font-weight: 800; color: #374151; margin-bottom: 6px; }
     .field input, .field select { width: 100%; height: 40px; border: 1px solid #D1D5DB; border-radius: 8px; padding: 0 11px; font-family: inherit; font-size: 13px; }
+    .password-field { position: relative; }
+    .password-field input { padding-right: 42px; }
+    .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; background: transparent; color: #6B7280; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .password-toggle:hover { background: #F3F4F6; color: #003DA5; }
+    .password-toggle:focus-visible { outline: 2px solid #93C5FD; outline-offset: 2px; }
     .modal-actions { padding: 16px 18px; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; gap: 10px; }
     @media (max-width: 1100px) { .exec-hero, .exec-grid { grid-template-columns: 1fr; } .people-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
     @media (max-width: 680px) { .exec-scoreboard, .people-grid, .form-grid { grid-template-columns: 1fr; } .exec-title { font-size: 26px; } }
@@ -122,6 +127,7 @@
         </div>
     </section>
 
+    @if(false)
     <section class="exec-panel" id="nhan-su">
         <div class="exec-panel-header">
             <div class="exec-panel-title"><i data-lucide="id-card"></i> Nhân sự toàn công ty</div>
@@ -151,6 +157,7 @@
             @endforelse
         </div>
     </section>
+    @endif
 </div>
 
 <div class="modal-overlay" id="addUserModal">
@@ -162,7 +169,7 @@
                 <div class="form-grid">
                     <div class="field"><label>Họ tên</label><input name="name" required></div>
                     <div class="field"><label>Email</label><input type="email" name="email" required></div>
-                    <div class="field"><label>Mật khẩu</label><input type="password" name="password" required></div>
+                    <div class="field"><label>Mật khẩu</label><div class="password-field"><input type="password" name="password" required><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button></div></div>
                     <div class="field"><label>Phòng ban</label><select name="department_id" required>@foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>@endforeach</select></div>
                     <div class="field"><label>Vai trò</label><select name="role_id" required>@foreach($roles as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach</select></div>
                 </div>
@@ -181,7 +188,7 @@
                 <div class="form-grid">
                     <div class="field"><label>Họ tên</label><input name="name" id="edit_name" required></div>
                     <div class="field"><label>Email</label><input type="email" name="email" id="edit_email" required></div>
-                    <div class="field"><label>Mật khẩu mới</label><input type="password" name="password"></div>
+                    <div class="field"><label>Mật khẩu mới</label><div class="password-field"><input type="password" name="password"><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button></div></div>
                     <div class="field"><label>Phòng ban</label><select name="department_id" id="edit_dept" required>@foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>@endforeach</select></div>
                     <div class="field"><label>Vai trò</label><select name="role_id" id="edit_role" required>@foreach($roles as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach</select></div>
                 </div>
@@ -205,6 +212,19 @@
         openModal('editUserModal');
         lucide.createIcons();
     }
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = button.closest('.password-field').querySelector('input');
+            const icon = button.querySelector('i');
+            const shouldShow = input.type === 'password';
+
+            input.type = shouldShow ? 'text' : 'password';
+            icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+            button.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            button.setAttribute('title', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            lucide.createIcons();
+        });
+    });
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); }));
     lucide.createIcons();
 </script>

@@ -46,6 +46,34 @@ class RoleTaskCreationTest extends TestCase
         ]);
     }
 
+    public function test_director_can_assign_one_task_to_multiple_users(): void
+    {
+        $director = User::factory()->create(['role_id' => User::ROLE_ADMIN, 'department_id' => 1]);
+        $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+        $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 2]);
+
+        $this->actingAs($director)->post(route('dashboard.tasks.save'), [
+            'task_name' => 'Lap bao cao lien phong',
+            'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
+            'deadline' => now()->addWeek()->toDateString(),
+            'description' => 'Moi phong nop mot phan',
+            'status' => 'Chờ xử lý',
+        ])->assertRedirect(route('dashboard.tasks'));
+
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Lap bao cao lien phong',
+            'assigned_by' => $director->id,
+            'assigned_to' => $firstEmployee->id,
+        ]);
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Lap bao cao lien phong',
+            'assigned_by' => $director->id,
+            'assigned_to' => $secondEmployee->id,
+        ]);
+        $this->assertSame(2, Task::where('task_name', 'Lap bao cao lien phong')->count());
+        $this->assertSame(2, Notification::where('title', 'Bạn vừa được giao công việc mới')->count());
+    }
+
     public function test_manager_can_only_assign_tasks_inside_their_department(): void
     {
         Department::create(['id' => 1, 'TENPHONG' => 'Nhan su', 'name' => 'HR']);
@@ -64,6 +92,65 @@ class RoleTaskCreationTest extends TestCase
         $this->assertDatabaseMissing('tasks', [
             'task_name' => 'Giao viec sai phong',
         ]);
+    }
+
+    public function test_manager_can_assign_one_task_to_multiple_department_employees(): void
+    {
+        Department::create(['id' => 1, 'TENPHONG' => 'Nhan su', 'name' => 'HR']);
+
+        $manager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 1]);
+        $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+        $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+
+        $this->actingAs($manager)->post(route('dashboard.tasks.save'), [
+            'task_name' => 'Kiem tra ho so nhan su',
+            'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
+            'deadline' => now()->addDays(5)->toDateString(),
+            'status' => 'Đang làm',
+        ])->assertRedirect(route('dashboard.tasks'));
+
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Kiem tra ho so nhan su',
+            'assigned_by' => $manager->id,
+            'assigned_to' => $firstEmployee->id,
+            'status' => 'Đang làm',
+        ]);
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Kiem tra ho so nhan su',
+            'assigned_by' => $manager->id,
+            'assigned_to' => $secondEmployee->id,
+            'status' => 'Đang làm',
+        ]);
+        $this->assertSame(2, Task::where('task_name', 'Kiem tra ho so nhan su')->count());
+    }
+
+    public function test_manager_dashboard_assign_form_accepts_multiple_department_employees(): void
+    {
+        Department::create(['id' => 1, 'TENPHONG' => 'Nhan su', 'name' => 'HR']);
+
+        $manager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 1]);
+        $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+        $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+
+        $this->actingAs($manager)->post(route('manager.task.assign'), [
+            'task_name' => 'Sap xep lich phong van',
+            'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
+            'deadline' => now()->addDays(4)->toDateString(),
+            'description' => 'Moi nguoi phu trach mot nhom ung vien',
+            'status' => 'Chờ xử lý',
+        ])->assertRedirect(route('manager.dashboard'));
+
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Sap xep lich phong van',
+            'assigned_by' => $manager->id,
+            'assigned_to' => $firstEmployee->id,
+        ]);
+        $this->assertDatabaseHas('tasks', [
+            'task_name' => 'Sap xep lich phong van',
+            'assigned_by' => $manager->id,
+            'assigned_to' => $secondEmployee->id,
+        ]);
+        $this->assertSame(2, Task::where('task_name', 'Sap xep lich phong van')->count());
     }
 
     public function test_employee_task_submission_is_for_themselves_only(): void
@@ -262,6 +349,47 @@ class RoleTaskCreationTest extends TestCase
             'id' => $member->id,
             'is_active' => false,
         ]);
+    }
+
+    public function test_members_page_searches_by_employee_code_and_paginates_ten_per_page(): void
+    {
+        Department::create(['id' => 1, 'TENPHONG' => 'Nhan su', 'name' => 'HR']);
+        Role::create(['id' => User::ROLE_ADMIN, 'name' => 'Admin']);
+        Role::create(['id' => User::ROLE_EMPLOYEE, 'name' => 'Nhan vien']);
+
+        $director = User::factory()->create([
+            'id' => 100,
+            'role_id' => User::ROLE_ADMIN,
+            'department_id' => 1,
+        ]);
+
+        for ($i = 1; $i <= 12; $i++) {
+            User::factory()->create([
+                'id' => $i,
+                'name' => "Member {$i}",
+                'email' => "member{$i}@mobifone.vn",
+                'role_id' => User::ROLE_EMPLOYEE,
+                'department_id' => 1,
+            ]);
+        }
+
+        $this->actingAs($director)
+            ->get(route('dashboard.members'))
+            ->assertOk()
+            ->assertSee('NV010')
+            ->assertDontSee('NV011');
+
+        $this->actingAs($director)
+            ->get(route('dashboard.members', ['page' => 2]))
+            ->assertOk()
+            ->assertSee('NV011')
+            ->assertSee('NV012');
+
+        $this->actingAs($director)
+            ->get(route('dashboard.members', ['search' => 'NV012']))
+            ->assertOk()
+            ->assertSee('member12@mobifone.vn')
+            ->assertDontSee('member11@mobifone.vn');
     }
 
     public function test_employee_uploaded_file_reaches_director_only_after_manager_forwarding(): void

@@ -46,15 +46,17 @@
             gap: 12px;
         }
         .brand-logo {
-            width: 40px; height: 40px; border-radius: 10px;
-            background: var(--mf-red);
+            width: 38px; height: 38px; border-radius: 8px;
+            background: #fff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 900; letter-spacing: .04em; color: #fff;
+            font-size: 15px; font-weight: 900; letter-spacing: -.02em; color: var(--mf-blue);
             flex-shrink: 0;
+            box-shadow: inset 5px 0 0 var(--mf-red);
         }
-        .brand-name { font-size: 15px; font-weight: 800; line-height: 1.2; }
-        .brand-name .red { color: #FF4D6D; }
-        .brand-sub { color: rgba(255,255,255,.55); font-size: 10px; margin-top: 2px; letter-spacing: .12em; text-transform: uppercase; }
+        .mf-logo-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+        .mf-logo-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .mf-logo-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .brand-sub { color: #BFD8FF; font-size: 10px; margin-top: 6px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
 
         /* Profile Card */
         .profile-card {
@@ -133,7 +135,7 @@
             position: relative;
         }
         .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
-        .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
+        .nav-item.active { background: #fff; color: var(--mf-blue); font-weight: 800; box-shadow: inset 3px 0 0 var(--mf-red); }
         .nav-badge {
             margin-left: auto;
             min-width: 20px; height: 20px; border-radius: 10px;
@@ -417,10 +419,10 @@
     {{-- ======= SIDEBAR ======= --}}
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-logo">MB</div>
+            <div class="brand-logo">M</div>
             <div>
-                <div class="brand-name">Mobi<span class="red">Fone</span> HR</div>
-                <div class="brand-sub">Không gian nhân viên</div>
+                <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="brand-sub">EMPLOYEE WORKHUB</div>
             </div>
         </div>
 

@@ -24,6 +24,7 @@
     <div id="sidebar" class="mf-sidebar">
         <!-- Logo -->
         <div class="mf-brand">
+            <div class="mf-logo-mark" aria-hidden="true">M</div>
             <div class="logo-text">
                 <div class="mf-logo-lockup" aria-label="MobiFone">
                     <span class="mf-logo-blue">Mobi</span><span class="mf-logo-red">Fone</span>
@@ -35,21 +36,23 @@
         <!-- Navigation Menu -->
         <nav class="mf-nav custom-scrollbar">
             @php
+                $authUser = Auth::user();
+                $authRoleName = $authUser->role_display_name ?? 'Chưa có chức vụ';
                 $route = Route::currentRouteName();
                 $menuItems = [
                     ['route' => 'dashboard.index', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
                     ['route' => 'dashboard.tasks', 'label' => 'Công việc', 'icon' => 'check-square'],
                 ];
 
-                // Chỉ Trưởng phòng (role_id = 1) mới thấy menu Thành viên và Phân quyền
-                if (Auth::user() && Auth::user()->role_id == 1) {
+                // Giám đốc thấy menu quản trị nhân sự và phân quyền.
+                if ($authUser && $authUser->isDirector()) {
                     $menuItems[] = ['route' => 'dashboard.members', 'label' => 'Thành viên', 'icon' => 'users'];
                 }
 
                 $menuItems[] = ['route' => 'dashboard.reports', 'label' => 'Báo cáo', 'icon' => 'bar-chart-2'];
                 $menuItems[] = ['route' => 'dashboard.notifications', 'label' => 'Thông báo', 'icon' => 'bell', 'badge' => $unreadNotificationsCount ?? 0];
 
-                if (Auth::user() && Auth::user()->role_id == 1) {
+                if ($authUser && $authUser->isDirector()) {
                     $menuItems[] = ['route' => 'dashboard.roles', 'label' => 'Phân quyền', 'icon' => 'shield'];
                 }
             @endphp
@@ -73,19 +76,11 @@
             <!-- User Profile (Quick View) -->
             <div class="mf-user-card">
                 <div class="mf-avatar">
-                    {{ substr(Auth::user()->name ?? 'AD', 0, 2) }}
+                    {{ substr($authUser->name ?? 'AD', 0, 2) }}
                 </div>
                 <div class="flex-1 min-w-0 user-info">
-                    <div class="mf-user-name">{{ Auth::user()->name ?? 'Hoàng Thị Em' }}</div>
-                    <div class="mf-user-role">
-                        @if(Auth::user()->role_id == 1)
-                            Trưởng phòng
-                        @elseif(Auth::user()->role_id == 2)
-                            Phó phòng
-                        @else
-                            Chuyên viên
-                        @endif
-                    </div>
+                    <div class="mf-user-name">{{ $authUser->name ?? 'Hoàng Thị Em' }}</div>
+                    <div class="mf-user-role">{{ $authRoleName }}</div>
                 </div>
                 <!-- Logout form link -->
                 <form action="{{ route('logout') }}" method="POST" id="logout-form" class="inline">
@@ -133,7 +128,7 @@
                     <i data-lucide="calendar" class="w-[18px] h-[18px]"></i>
                 </button>
                 <div class="mf-avatar">
-                    {{ substr(Auth::user()->name ?? 'AD', 0, 2) }}
+                    {{ substr($authUser->name ?? 'AD', 0, 2) }}
                 </div>
             </div>
         </header>

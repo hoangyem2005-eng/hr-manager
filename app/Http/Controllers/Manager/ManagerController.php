@@ -170,33 +170,46 @@ class ManagerController extends Controller
     {
         $manager = Auth::user();
         $deptId  = $manager->department_id;
+        $assignedToInput = $request->input('assigned_to', []);
+        $assignedToIds = collect(is_array($assignedToInput) ? $assignedToInput : [$assignedToInput])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $request->merge(['assigned_to' => $assignedToIds]);
 
         $request->validate([
             'task_name'   => 'required|string|max:255',
-            'assigned_to' => 'required|exists:users,id',
+            'assigned_to' => 'required|array|min:1',
+            'assigned_to.*' => 'integer|exists:users,id',
             'deadline'    => 'required|date',
             'description' => 'nullable|string',
             'status'      => 'nullable|string',
         ]);
 
         // Verify: người được giao phải trong phòng của mình
-        $assignee = User::findOrFail($request->assigned_to);
-        if ($assignee->department_id !== $deptId) {
+        $assignees = User::whereIn('id', $assignedToIds)->get();
+        $invalidAssignee = $assignees->first(fn ($assignee) => (int) $assignee->department_id !== (int) $deptId);
+        if ($invalidAssignee) {
             return back()->with('error', 'Bạn chỉ có thể giao việc cho nhân viên trong phòng của mình!');
         }
 
-        Task::create([
-            'task_name'   => $request->task_name,
-            'description' => $request->description,
-            'assigned_by' => $manager->id,
-            'assigned_to' => $request->assigned_to,
-            'deadline'    => $request->deadline,
-            'status'      => $request->status ?? 'Chờ xử lý',
-            'progress'    => 0,
-        ]);
+        foreach ($assignedToIds as $assignedTo) {
+            Task::create([
+                'task_name'   => $request->task_name,
+                'description' => $request->description,
+                'assigned_by' => $manager->id,
+                'assigned_to' => $assignedTo,
+                'deadline'    => $request->deadline,
+                'status'      => $request->status ?? 'Chờ xử lý',
+                'progress'    => 0,
+            ]);
+        }
 
         return redirect()->route('manager.dashboard')
-            ->with('success', "Đã giao công việc cho {$assignee->name}!");
+            ->with('success', 'Đã giao công việc cho ' . count($assignedToIds) . ' nhân viên!');
     }
 
     public function delegateIncomingTask(Request $request, Task $task)

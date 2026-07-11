@@ -90,4 +90,14 @@ class User extends Authenticatable
     {
         return (int) $this->role_id === self::ROLE_EMPLOYEE;
     }
+
+    public function getRoleDisplayNameAttribute(): string
+    {
+        return match ((int) $this->role_id) {
+            self::ROLE_ADMIN => 'Giám đốc',
+            self::ROLE_MANAGER => 'Trưởng phòng',
+            self::ROLE_EMPLOYEE => 'Nhân viên',
+            default => $this->role->name ?? 'Chưa có chức vụ',
+        };
+    }
 }
