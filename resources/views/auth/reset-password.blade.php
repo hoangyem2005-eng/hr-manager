@@ -144,15 +144,26 @@
             top: 38px; 
             cursor: pointer; 
             color: #64748b; 
-            font-size: 13px; 
-            font-weight: 600;
             user-select: none; 
-            padding: 4px;
+            width: 30px;
+            height: 30px;
+            border: 0;
+            background: transparent;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: color 0.2s;
         }
 
         .toggle-password:hover {
+            background: #e2e8f0;
             color: #0054A6;
+        }
+
+        .toggle-password:focus-visible {
+            outline: 2px solid rgba(0, 84, 166, 0.3);
+            outline-offset: 2px;
         }
     </style>
 </head>
@@ -218,7 +229,7 @@
                 autocomplete="new-password"
                 minlength="8"
             >
-            <span class="toggle-password" onclick="toggleField('password', this)">Hiện</span>
+            <button type="button" class="toggle-password" onclick="toggleField('password', this)" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button>
             @error('password') 
                 <div class="error">⚠️ {{ $message }}</div> 
             @enderror
@@ -236,7 +247,7 @@
                 autocomplete="new-password"
                 minlength="8"
             >
-            <span class="toggle-password" onclick="toggleField('password_confirmation', this)">Hiện</span>
+            <button type="button" class="toggle-password" onclick="toggleField('password_confirmation', this)" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button>
         </div>
 
         <button type="submit" class="btn">CẬP NHẬT MẬT KHẨU</button>
@@ -247,16 +258,20 @@
     </a>
 </div>
 
+<script src="https://unpkg.com/lucide@latest"></script>
 <script>
+    lucide.createIcons();
+
     function toggleField(id, el) {
         const input = document.getElementById(id);
-        if (input.type === "password") {
-            input.type = "text";
-            el.innerText = "Ẩn";
-        } else {
-            input.type = "password";
-            el.innerText = "Hiện";
-        }
+        const icon = el.querySelector('i');
+        const shouldShow = input.type === "password";
+
+        input.type = shouldShow ? "text" : "password";
+        icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+        el.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+        el.setAttribute('title', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+        lucide.createIcons();
     }
 </script>
 </body>

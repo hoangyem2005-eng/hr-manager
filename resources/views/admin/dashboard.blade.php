@@ -1,604 +1,231 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Dashboard Giám đốc — MobiFone HR')
-@section('page_title', '🏢 Tổng quan Giám đốc')
+@section('title', 'Trung tâm điều hành - MobiFone HR')
+@section('page_title', 'Trung tâm điều hành')
 
 @section('head_extra')
 <style>
-    /* ======= GRID LAYOUT ======= */
-    .kpi-grid   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .main-grid  { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-bottom: 24px; }
-    .dept-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-
-    /* ======= KPI CARD ======= */
-    .kpi-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px;
-        display: flex; align-items: flex-start; justify-content: space-between;
-        box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-        border: 1px solid #F1F5F9;
-        transition: box-shadow .2s, transform .2s;
-        position: relative; overflow: hidden;
-    }
-    .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); transform: translateY(-2px); }
-    .kpi-card::after {
-        content: '';
-        position: absolute; top: 0; left: 0;
-        width: 4px; height: 100%;
-        border-radius: 4px 0 0 4px;
-    }
-    .kpi-card.blue::after   { background: #2563EB; }
-    .kpi-card.green::after  { background: #16A34A; }
-    .kpi-card.amber::after  { background: #D97706; }
-    .kpi-card.red::after    { background: #E63946; }
-
-    .kpi-label  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94A3B8; margin-bottom: 6px; }
-    .kpi-value  { font-size: 36px; font-weight: 800; color: #0F172A; line-height: 1; }
-    .kpi-sub    { font-size: 11px; color: #94A3B8; margin-top: 6px; }
-
-    .kpi-icon {
-        width: 46px; height: 46px; border-radius: 13px;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-    }
-    .kpi-icon.blue  { background: rgba(37,99,235,.1);  color: #2563EB; }
-    .kpi-icon.green { background: rgba(22,163,74,.1);  color: #16A34A; }
-    .kpi-icon.amber { background: rgba(217,119,6,.1);  color: #D97706; }
-    .kpi-icon.red   { background: rgba(230,57,70,.1);  color: #E63946; }
-
-    /* ======= CARD BASE ======= */
-    .card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #F1F5F9;
-        box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        overflow: hidden;
-    }
-    .card-header {
-        padding: 18px 20px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    .card-title { font-size: 14px; font-weight: 700; color: #0F172A; }
-    .card-body  { padding: 20px; }
-    .card-link  { font-size: 12px; font-weight: 600; color: #2563EB; text-decoration: none; }
-    .card-link:hover { text-decoration: underline; }
-
-    /* ======= TABLE ======= */
-    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .data-table thead th {
-        background: #F8FAFC; padding: 11px 16px;
-        text-align: left; font-size: 10px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .08em; color: #64748B;
-        border-bottom: 1px solid #F1F5F9;
-    }
-    .data-table tbody tr {
-        border-bottom: 1px solid #F8FAFC;
-        transition: background .15s;
-    }
-    .data-table tbody tr:hover { background: #F8FAFF; }
-    .data-table tbody td { padding: 12px 16px; color: #374151; vertical-align: middle; }
-
-    .avatar-badge {
-        width: 34px; height: 34px; border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 12px; color: #fff;
-    }
-
-    /* ======= ROLE PILL ======= */
-    .pill {
-        display: inline-block;
-        padding: 3px 10px; border-radius: 99px;
-        font-size: 11px; font-weight: 600;
-    }
-    .pill.director { background: rgba(230,57,70,.1);  color: #E63946; }
-    .pill.leader   { background: rgba(37,99,235,.1);  color: #2563EB; }
-    .pill.employee { background: rgba(107,114,128,.1); color: #374151; }
-
-    .status-pill {
-        display: inline-block;
-        padding: 3px 10px; border-radius: 99px;
-        font-size: 11px; font-weight: 600;
-    }
-    .status-pill.done    { background: #F0FDF4; color: #16A34A; }
-    .status-pill.doing   { background: #FFFBEB; color: #D97706; }
-    .status-pill.review  { background: #EFF6FF; color: #2563EB; }
-    .status-pill.pending { background: #F9FAFB; color: #6B7280; }
-    .status-pill.overdue { background: #FFF1F2; color: #E63946; }
-
-    /* ======= DEPT CARD ======= */
-    .dept-card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #F1F5F9;
-        padding: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.05);
-    }
-    .dept-name   { font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 12px; }
-    .dept-stats  { display: flex; gap: 20px; margin-bottom: 14px; }
-    .dept-stat   { font-size: 11px; color: #64748B; }
-    .dept-stat strong { font-size: 18px; font-weight: 800; color: #0F172A; display: block; }
-    .progress-bar {
-        height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden;
-    }
-    .progress-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
-
-    /* ======= SECTION HEADER ======= */
-    .section-hdr {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 16px;
-    }
-    .section-title {
-        font-size: 16px; font-weight: 700; color: #0F172A;
-        display: flex; align-items: center; gap: 8px;
-    }
-
-    /* ======= BTN ======= */
-    .btn-primary {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 9px 18px; border-radius: 10px;
-        background: linear-gradient(135deg, #E63946, #C0392B);
-        color: #fff; font-size: 13px; font-weight: 600;
-        text-decoration: none; border: none; cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 2px 8px rgba(230,57,70,.3);
-        transition: all .18s;
-    }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(230,57,70,.4); }
-
-    .btn-ghost {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 7px 14px; border-radius: 9px;
-        background: #F1F5F9; color: #374151;
-        font-size: 12px; font-weight: 600;
-        border: none; cursor: pointer; font-family: inherit;
-        transition: all .15s; text-decoration: none;
-    }
-    .btn-ghost:hover { background: #E2E8F0; }
-    .btn-danger {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 5px 10px; border-radius: 7px;
-        background: rgba(230,57,70,.08); color: #E63946;
-        font-size: 11px; font-weight: 600;
-        border: 1px solid rgba(230,57,70,.15); cursor: pointer; font-family: inherit;
-        transition: all .15s;
-    }
-    .btn-danger:hover { background: rgba(230,57,70,.15); }
-
-    /* ======= MODAL ======= */
-    .modal-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,.45);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 9999; opacity: 0; pointer-events: none;
-        transition: opacity .2s;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-    .modal {
-        background: #fff; border-radius: 20px;
-        width: 520px; max-width: 95vw;
-        padding: 28px; position: relative;
-        box-shadow: 0 20px 60px rgba(0,0,0,.2);
-        transform: translateY(16px);
-        transition: transform .2s;
-        max-height: 90vh; overflow-y: auto;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-title { font-size: 18px; font-weight: 700; color: #0F172A; margin-bottom: 20px; }
-
-    .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
-    .form-input {
-        width: 100%; height: 40px; border: 1.5px solid #E2E8F0;
-        border-radius: 10px; padding: 0 12px;
-        font-size: 13px; color: #0F172A; outline: none;
-        font-family: inherit; transition: border-color .2s;
-    }
-    .form-input:focus { border-color: #E63946; }
-    .form-select { appearance: none; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-
-    /* ======= COMPLETION CIRCLE ======= */
-    .rate-circle {
-        width: 50px; height: 50px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 13px; font-weight: 700; color: #0F172A;
-        background: conic-gradient(#16A34A var(--pct), #E2E8F0 0);
-        position: relative;
-    }
-    .rate-circle::before {
-        content: ''; position: absolute; inset: 5px;
-        border-radius: 50%; background: #fff;
-    }
-    .rate-circle span { position: relative; z-index: 1; font-size: 11px; }
-
-    @media (max-width: 1200px) {
-        .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
-        .main-grid { grid-template-columns: 1fr; }
-        .dept-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 700px) {
-        .kpi-grid  { grid-template-columns: 1fr; }
-        .dept-grid { grid-template-columns: 1fr; }
-    }
+    .exec-shell { display: grid; gap: 20px; }
+    .exec-hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #001F5B 0%, #003DA5 100%); color: #fff; border: 1px solid rgba(0,61,165,.18); border-radius: 8px; padding: 28px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 24px; }
+    .exec-hero::before { content: ''; position: absolute; inset: 0; opacity: .11; background-image: linear-gradient(rgba(255,255,255,.24) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.24) 1px, transparent 1px); background-size: 34px 34px; }
+    .exec-hero > * { position: relative; z-index: 1; }
+    .exec-kicker { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #BFDBFE; font-weight: 800; }
+    .exec-title { font-size: 32px; line-height: 1.15; font-weight: 900; margin-top: 10px; max-width: 720px; }
+    .exec-copy { color: #D7E7FF; font-size: 14px; line-height: 1.7; margin-top: 12px; max-width: 700px; }
+    .exec-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .exec-btn { height: 40px; border-radius: 8px; padding: 0 14px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; font-family: inherit; }
+    .exec-btn.primary { background: #E4002B; color: #fff; }
+    .exec-btn.secondary { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.22); color: #EAF2FF; }
+    .exec-scoreboard { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .exec-metric { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.1); border-radius: 8px; padding: 16px; backdrop-filter: blur(10px); }
+    .exec-metric span { display: block; font-size: 11px; color: #BFDBFE; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+    .exec-metric strong { display: block; margin-top: 8px; font-size: 30px; line-height: 1; }
+    .exec-grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: 20px; }
+    .exec-panel { background: #fff; border: 1px solid #DBE4EF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .exec-panel-header { height: 56px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E5E7EB; }
+    .exec-panel-title { font-size: 14px; font-weight: 900; color: #111827; display: flex; align-items: center; gap: 8px; }
+    .exec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .exec-table th { background: #F9FAFB; color: #6B7280; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; text-align: left; padding: 12px 14px; }
+    .exec-table td { padding: 13px 14px; border-top: 1px solid #F3F4F6; color: #374151; vertical-align: middle; }
+    .exec-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .exec-chip.red { background: #FEF2F2; color: #B91C1C; }
+    .exec-chip.green { background: #F0FDF4; color: #15803D; }
+    .exec-chip.blue { background: #EFF6FF; color: #1D4ED8; }
+    .exec-chip.gray { background: #F3F4F6; color: #4B5563; }
+    .dept-row { padding: 16px 18px; border-top: 1px solid #F3F4F6; }
+    .dept-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 800; color: #111827; }
+    .dept-meta { display: flex; gap: 16px; margin-top: 8px; color: #6B7280; font-size: 12px; }
+    .dept-track { height: 6px; background: #E5E7EB; border-radius: 99px; overflow: hidden; margin-top: 12px; }
+    .dept-fill { height: 100%; background: linear-gradient(90deg, #003DA5, #23A6D5); border-radius: 99px; }
+    .people-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; padding: 18px; }
+    .person-card { border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px; background: #fff; }
+    .person-top { display: flex; gap: 10px; align-items: center; }
+    .avatar { width: 34px; height: 34px; border-radius: 8px; background: #003DA5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
+    .person-name { font-size: 13px; font-weight: 900; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .person-sub { font-size: 11px; color: #6B7280; margin-top: 2px; }
+    .person-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .mini-btn { border: 1px solid #E5E7EB; background: #F9FAFB; color: #374151; border-radius: 7px; height: 30px; padding: 0 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+    .modal-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.55); z-index: 9999; padding: 16px; }
+    .modal-overlay.open { display: flex; }
+    .modal { width: min(560px, 100%); background: #fff; border-radius: 8px; overflow: hidden; }
+    .modal-head { padding: 18px; background: #001F5B; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 18px; display: grid; gap: 14px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field label { display: block; font-size: 12px; font-weight: 800; color: #374151; margin-bottom: 6px; }
+    .field input, .field select { width: 100%; height: 40px; border: 1px solid #D1D5DB; border-radius: 8px; padding: 0 11px; font-family: inherit; font-size: 13px; }
+    .password-field { position: relative; }
+    .password-field input { padding-right: 42px; }
+    .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; background: transparent; color: #6B7280; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .password-toggle:hover { background: #F3F4F6; color: #003DA5; }
+    .password-toggle:focus-visible { outline: 2px solid #93C5FD; outline-offset: 2px; }
+    .modal-actions { padding: 16px 18px; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; gap: 10px; }
+    @media (max-width: 1100px) { .exec-hero, .exec-grid { grid-template-columns: 1fr; } .people-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 680px) { .exec-scoreboard, .people-grid, .form-grid { grid-template-columns: 1fr; } .exec-title { font-size: 26px; } }
 </style>
 @endsection
 
 @section('content')
-
-<!-- ===== KPI CARDS ===== -->
-<div class="kpi-grid">
-    <div class="kpi-card blue">
+<div class="exec-shell">
+    <section class="exec-hero">
         <div>
-            <div class="kpi-label">Tổng nhân sự</div>
-            <div class="kpi-value">{{ $totalUsers }}</div>
-            <div class="kpi-sub">{{ $totalDepts }} phòng ban</div>
-        </div>
-        <div class="kpi-icon blue">
-            <i data-lucide="users" style="width:22px;height:22px"></i>
-        </div>
-    </div>
-
-    <div class="kpi-card green">
-        <div>
-            <div class="kpi-label">Hoàn thành</div>
-            <div class="kpi-value">{{ $completionRate }}%</div>
-            <div class="kpi-sub">{{ $doneTasks }}/{{ $totalTasks }} công việc</div>
-        </div>
-        <div class="kpi-icon green">
-            <i data-lucide="check-circle-2" style="width:22px;height:22px"></i>
-        </div>
-    </div>
-
-    <div class="kpi-card amber">
-        <div>
-            <div class="kpi-label">Đang thực hiện</div>
-            <div class="kpi-value">{{ $doingTasks }}</div>
-            <div class="kpi-sub">Công việc đang làm</div>
-        </div>
-        <div class="kpi-icon amber">
-            <i data-lucide="zap" style="width:22px;height:22px"></i>
-        </div>
-    </div>
-
-    <div class="kpi-card red">
-        <div>
-            <div class="kpi-label">Quá hạn</div>
-            <div class="kpi-value">{{ $overdueTasks }}</div>
-            <div class="kpi-sub" style="color:#E63946;font-weight:600">Cần xử lý ngay</div>
-        </div>
-        <div class="kpi-icon red">
-            <i data-lucide="alert-circle" style="width:22px;height:22px"></i>
-        </div>
-        @if($overdueTasks > 0)
-            <span style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#E63946;animation:ping 1.2s infinite"></span>
-        @endif
-    </div>
-</div>
-
-<!-- ===== PHÒNG BAN ===== -->
-<div id="phong-ban" class="section-hdr">
-    <div class="section-title">
-        <i data-lucide="building-2" style="width:18px;height:18px;color:#E63946"></i>
-        Thống kê phòng ban
-    </div>
-</div>
-<div class="dept-grid" style="margin-bottom:28px">
-    @forelse($deptStats as $d)
-        <div class="dept-card">
-            <div class="dept-name">{{ $d['name'] }}</div>
-            <div class="dept-stats">
-                <div class="dept-stat"><strong>{{ $d['users'] }}</strong>Nhân viên</div>
-                <div class="dept-stat"><strong>{{ $d['tasks'] }}</strong>Công việc</div>
-                <div class="dept-stat"><strong>{{ $d['rate'] }}%</strong>Hoàn thành</div>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width:{{ $d['rate'] }}%; background: {{ $d['rate'] >= 70 ? '#16A34A' : ($d['rate'] >= 40 ? '#D97706' : '#E63946') }}"></div>
+            <div class="exec-kicker">MobiFone HR operations</div>
+            <h1 class="exec-title">Điều hành nhân sự, phòng ban và tiến độ công việc trên một màn hình.</h1>
+            <p class="exec-copy">Theo dõi năng lực vận hành theo phòng ban, nắm nhanh việc quá hạn và xử lý các điểm nghẽn ảnh hưởng đến mục tiêu chung.</p>
+            <div class="exec-actions">
+                <button class="exec-btn primary" onclick="openModal('addUserModal')"><i data-lucide="user-plus"></i> Thêm nhân sự</button>
+                <a class="exec-btn secondary" href="{{ route('dashboard.tasks') }}"><i data-lucide="send"></i> Giao mục tiêu</a>
+                <a class="exec-btn secondary" href="{{ route('dashboard.reports') }}"><i data-lucide="bar-chart-3"></i> Báo cáo</a>
             </div>
         </div>
-    @empty
-        <div class="dept-card" style="grid-column:1/-1;text-align:center;color:#94A3B8;padding:40px">
-            Chưa có phòng ban nào
+        <div class="exec-scoreboard">
+            <div class="exec-metric"><span>Nhân sự</span><strong>{{ $totalUsers }}</strong></div>
+            <div class="exec-metric"><span>Phòng ban</span><strong>{{ $totalDepts }}</strong></div>
+            <div class="exec-metric"><span>Hoàn thành</span><strong>{{ $completionRate }}%</strong></div>
+            <div class="exec-metric"><span>Quá hạn</span><strong style="color:#FCA5A5">{{ $overdueTasks }}</strong></div>
         </div>
-    @endforelse
-</div>
+    </section>
 
-<!-- ===== MAIN GRID: Công việc + Chart ===== -->
-<div class="main-grid">
-    <!-- Công việc gần đây -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Công việc gần đây — Toàn công ty</span>
-            <a href="{{ route('dashboard.tasks') }}" class="card-link">Xem tất cả →</a>
-        </div>
-        <div style="overflow-x:auto">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Mã</th>
-                        <th>Tên công việc</th>
-                        <th>Người thực hiện</th>
-                        <th>Phòng ban</th>
-                        <th>Deadline</th>
-                        <th>Trạng thái</th>
-                    </tr>
-                </thead>
+    <section class="exec-grid" id="phong-ban">
+        <div class="exec-panel">
+            <div class="exec-panel-header">
+                <div class="exec-panel-title"><i data-lucide="radar"></i> Việc nóng toàn công ty</div>
+                <a class="mini-btn" href="{{ route('dashboard.tasks') }}">Xem tất cả</a>
+            </div>
+            <table class="exec-table">
+                <thead><tr><th>Mã</th><th>Công việc</th><th>Phụ trách</th><th>Phòng</th><th>Hạn</th><th>Trạng thái</th></tr></thead>
                 <tbody>
                     @forelse($recentTasks as $t)
+                        @php
+                            $class = $t['is_overdue'] ? 'red' : (str_contains($t['status'], 'Hoàn') ? 'green' : (str_contains($t['status'], 'review') ? 'blue' : 'gray'));
+                        @endphp
                         <tr>
-                            <td style="font-size:11px;font-family:monospace;color:#94A3B8">{{ $t['id'] }}</td>
-                            <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $t['name'] }}</td>
+                            <td style="font-family:monospace;color:#9CA3AF">{{ $t['id'] }}</td>
+                            <td style="font-weight:800;color:#111827">{{ $t['name'] }}</td>
                             <td>{{ $t['assignee'] }}</td>
-                            <td style="color:#64748B;font-size:12px">{{ $t['dept'] }}</td>
-                            <td style="font-size:12px;{{ $t['is_overdue'] ? 'color:#E63946;font-weight:600' : 'color:#94A3B8' }}">{{ $t['deadline'] }}</td>
-                            <td>
-                                @php
-                                    $sc = match($t['status']) {
-                                        'Hoàn thành' => 'done', 'Đang làm' => 'doing',
-                                        'Đang review' => 'review', 'Quá hạn' => 'overdue',
-                                        default => 'pending'
-                                    };
-                                @endphp
-                                <span class="status-pill {{ $sc }}">{{ $t['status'] }}</span>
-                            </td>
+                            <td>{{ $t['dept'] }}</td>
+                            <td style="{{ $t['is_overdue'] ? 'color:#B91C1C;font-weight:900' : '' }}">{{ $t['deadline'] }}</td>
+                            <td><span class="exec-chip {{ $class }}">{{ $t['status'] }}</span></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" style="text-align:center;padding:30px;color:#94A3B8">Chưa có công việc nào</td></tr>
+                        <tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:28px">Chưa có công việc.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Chart -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Phân bổ công việc</span>
+        <div class="exec-panel">
+            <div class="exec-panel-header"><div class="exec-panel-title"><i data-lucide="building-2"></i> Phòng ban</div></div>
+            @forelse($deptStats as $d)
+                <div class="dept-row">
+                    <div class="dept-line"><span>{{ $d['name'] }}</span><span>{{ $d['rate'] }}%</span></div>
+                    <div class="dept-meta"><span>{{ $d['users'] }} nhân sự</span><span>{{ $d['tasks'] }} việc</span></div>
+                    <div class="dept-track"><div class="dept-fill" style="width: {{ $d['rate'] }}%"></div></div>
+                </div>
+            @empty
+                <div class="dept-row" style="color:#9CA3AF">Chưa có phòng ban.</div>
+            @endforelse
         </div>
-        <div class="card-body">
-            <div id="admin-donut-chart"></div>
-            <div style="margin-top:16px;space-y:8px">
-                @foreach($statusChart as $s)
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F1F5F9">
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <span style="width:10px;height:10px;border-radius:50%;background:{{ $s['color'] }};display:inline-block"></span>
-                            <span style="font-size:13px;color:#374151">{{ $s['name'] }}</span>
+    </section>
+
+    @if(false)
+    <section class="exec-panel" id="nhan-su">
+        <div class="exec-panel-header">
+            <div class="exec-panel-title"><i data-lucide="id-card"></i> Nhân sự toàn công ty</div>
+            <button class="mini-btn" onclick="openModal('addUserModal')"><i data-lucide="plus"></i> Thêm</button>
+        </div>
+        <div class="people-grid">
+            @forelse($allUsers as $u)
+                <div class="person-card">
+                    <div class="person-top">
+                        <div class="avatar">{{ $u['avatar'] }}</div>
+                        <div style="min-width:0">
+                            <div class="person-name">{{ $u['name'] }}</div>
+                            <div class="person-sub">{{ $u['role_name'] }} - {{ $u['dept'] }}</div>
                         </div>
-                        <span style="font-weight:700;font-size:14px;color:#0F172A">{{ $s['value'] }}</span>
                     </div>
-                @endforeach
-            </div>
+                    <div class="person-sub" style="margin-top:10px">{{ $u['email'] }}</div>
+                    <div class="person-actions">
+                        <button class="mini-btn" onclick="openEditModal({{ json_encode($u) }})"><i data-lucide="pencil"></i> Sửa</button>
+                        <form action="{{ route('admin.user.destroy', $u['id']) }}" method="POST" onsubmit="return confirm('Xóa nhân sự {{ $u['name'] }}?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="mini-btn" style="color:#B91C1C"><i data-lucide="trash-2"></i> Xóa</button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div style="color:#9CA3AF">Chưa có nhân sự.</div>
+            @endforelse
         </div>
-    </div>
+    </section>
+    @endif
 </div>
 
-<!-- ===== BẢNG NHÂN SỰ (FULL CRUD) ===== -->
-<div id="nhan-su" class="section-hdr">
-    <div class="section-title">
-        <i data-lucide="users" style="width:18px;height:18px;color:#E63946"></i>
-        Quản lý nhân sự — Toàn công ty
-    </div>
-    <button class="btn-primary" onclick="openModal('addUserModal')">
-        <i data-lucide="user-plus" style="width:15px;height:15px"></i>
-        Thêm nhân sự
-    </button>
-</div>
-
-<div class="card" style="margin-bottom:32px">
-    <div style="overflow-x:auto">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mã NV</th>
-                    <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>Phòng ban</th>
-                    <th>Vai trò</th>
-                    <th>Công việc</th>
-                    <th>Ngày tham gia</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($allUsers as $u)
-                    <tr>
-                        <td style="font-family:monospace;font-size:11px;color:#94A3B8">{{ $u['code'] }}</td>
-                        <td>
-                            <div style="display:flex;align-items:center;gap:10px">
-                                <div class="avatar-badge" style="background: {{ $u['role_id'] == 3 ? 'linear-gradient(135deg,#E63946,#C0392B)' : ($u['role_id'] == 1 ? 'linear-gradient(135deg,#2563EB,#1E40AF)' : 'linear-gradient(135deg,#7C3AED,#5B21B6)') }}">
-                                    {{ $u['avatar'] }}
-                                </div>
-                                <span style="font-weight:600;font-size:13px">{{ $u['name'] }}</span>
-                            </div>
-                        </td>
-                        <td style="color:#64748B;font-size:12px">{{ $u['email'] }}</td>
-                        <td style="font-size:12px">{{ $u['dept'] }}</td>
-                        <td>
-                            <span class="pill {{ $u['role_id'] == 3 ? 'director' : ($u['role_id'] == 1 ? 'leader' : 'employee') }}">
-                                {{ $u['role_name'] }}
-                            </span>
-                        </td>
-                        <td style="font-weight:600;color:#0F172A">{{ $u['tasks'] }}</td>
-                        <td style="font-size:12px;color:#94A3B8">{{ $u['joined'] }}</td>
-                        <td>
-                            <div style="display:flex;gap:6px">
-                                <button class="btn-ghost" style="padding:5px 10px;font-size:11px"
-                                    onclick="openEditModal({{ json_encode($u) }})">
-                                    <i data-lucide="pencil" style="width:13px;height:13px"></i> Sửa
-                                </button>
-                                <form action="{{ route('admin.user.destroy', $u['id']) }}" method="POST"
-                                      onsubmit="return confirm('Xóa nhân sự {{ $u['name'] }}?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn-danger">
-                                        <i data-lucide="trash-2" style="width:12px;height:12px"></i> Xóa
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="8" style="text-align:center;padding:40px;color:#94A3B8">Chưa có nhân sự</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- ===== MODAL: Thêm nhân sự ===== -->
 <div class="modal-overlay" id="addUserModal">
     <div class="modal">
-        <div class="modal-title">
-            <i data-lucide="user-plus" style="width:18px;height:18px;color:#E63946;vertical-align:middle;margin-right:8px"></i>
-            Thêm nhân sự mới
-        </div>
+        <div class="modal-head"><strong>Thêm nhân sự cấp công ty</strong><button class="mini-btn" onclick="closeModal('addUserModal')">Đóng</button></div>
         <form action="{{ route('admin.user.store') }}" method="POST">
             @csrf
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Họ và tên *</label>
-                    <input type="text" name="name" class="form-input" placeholder="Nguyễn Văn A" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email *</label>
-                    <input type="email" name="email" class="form-input" placeholder="nva@mobifone.vn" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu *</label>
-                    <input type="password" name="password" class="form-input" placeholder="Tối thiểu 6 ký tự" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Phòng ban *</label>
-                    <select name="department_id" class="form-input form-select" required>
-                        <option value="">Chọn phòng ban</option>
-                        @foreach($departments as $d)
-                            <option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>
-                        @endforeach
-                    </select>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field"><label>Họ tên</label><input name="name" required></div>
+                    <div class="field"><label>Email</label><input type="email" name="email" required></div>
+                    <div class="field"><label>Mật khẩu</label><div class="password-field"><input type="password" name="password" required><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button></div></div>
+                    <div class="field"><label>Phòng ban</label><select name="department_id" required>@foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>@endforeach</select></div>
+                    <div class="field"><label>Vai trò</label><select name="role_id" required>@foreach($roles as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach</select></div>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Vai trò *</label>
-                <select name="role_id" class="form-input form-select" required>
-                    @foreach($roles as $r)
-                        <option value="{{ $r->id }}">{{ $r->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-ghost" onclick="closeModal('addUserModal')">Hủy</button>
-                <button type="submit" class="btn-primary">
-                    <i data-lucide="check" style="width:14px;height:14px"></i> Tạo tài khoản
-                </button>
-            </div>
+            <div class="modal-actions"><button type="button" class="mini-btn" onclick="closeModal('addUserModal')">Hủy</button><button class="exec-btn primary" type="submit">Tạo tài khoản</button></div>
         </form>
-        <button onclick="closeModal('addUserModal')" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#94A3B8">
-            <i data-lucide="x" style="width:20px;height:20px"></i>
-        </button>
     </div>
 </div>
 
-<!-- ===== MODAL: Sửa nhân sự ===== -->
 <div class="modal-overlay" id="editUserModal">
     <div class="modal">
-        <div class="modal-title">
-            <i data-lucide="pencil" style="width:18px;height:18px;color:#2563EB;vertical-align:middle;margin-right:8px"></i>
-            Chỉnh sửa nhân sự
-        </div>
+        <div class="modal-head"><strong>Chỉnh sửa nhân sự</strong><button class="mini-btn" onclick="closeModal('editUserModal')">Đóng</button></div>
         <form id="editUserForm" method="POST">
             @csrf @method('PUT')
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Họ và tên *</label>
-                    <input type="text" name="name" id="edit_name" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email *</label>
-                    <input type="email" name="email" id="edit_email" class="form-input" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu mới (để trống nếu không đổi)</label>
-                    <input type="password" name="password" class="form-input" placeholder="Để trống nếu không đổi">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Phòng ban *</label>
-                    <select name="department_id" id="edit_dept" class="form-input form-select" required>
-                        @foreach($departments as $d)
-                            <option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>
-                        @endforeach
-                    </select>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field"><label>Họ tên</label><input name="name" id="edit_name" required></div>
+                    <div class="field"><label>Email</label><input type="email" name="email" id="edit_email" required></div>
+                    <div class="field"><label>Mật khẩu mới</label><div class="password-field"><input type="password" name="password"><button type="button" class="password-toggle" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button></div></div>
+                    <div class="field"><label>Phòng ban</label><select name="department_id" id="edit_dept" required>@foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->TENPHONG ?? $d->name }}</option>@endforeach</select></div>
+                    <div class="field"><label>Vai trò</label><select name="role_id" id="edit_role" required>@foreach($roles as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach</select></div>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Vai trò *</label>
-                <select name="role_id" id="edit_role" class="form-input form-select" required>
-                    @foreach($roles as $r)
-                        <option value="{{ $r->id }}">{{ $r->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-ghost" onclick="closeModal('editUserModal')">Hủy</button>
-                <button type="submit" class="btn-primary">
-                    <i data-lucide="save" style="width:14px;height:14px"></i> Lưu thay đổi
-                </button>
-            </div>
+            <div class="modal-actions"><button type="button" class="mini-btn" onclick="closeModal('editUserModal')">Hủy</button><button class="exec-btn primary" type="submit">Lưu</button></div>
         </form>
-        <button onclick="closeModal('editUserModal')" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#94A3B8">
-            <i data-lucide="x" style="width:20px;height:20px"></i>
-        </button>
     </div>
 </div>
-
 @endsection
 
 @section('scripts')
 <script>
-    // Chart
-    const chartData = @json($statusChart);
-    new ApexCharts(document.querySelector('#admin-donut-chart'), {
-        series: chartData.map(d => d.value),
-        labels: chartData.map(d => d.name),
-        colors: chartData.map(d => d.color),
-        chart: { type: 'donut', height: 200, sparkline: { enabled: true } },
-        plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Tổng', color: '#0F172A', fontSize: '13px', fontWeight: 700 } } } } },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        stroke: { show: false },
-        tooltip: { style: { fontFamily: 'Inter, sans-serif', fontSize: '12px' } }
-    }).render();
-
-    // Modal helpers
-    function openModal(id) {
-        document.getElementById(id).classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeModal(id) {
-        document.getElementById(id).classList.remove('open');
-        document.body.style.overflow = '';
-    }
-    document.querySelectorAll('.modal-overlay').forEach(o => {
-        o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
-    });
-
+    function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
     function openEditModal(u) {
         document.getElementById('editUserForm').action = '/admin/users/' + u.id;
-        document.getElementById('edit_name').value  = u.name;
+        document.getElementById('edit_name').value = u.name;
         document.getElementById('edit_email').value = u.email;
-        document.getElementById('edit_dept').value  = u.dept_id;
-        document.getElementById('edit_role').value  = u.role_id;
+        document.getElementById('edit_dept').value = u.dept_id;
+        document.getElementById('edit_role').value = u.role_id;
         openModal('editUserModal');
         lucide.createIcons();
     }
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = button.closest('.password-field').querySelector('input');
+            const icon = button.querySelector('i');
+            const shouldShow = input.type === 'password';
 
-    // Ping animation
-    const style = document.createElement('style');
-    style.textContent = '@keyframes ping { 0%,100%{transform:scale(1);opacity:.75} 50%{transform:scale(1.5);opacity:0} }';
-    document.head.appendChild(style);
+            input.type = shouldShow ? 'text' : 'password';
+            icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+            button.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            button.setAttribute('title', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            lucide.createIcons();
+        });
+    });
+    document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); }));
+    lucide.createIcons();
 </script>
 @endsection

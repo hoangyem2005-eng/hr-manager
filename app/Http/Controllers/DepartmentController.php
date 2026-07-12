@@ -9,14 +9,21 @@ use Illuminate\Support\Facades\DB;
 
 class DepartmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $departments = Department::query()
             ->withCount('users')
             ->orderBy('id')
             ->paginate(10);
 
-        return view('admin.layouts.phongban.danhsach', compact('departments'));
+        $selectedDepartment = null;
+        if ($request->filled('department_id')) {
+            $selectedDepartment = Department::with(['users.role'])
+                ->withCount('users')
+                ->find($request->integer('department_id'));
+        }
+
+        return view('admin.layouts.phongban.danhsach', compact('departments', 'selectedDepartment'));
     }
 
     public function create()

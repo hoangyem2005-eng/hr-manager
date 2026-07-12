@@ -5,222 +5,500 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - MobiFone WorkHub</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Tailwind CSS (via Vite) -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css'])
 
     <style>
+        :root {
+            --mf-navy: #001F5B;
+            --mf-blue: #003DA5;
+            --mf-sky: #0B66D8;
+            --mf-red: #E4002B;
+            --mf-line: #D8E4F5;
+            --mf-soft: #EEF5FF;
+            --mf-ink: #10233F;
+            --mf-muted: #7182A0;
+        }
+
+        * { box-sizing: border-box; }
         body {
+            margin: 0;
+            min-height: 100vh;
             font-family: 'Be Vietnam Pro', sans-serif;
+            color: var(--mf-ink);
+            background: #F5F8FD;
         }
 
-        @keyframes floatOrb {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-18px);
-            }
+        .auth-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(440px, .95fr);
+            overflow: hidden;
         }
 
-        .orb {
-            animation: floatOrb 3.5s ease-in-out infinite alternate;
+        .brand-panel {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 56px;
+            color: #fff;
+            background:
+                radial-gradient(circle at 76% 12%, rgba(255,255,255,.16), transparent 26%),
+                linear-gradient(135deg, #001D58 0%, #003DA5 58%, #075FD0 100%);
+        }
+
+        .brand-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: .36;
+            background-image:
+                linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px);
+            background-size: 46px 46px;
+            animation: gridDrift 22s linear infinite;
+        }
+
+        .brand-panel::after {
+            content: "";
+            position: absolute;
+            width: 720px;
+            height: 720px;
+            right: -250px;
+            bottom: -260px;
+            border-radius: 50%;
+            border: 98px solid rgba(255,255,255,.08);
+            animation: ringBreathe 8s ease-in-out infinite;
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 2;
+            width: min(610px, 100%);
+        }
+
+        .brand-lockup {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.10);
+            border: 1px solid rgba(255,255,255,.16);
+            backdrop-filter: blur(10px);
+            animation: floatIn 700ms ease both;
+        }
+
+        .brand-mark {
+            position: relative;
+            overflow: hidden;
+            width: 58px;
+            height: 58px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: var(--mf-blue);
+            background: #fff;
+            font-size: 27px;
+            font-weight: 900;
+            box-shadow: inset 7px 0 0 var(--mf-red), 0 18px 36px rgba(0,0,0,.18);
+            animation: logoHop 3.8s ease-in-out infinite;
+        }
+
+        .brand-mark::after,
+        .brand-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .brand-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+        }
+
+        .brand-word strong { font-size: 25px; font-weight: 900; letter-spacing: -.04em; }
+        .brand-word .blue { color: var(--mf-blue); }
+        .brand-word .red { color: var(--mf-red); }
+        .brand-sub { margin-top: 8px; color: #D3E5FF; font-size: 11px; font-weight: 900; letter-spacing: .22em; }
+
+        .brand-title {
+            margin: 42px 0 0;
+            max-width: 760px;
+            font-size: clamp(42px, 5.3vw, 74px);
+            line-height: 1.14;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .brand-title span {
+            position: relative;
+            display: block;
+            padding: .08em 0 .18em;
+            overflow: visible;
+            animation: titleRise 800ms ease both;
+        }
+
+        .brand-title span:nth-child(2) { animation-delay: 90ms; }
+        .brand-title span:nth-child(3) { animation-delay: 180ms; }
+        .brand-title .accent::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 22%;
+            bottom: .24em;
+            height: .24em;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--mf-red), rgba(11,102,216,.96));
+            z-index: -1;
+            transform-origin: left;
+            animation: markerSweep 1.2s .35s ease both;
+        }
+
+        .brand-desc {
+            margin-top: 18px;
+            max-width: 560px;
+            color: #DDEBFF;
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        .orbit {
+            position: absolute;
+            z-index: 3;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 999px;
+            color: #EAF3FF;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.18);
+            font-size: 12px;
+            font-weight: 900;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 18px 36px rgba(0,0,0,.14);
+            animation: chipFloat 6s ease-in-out infinite;
+        }
+
+        .orbit i { width: 16px; height: 16px; }
+        .orbit.one { top: 18%; right: 11%; }
+        .orbit.two { top: 56%; right: 8%; animation-delay: -2s; }
+        .orbit.three { top: 29%; right: 8%; animation-delay: -3.6s; }
+
+        .mini-board {
+            margin-top: 28px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            max-width: 540px;
+        }
+
+        .mini-card {
+            min-height: 112px;
+            padding: 17px 18px 18px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.13);
+            border: 1px solid rgba(255,255,255,.18);
+            backdrop-filter: blur(12px);
+            animation: cardPop 650ms ease both;
+        }
+
+        .mini-card:nth-child(2) { animation-delay: 100ms; }
+        .mini-card:nth-child(3) { animation-delay: 200ms; }
+        .mini-card b { display: block; color: #fff; font-size: 26px; line-height: 1.18; }
+        .mini-card span { display: block; margin-top: 8px; padding-bottom: 2px; color: #CFE2FF; font-size: 11px; line-height: 1.55; font-weight: 900; text-transform: uppercase; }
+        .mini-line { margin-top: 10px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
+        .mini-line i { display: block; height: 100%; border-radius: inherit; background: var(--mf-red); transform-origin: left; animation: growBar 1.2s ease both; }
+
+        .form-panel {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 42px;
+            background:
+                radial-gradient(circle at 16% 16%, #EAF2FF, transparent 30%),
+                linear-gradient(180deg, #FFFFFF, #F7FAFF);
+        }
+
+        .form-panel::before {
+            content: "";
+            position: absolute;
+            inset: 28px;
+            border: 1px solid rgba(0,61,165,.08);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .auth-card {
+            position: relative;
+            z-index: 1;
+            width: min(520px, 100%);
+            padding: 28px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.82);
+            border: 1px solid rgba(216,228,245,.95);
+            box-shadow: 0 24px 70px rgba(0,31,91,.12);
+            backdrop-filter: blur(14px);
+        }
+
+        .form-badge {
+            width: 64px;
+            height: 64px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            background: linear-gradient(135deg, var(--mf-blue), var(--mf-sky));
+            box-shadow: inset 6px 0 0 var(--mf-red), 0 16px 30px rgba(0,61,165,.22);
+            margin: 0 auto 18px;
+            animation: badgePulse 4s ease-in-out infinite;
+        }
+
+        .form-title {
+            margin: 0;
+            color: var(--mf-navy);
+            font-size: 34px;
+            line-height: 1.2;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        .form-desc { margin: 10px 0 24px; color: #8290AA; text-align: center; font-size: 14px; }
+        .alert { display: flex; gap: 9px; align-items: flex-start; padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; font-weight: 700; }
+        .alert.error { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; }
+        .alert.success { color: #15803D; background: #ECFDF5; border: 1px solid #BBF7D0; }
+        .field { margin-bottom: 16px; }
+        .field label { display: block; margin-bottom: 8px; color: #1E293B; font-size: 13px; font-weight: 900; }
+        .input-wrap { position: relative; }
+        .input-wrap > i,
+        .input-wrap > svg:not(.lucide-eye):not(.lucide-eye-off) {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #8CA0BD;
+            pointer-events: none;
+        }
+
+        .input {
+            width: 100%;
+            min-height: 54px;
+            border: 1px solid var(--mf-line);
+            border-radius: 8px;
+            background: #F8FBFF;
+            padding: 0 14px 0 46px;
+            color: #0F172A;
+            font-size: 15px;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+        }
+
+        .input:focus {
+            background: #fff;
+            border-color: var(--mf-blue);
+            box-shadow: 0 0 0 4px rgba(0,61,165,.11);
+            transform: translateY(-1px);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #8CA0BD;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        .password-toggle:hover { color: var(--mf-blue); background: var(--mf-soft); }
+        .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 18px; }
+        .remember { display: inline-flex; align-items: center; gap: 8px; color: #334155; font-size: 13px; font-weight: 700; }
+        .remember input { width: 15px; height: 15px; accent-color: var(--mf-blue); }
+        .link { color: var(--mf-blue); font-size: 13px; font-weight: 900; text-decoration: none; }
+        .link:hover { color: var(--mf-sky); text-decoration: underline; }
+
+        .btn {
+            width: 100%;
+            min-height: 56px;
+            border: 0;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--mf-blue), var(--mf-sky));
+            box-shadow: 0 18px 34px rgba(0,61,165,.22);
+        }
+        .btn-primary:hover { box-shadow: 0 22px 38px rgba(0,61,165,.28); }
+        .btn-ghost { margin-top: 12px; color: #334155; background: #fff; border: 1px solid var(--mf-line); }
+        .btn-ghost:hover { background: #F8FBFF; }
+        .switch-auth { margin-top: 24px; color: #8A98B0; text-align: center; font-size: 14px; }
+        .copyright { margin-top: 34px; color: #94A3B8; text-align: center; font-size: 12px; }
+
+        @keyframes gridDrift { from { background-position: 0 0, 0 0; } to { background-position: 92px 46px, 92px 46px; } }
+        @keyframes ringBreathe { 0%, 100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.05); opacity: .55; } }
+        @keyframes logoHop { 0%, 100% { transform: translateY(0) rotate(0deg); } 42% { transform: translateY(-7px) rotate(-2deg); } 58% { transform: translateY(-4px) rotate(2deg); } }
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
+        @keyframes floatIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes titleRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes markerSweep { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        @keyframes chipFloat { 0%, 100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-14px,0); } }
+        @keyframes cardPop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes growBar { from { transform: scaleX(.18); } to { transform: scaleX(1); } }
+        @keyframes badgePulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+        @media (max-width: 1100px) {
+            .auth-shell { grid-template-columns: 1fr; }
+            .brand-panel { min-height: 560px; padding: 36px 24px; }
+            .form-panel { padding: 30px 18px; }
+            .orbit { display: none; }
+        }
+
+        @media (max-width: 680px) {
+            .brand-panel { min-height: auto; align-items: flex-start; }
+            .brand-title { font-size: 36px; }
+            .mini-board { grid-template-columns: 1fr; }
+            .auth-card { padding: 22px; }
+            .form-title { font-size: 28px; }
+            .row { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
-<body class="bg-gray-50 flex h-screen w-full overflow-hidden">
+<body>
+    <main class="auth-shell">
+        <section class="brand-panel" aria-label="MobiFone WorkHub">
+            <div class="orbit one"><i data-lucide="sparkles"></i> Đồng bộ nhóm</div>
+            <div class="orbit two"><i data-lucide="bell-ring"></i> Nhắc deadline</div>
+            <div class="orbit three"><i data-lucide="paperclip"></i> Tài liệu theo việc</div>
 
-    <!-- LEFT PANEL: Brand Info & Visual Elements -->
-    <div class="relative hidden lg:flex flex-col items-center justify-center w-[55%] h-full overflow-hidden bg-gradient-to-br from-[#001F5B] to-[#0057C8]">
-        <!-- Radial Dot Matrix -->
-        <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, white 1.5px, transparent 1.5px); background-size: 30px 30px;"></div>
+            <div class="brand-content">
+                <div class="brand-lockup">
+                    <div class="brand-mark">M</div>
+                    <div>
+                        <div class="brand-word"><strong class="blue">Mobi</strong><strong class="red">Fone</strong></div>
+                        <div class="brand-sub">WORKHUB</div>
+                    </div>
+                </div>
 
-        <!-- Floating Orbs -->
-        <div class="orb absolute rounded-full bg-white/5" style="width: 80px; height: 80px; top: 8%; left: 6%; animation-duration: 3s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 50px; height: 50px; top: 20%; left: 80%; animation-duration: 4s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 30px; height: 30px; top: 60%; left: 5%; animation-duration: 3.5s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 60px; height: 60px; top: 75%; left: 75%; animation-duration: 5s;"></div>
-        <div class="orb absolute rounded-full bg-white/5" style="width: 20px; height: 20px; top: 45%; left: 90%; animation-duration: 2.5s;"></div>
-
-        <!-- Main Card Brand -->
-        <div class="relative z-10 flex flex-col items-center gap-6 px-16 text-center">
-            <div class="flex items-center gap-4 mb-2">
-                <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                    <span class="text-white font-black text-2xl">M</span>
-                </div>
-                <div class="text-left">
-                    <div class="text-white text-2xl font-bold tracking-tight">MobiFone</div>
-                    <div class="text-blue-300 text-xs font-semibold tracking-[0.2em] uppercase">WorkHub</div>
-                </div>
-            </div>
-
-            <p class="text-blue-200 text-lg font-light leading-relaxed max-w-xs">
-                Hệ thống Quản lý Công việc Nội bộ
-            </p>
-
-            <!-- Dashboard Preview Widget -->
-            <div class="w-80 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 p-5 text-left mt-2 shadow-2xl">
-                <p class="text-blue-300 text-[10px] font-semibold mb-3 uppercase tracking-wider">Dashboard Overview</p>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    @php
-                        $kpis = [
-                            ['Tổng CV', '142', '#003DA5'],
-                            ['Hoàn thành', '58', '#16A34A'],
-                            ['Đang làm', '42', '#D97706'],
-                            ['Quá hạn', '12', '#DC2626']
-                        ];
-                    @endphp
-                    @foreach($kpis as $kpi)
-                        <div class="rounded-xl p-3 bg-white/5">
-                            <div class="text-xl font-bold text-white">{{ $kpi[1] }}</div>
-                            <div class="text-[10px] text-blue-200 mt-0.5">{{ $kpi[0] }}</div>
-                            <div class="h-1 rounded-full mt-2 bg-white/10">
-                                <div class="h-1 rounded-full" style="width: {{ intval($kpi[1]) / 1.42 }}%; background-color: {{ $kpi[2] }};"></div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                <div class="text-xs text-blue-200 flex items-center justify-between">
-                    <span>Tiến độ tháng 6/2025</span>
-                    <span class="font-semibold text-white">72%</span>
-                </div>
-                <div class="h-1.5 rounded-full mt-1.5 bg-white/20">
-                    <div class="h-1.5 rounded-full bg-[#16A34A]" style="width: 72%;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- RIGHT PANEL: Login Form -->
-    <div class="flex items-center justify-center w-full lg:w-[45%] h-full bg-white px-8 md:px-16">
-        <div class="w-full max-w-sm">
-            <!-- Header Form -->
-            <div class="flex flex-col items-center mb-8">
-                <div class="p-3.5 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-[#003DA5]/20 bg-[#003DA5]/5 text-[#003DA5]">
-                    <i data-lucide="users" class="w-8 h-8"></i>
-                </div>
-                <h1 class="text-2xl md:text-3xl font-bold mb-2 tracking-tight text-[#001F5B]">
-                    Quản lý nhân sự
+                <h1 class="brand-title">
+                    <span>Đăng nhập</span>
+                    <span class="accent">vào WorkHub</span>
+                    <span>thật nhanh.</span>
                 </h1>
-                <p class="text-sm text-gray-400 text-center">
-                    Đăng nhập để tiếp tục vào MobiFone WorkHub
-                </p>
+                <p class="brand-desc">Một màn hình điều phối gọn gàng cho công việc, phòng ban, tài liệu và thông báo nội bộ.</p>
+
+                <div class="mini-board" aria-label="Tổng quan vận hành">
+                    <div class="mini-card"><b>142</b><span>Công việc</span><div class="mini-line"><i style="width: 82%; background:#0B66D8"></i></div></div>
+                    <div class="mini-card"><b>58</b><span>Hoàn thành</span><div class="mini-line"><i style="width: 72%; background:#22C55E"></i></div></div>
+                    <div class="mini-card"><b>12</b><span>Quá hạn</span><div class="mini-line"><i style="width: 18%; background:#E4002B"></i></div></div>
+                </div>
             </div>
+        </section>
 
-            <!-- Notification Messages -->
-            @if(session('error'))
-                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
-                    <span>{{ session('error') }}</span>
-                </div>
-            @endif
+        <section class="form-panel">
+            <div class="auth-card">
+                <div class="form-badge"><i data-lucide="log-in" class="w-8 h-8"></i></div>
+                <h2 class="form-title">Chào mừng trở lại</h2>
+                <p class="form-desc">Đăng nhập để tiếp tục vào MobiFone WorkHub.</p>
 
-            @if(session('success'))
-                <div class="p-3 mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                    <i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
+                @if(session('error'))
+                    <div class="alert error"><i data-lucide="alert-circle" class="w-4 h-4"></i><span>{{ session('error') }}</span></div>
+                @endif
+                @if(session('success'))
+                    <div class="alert success"><i data-lucide="check-circle" class="w-4 h-4"></i><span>{{ session('success') }}</span></div>
+                @endif
+                @if($errors->any())
+                    <div class="alert error">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        <div>@foreach($errors->all() as $err)<div>{{ $err }}</div>@endforeach</div>
+                    </div>
+                @endif
 
-            @if(count($errors) > 0)
-                <div class="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl space-y-1">
-                    @foreach($errors->all() as $err)
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="x" class="w-3.5 h-3.5 flex-shrink-0"></i>
-                            <span>{{ $err }}</span>
+                <form action="{{ url('/login') }}" method="POST">
+                    @csrf
+                    <div class="field">
+                        <label for="email">Email công ty</label>
+                        <div class="input-wrap">
+                            <i data-lucide="mail"></i>
+                            <input id="email" class="input" type="email" name="email" value="{{ old('email') }}" placeholder="ten.nguyen@mobifone.vn" required>
                         </div>
-                    @endforeach
-                </div>
-            @endif
-
-            <!-- Form -->
-            <form action="{{ url('/login') }}" method="POST" class="space-y-4">
-                @csrf
-                <!-- Email -->
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Email công ty</label>
-                    <div class="relative">
-                        <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                        <input
-                            type="email" name="email" value="{{ old('email') }}"
-                            placeholder="ten.nguyen@mobifone.vn" required
-                            class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
-                        />
                     </div>
-                </div>
 
-                <!-- Password -->
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Mật khẩu</label>
-                    <div class="relative">
-                        <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                        <input
-                            type="password" name="password" id="password" placeholder="••••••••" required
-                            class="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:border-[#003DA5] focus:ring-1 focus:ring-[#003DA5]"
-                        />
-                        <button type="button" id="toggle-password" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                            <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
-                        </button>
+                    <div class="field">
+                        <label for="password">Mật khẩu</label>
+                        <div class="input-wrap">
+                            <i data-lucide="lock"></i>
+                            <input id="password" class="input" type="password" name="password" placeholder="••••••••" required style="padding-right:52px">
+                            <button type="button" class="password-toggle" data-target="password" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Remember & Forgot -->
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer text-gray-700">
-                        <input type="checkbox" name="remember" class="rounded border-gray-300 text-[#003DA5] focus:ring-[#003DA5]" /> Ghi nhớ đăng nhập
-                    </label>
-                    <a href="{{ route('password.request') }}" class="text-sm font-semibold text-[#003DA5] hover:text-[#0057C8] transition-colors">Quên mật khẩu?</a>
-                </div>
+                    <div class="row">
+                        <label class="remember"><input type="checkbox" name="remember"> Ghi nhớ đăng nhập</label>
+                        <a href="{{ route('password.request') }}" class="link">Quên mật khẩu?</a>
+                    </div>
 
-                <!-- Submit buttons -->
-                <button
-                    type="submit"
-                    class="w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-[#003DA5] to-[#0057C8] hover:shadow-lg hover:shadow-[#003DA5]/20 active:scale-[0.98] transition-all"
-                >
-                    Đăng nhập <i data-lucide="arrow-right" class="w-[18px] h-[18px]"></i>
-                </button>
+                    <button type="submit" class="btn btn-primary">Đăng nhập <i data-lucide="arrow-right"></i></button>
+                    <a href="{{ route('landing') }}" class="btn btn-ghost"><i data-lucide="chevron-left"></i> Quay lại trang chủ</a>
+                </form>
 
-                <a
-                    href="{{ route('landing') }}"
-                    class="w-full py-3 rounded-xl border border-gray-200 text-sm font-medium flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all mt-2"
-                >
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                    Quay lại trang chủ
-                </a>
-            </form>
-
-            <div class="text-center mt-6">
-                <span class="text-sm text-gray-400">Chưa có tài khoản? </span>
-                <a href="{{ route('register') }}" class="text-sm font-bold text-[#003DA5] hover:underline">Đăng ký ngay</a>
+                <div class="switch-auth">Chưa có tài khoản? <a href="{{ route('register') }}" class="link">Đăng ký ngay</a></div>
+                <div class="copyright">© 2026 MobiFone WorkHub · v2.4.1</div>
             </div>
+        </section>
+    </main>
 
-            <p class="text-center text-xs text-gray-400 mt-10">
-                © 2025 MobiFone. All rights reserved. · v2.4.1
-            </p>
-        </div>
-    </div>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         lucide.createIcons();
-
-        // Toggle show password
-        const togglePassBtn = document.getElementById('toggle-password');
-        const passwordInput = document.getElementById('password');
-        const eyeIcon = document.getElementById('eye-icon');
-
-        togglePassBtn.addEventListener('click', () => {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.setAttribute('data-lucide', 'eye-off');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.setAttribute('data-lucide', 'eye');
-            }
-            lucide.createIcons();
+        document.querySelectorAll('.password-toggle').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = document.getElementById(button.dataset.target);
+                const icon = button.querySelector('i');
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                icon.setAttribute('data-lucide', show ? 'eye-off' : 'eye');
+                button.setAttribute('aria-label', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+                button.setAttribute('title', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+                lucide.createIcons();
+            });
         });
     </script>
 </body>

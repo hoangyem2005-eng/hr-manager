@@ -1,558 +1,755 @@
-@extends('employee.layouts.app')
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>WorkHub Nhân viên - MobiFone HR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --mf-blue: #003DA5;
+            --mf-blue-dark: #001F5B;
+            --mf-red: #E4002B;
+            --mf-red-light: #FEF2F2;
+            --mf-light: #EEF3FC;
+            --mf-border: #D4E0F7;
+            --bg: #F0F4FB;
+            --white: #ffffff;
+            --text: #0D1B3E;
+            --text-muted: #64748B;
+            --sidebar-w: 272px;
+        }
+        body { min-height: 100vh; font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text); }
 
-@section('title', 'Nhân viên — MobiFone HR')
-@section('page_title', '🏢 Tổng quan Nhân viên')
+        /* ======= LAYOUT ======= */
+        .layout { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar-w) 1fr; }
 
-@section('head_extra')
-<style>
-    /* ======= GRID LAYOUT ======= */
-    .kpi-grid   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .main-grid  { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-bottom: 24px; }
+        /* ======= SIDEBAR ======= */
+        .sidebar {
+            background: linear-gradient(180deg, #001F5B 0%, #003DA5 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 38px; height: 38px; border-radius: 8px;
+            background: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 900; letter-spacing: -.02em; color: var(--mf-blue);
+            flex-shrink: 0;
+            box-shadow: inset 5px 0 0 var(--mf-red);
+        }
+        .mf-logo-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+        .mf-logo-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .mf-logo-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .brand-sub { color: #BFD8FF; font-size: 10px; margin-top: 6px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
 
-    /* ======= KPI CARD ======= */
-    .kpi-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px;
-        display: flex; align-items: flex-start; justify-content: space-between;
-        box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-        border: 1px solid #F1F5F9;
-        transition: box-shadow .2s, transform .2s;
-        position: relative; overflow: hidden;
-    }
-    .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); transform: translateY(-2px); }
-    .kpi-card::after {
-        content: '';
-        position: absolute; top: 0; left: 0;
-        width: 4px; height: 100%;
-        border-radius: 4px 0 0 4px;
-    }
-    .kpi-card.blue::after   { background: #2563EB; }
-    .kpi-card.green::after  { background: #16A34A; }
-    .kpi-card.amber::after  { background: #D97706; }
-    .kpi-card.red::after    { background: #E63946; }
+        /* Profile Card */
+        .profile-card {
+            margin: 18px 14px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 12px;
+            padding: 16px;
+            backdrop-filter: blur(8px);
+        }
+        .profile-row { display: flex; align-items: center; gap: 12px; }
+        .avatar {
+            width: 46px; height: 46px; border-radius: 10px;
+            background: linear-gradient(135deg, #E4002B, #FF5A7A);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 15px; flex-shrink: 0;
+        }
+        .profile-info .name { font-size: 14px; font-weight: 800; }
+        .profile-info .meta { font-size: 11px; color: rgba(255,255,255,.6); margin-top: 3px; }
+        .profile-dept {
+            margin-top: 12px;
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,.1);
+            border-radius: 8px; padding: 7px 10px;
+            font-size: 12px; font-weight: 600; color: rgba(255,255,255,.85);
+        }
 
-    .kpi-label  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94A3B8; margin-bottom: 6px; }
-    .kpi-value  { font-size: 36px; font-weight: 800; color: #0F172A; line-height: 1; }
-    .kpi-sub    { font-size: 11px; color: #94A3B8; margin-top: 6px; }
+        /* Stats */
+        .sidebar-stats {
+            padding: 0 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .stat-box.full { grid-column: 1/-1; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.5); font-weight: 700; }
+        .stat-val { font-size: 26px; font-weight: 900; margin-top: 4px; line-height: 1; }
+        .stat-val.red { color: #FCA5A5; }
+        .stat-val.green { color: #6EE7B7; }
+        .stat-val.blue { color: #93C5FD; }
 
-    .kpi-icon {
-        width: 46px; height: 46px; border-radius: 13px;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-    }
-    .kpi-icon.blue  { background: rgba(37,99,235,.1);  color: #2563EB; }
-    .kpi-icon.green { background: rgba(22,163,74,.1);  color: #16A34A; }
-    .kpi-icon.amber { background: rgba(217,119,6,.1);  color: #D97706; }
-    .kpi-icon.red   { background: rgba(230,57,70,.1);  color: #E63946; }
+        /* Progress Ring */
+        .progress-ring-wrap {
+            display: flex; align-items: center; gap: 14px;
+        }
+        .ring-svg { transform: rotate(-90deg); }
+        .ring-track { fill: none; stroke: rgba(255,255,255,.15); stroke-width: 5; }
+        .ring-fill { fill: none; stroke: #6EE7B7; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+        .ring-center { text-align: right; }
+        .ring-pct { font-size: 22px; font-weight: 900; color: #6EE7B7; }
+        .ring-sub { font-size: 10px; color: rgba(255,255,255,.5); margin-top: 2px; }
 
-    /* ======= CARD BASE ======= */
-    .card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #F1F5F9;
-        box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        overflow: hidden;
-        margin-bottom: 20px;
-    }
-    .card-header {
-        padding: 18px 20px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    .card-title { font-size: 14px; font-weight: 700; color: #0F172A; }
-    .card-body  { padding: 20px; }
-    .card-link  { font-size: 12px; font-weight: 600; color: #2563EB; text-decoration: none; }
-    .card-link:hover { text-decoration: underline; }
+        /* Sidebar Nav */
+        .sidebar-nav {
+            margin: 14px 14px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 10px;
+            color: rgba(255,255,255,.7);
+            text-decoration: none;
+            font-size: 13px; font-weight: 600;
+            border: none; background: transparent; cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+            transition: background .15s, color .15s;
+            position: relative;
+        }
+        .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+        .nav-item.active { background: #fff; color: var(--mf-blue); font-weight: 800; box-shadow: inset 3px 0 0 var(--mf-red); }
+        .nav-badge {
+            margin-left: auto;
+            min-width: 20px; height: 20px; border-radius: 10px;
+            background: var(--mf-red);
+            color: #fff; font-size: 10px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 5px;
+        }
 
-    /* ======= TABLE ======= */
-    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .data-table thead th {
-        background: #F8FAFC; padding: 11px 16px;
-        text-align: left; font-size: 10px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .08em; color: #64748B;
-        border-bottom: 1px solid #F1F5F9;
-    }
-    .data-table tbody tr {
-        border-bottom: 1px solid #F8FAFC;
-        transition: background .15s;
-    }
-    .data-table tbody tr:hover { background: #F8FAFF; }
-    .data-table tbody td { padding: 12px 16px; color: #374151; vertical-align: middle; }
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 14px;
+            border-top: 1px solid rgba(255,255,255,.1);
+        }
+        .logout-btn {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 10px;
+            color: rgba(255,255,255,.55);
+            border: none; background: transparent; cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            width: 100%;
+            transition: background .15s, color .15s;
+        }
+        .logout-btn:hover { background: rgba(228,0,43,.15); color: #FCA5A5; }
 
-    /* ======= FILTER TABS ======= */
-    .filter-tabs {
-        display: flex; gap: 4px;
-        background: #F1F5F9; border-radius: 8px; padding: 3px;
-    }
-    .tab-btn {
-        padding: 5px 12px; border-radius: 6px; border: none;
-        font-size: 11px; font-weight: 600; cursor: pointer;
-        font-family: inherit; color: #64748B; background: none;
-        transition: all .15s;
-    }
-    .tab-btn.active { background: #fff; color: #2563EB; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        /* ======= MAIN CONTENT ======= */
+        .main { min-width: 0; display: flex; flex-direction: column; }
 
-    /* ======= STATUS PILLS ======= */
-    .status-pill {
-        display: inline-block;
-        padding: 3px 10px; border-radius: 99px;
-        font-size: 11px; font-weight: 600;
-        text-align: center;
-        white-space: nowrap;
-    }
-    .status-pill.done    { background: #F0FDF4; color: #16A34A; }
-    .status-pill.doing   { background: #FFFBEB; color: #D97706; }
-    .status-pill.review  { background: #EFF6FF; color: #2563EB; }
-    .status-pill.pending { background: #F9FAFB; color: #6B7280; }
-    .status-pill.overdue { background: #FFF1F2; color: #E63946; }
+        /* Topbar */
+        .topbar {
+            position: sticky; top: 0; z-index: 30;
+            background: rgba(240,244,251,.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #D4E0F7;
+            height: 60px;
+            display: flex; align-items: center;
+            padding: 0 24px;
+            gap: 16px;
+        }
+        .topbar-title { font-size: 14px; font-weight: 800; color: var(--mf-blue-dark); flex: 1; }
+        .topbar-date { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        .topbar-bell {
+            position: relative;
+            width: 36px; height: 36px; border-radius: 8px;
+            border: 1px solid var(--mf-border);
+            background: var(--white);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; text-decoration: none; color: var(--text);
+            transition: border-color .15s;
+        }
+        .topbar-bell:hover { border-color: var(--mf-blue); }
+        .bell-dot {
+            position: absolute; top: 6px; right: 6px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--mf-red); border: 2px solid var(--bg);
+        }
 
-    /* ======= PROGRESS BAR ======= */
-    .progress-container {
-        display: flex; align-items: center; gap: 8px;
-        min-width: 110px;
-    }
-    .progress-track {
-        flex: 1; height: 6px; background: #E2E8F0;
-        border-radius: 99px; overflow: hidden;
-    }
-    .progress-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
-    .progress-text { font-size: 11px; font-weight: 700; color: #475569; min-width: 28px; text-align: right; }
+        /* Content Area */
+        .content { padding: 22px 24px; display: flex; flex-direction: column; gap: 20px; flex: 1; }
 
-    /* ======= SELECT CONTROL ======= */
-    .status-select {
-        padding: 4px 8px; border-radius: 8px;
-        border: 1.5px solid #E2E8F0;
-        font-size: 11px; font-weight: 600;
-        font-family: inherit; cursor: pointer;
-        outline: none; background: #fff;
-        transition: all .15s;
-        color: #475569;
-    }
-    .status-select:focus { border-color: #2563EB; }
+        /* Hero Banner */
+        .hero {
+            background: linear-gradient(135deg, var(--mf-blue-dark) 0%, var(--mf-blue) 60%, #1a56c4 100%);
+            border-radius: 14px;
+            padding: 24px 28px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle at 80% 50%, rgba(255,255,255,.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-kicker { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.55); font-weight: 700; }
+        .hero-title { font-size: 22px; font-weight: 900; color: #fff; margin-top: 6px; line-height: 1.3; }
+        .hero-sub { font-size: 13px; color: rgba(255,255,255,.6); margin-top: 6px; line-height: 1.6; }
+        .hero-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .hero-btn {
+            height: 36px; border-radius: 8px; padding: 0 14px;
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: 12px; font-weight: 800; cursor: pointer;
+            font-family: inherit; text-decoration: none; border: 1px solid transparent;
+            transition: opacity .15s;
+        }
+        .hero-btn:hover { opacity: .85; }
+        .hero-btn.primary { background: var(--mf-red); color: #fff; border-color: var(--mf-red); }
+        .hero-btn.ghost { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); }
+        .hero-stats { display: flex; gap: 20px; }
+        .hero-stat { text-align: center; }
+        .hero-stat-val { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; }
+        .hero-stat-label { font-size: 10px; color: rgba(255,255,255,.55); margin-top: 4px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
 
-    /* ======= ACTION BUTTONS ======= */
-    .btn-ghost {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 12px; border-radius: 8px;
-        background: #F1F5F9; color: #374151;
-        font-size: 12px; font-weight: 600;
-        border: none; cursor: pointer; font-family: inherit;
-        transition: all .15s; text-decoration: none;
-    }
-    .btn-ghost:hover { background: #E2E8F0; }
+        /* Deadline Alert */
+        .deadline-alert {
+            background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
+            border: 1px solid #FCD34D;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px; font-weight: 600; color: #92400E;
+        }
+        .deadline-alert i { color: #D97706; flex-shrink: 0; }
 
-    .btn-primary-sm {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 5px 10px; border-radius: 7px;
-        background: linear-gradient(135deg, #2563EB, #1D4ED8);
-        color: #fff; font-size: 11px; font-weight: 600;
-        border: none; cursor: pointer; font-family: inherit;
-        box-shadow: 0 2px 6px rgba(37,99,235,.2);
-        transition: all .15s; text-decoration: none;
-    }
-    .btn-primary-sm:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,.3); }
+        /* Content Grid */
+        .content-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
 
-    /* ======= SIDE PANEL LISTS ======= */
-    .todo-list, .notif-list {
-        display: flex; flex-direction: column; gap: 0;
-    }
-    .todo-item, .notif-item {
-        padding: 12px 0;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 12px;
-    }
-    .todo-item:last-child, .notif-item:last-child { border-bottom: none; }
-    
-    .todo-details { flex: 1; min-width: 0; }
-    .todo-name { font-size: 13px; font-weight: 600; color: #0F172A; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .todo-meta { font-size: 11px; color: #94A3B8; display: flex; align-items: center; gap: 6px; }
+        /* Panel */
+        .panel {
+            background: var(--white);
+            border: 1px solid #E5EDF8;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .panel-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid #EFF4FD;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .panel-title {
+            font-size: 14px; font-weight: 800; color: var(--mf-blue-dark);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .panel-title i { color: var(--mf-blue); }
 
-    .notif-details { flex: 1; min-width: 0; }
-    .notif-title { font-size: 13px; font-weight: 500; color: #334155; margin-bottom: 3px; }
-    .notif-time { font-size: 10px; color: #94A3B8; }
+        /* Tab Filter */
+        .tab-group {
+            display: flex; gap: 4px;
+            background: var(--mf-light);
+            border-radius: 8px; padding: 3px;
+        }
+        .tab-btn {
+            height: 28px; border-radius: 6px; padding: 0 12px;
+            background: transparent; border: none; cursor: pointer;
+            font-family: inherit; font-size: 12px; font-weight: 700;
+            color: var(--text-muted); transition: all .15s;
+        }
+        .tab-btn.active { background: #fff; color: var(--mf-blue); box-shadow: 0 1px 3px rgba(0,61,165,.12); }
 
-    .empty-panel-state {
-        text-align: center; padding: 24px 12px; color: #94A3B8; font-size: 13px;
-    }
-    .empty-panel-state svg { display: block; margin: 0 auto 10px; opacity: .4; }
+        /* Task Card */
+        .task-card {
+            padding: 16px 20px;
+            border-top: 1px solid #F1F5FD;
+            display: flex; flex-direction: column; gap: 10px;
+            transition: background .12s;
+            position: relative;
+        }
+        .task-card:hover { background: #F8FAFF; }
+        .task-card.overdue { border-left: 3px solid var(--mf-red); }
+        .task-card.done { border-left: 3px solid #10B981; }
+        .task-card.doing { border-left: 3px solid #3B82F6; }
+        .task-card.pending { border-left: 3px solid #9CA3AF; }
 
-    /* PROFILE TABLE */
-    .profile-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-    .profile-table td { padding: 8px 0; border-bottom: 1px solid #F1F5F9; }
-    .profile-table tr:last-child td { border-bottom: none; }
-    .profile-table .label { color: #64748B; }
-    .profile-table .value { font-weight: 600; color: #0F172A; text-align: right; }
+        .task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .task-name { font-size: 14px; font-weight: 800; color: var(--mf-blue-dark); line-height: 1.4; }
+        .task-code { font-family: monospace; font-size: 11px; color: var(--text-muted); background: #F1F5FD; border-radius: 5px; padding: 2px 6px; flex-shrink: 0; }
+        .task-meta-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .task-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            height: 22px; padding: 0 8px; border-radius: 999px;
+            font-size: 11px; font-weight: 700;
+        }
+        .chip-pending { background: #F3F4F6; color: #6B7280; }
+        .chip-doing { background: #EFF6FF; color: #1D4ED8; }
+        .chip-review { background: #F5F3FF; color: #6D28D9; }
+        .chip-done { background: #F0FDF4; color: #15803D; }
+        .chip-overdue { background: var(--mf-red-light); color: var(--mf-red); }
+        .deadline-chip { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+        .deadline-chip.urgent { color: var(--mf-red); font-weight: 700; }
 
-    @media (max-width: 1200px) {
-        .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
-        .main-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 700px) {
-        .kpi-grid  { grid-template-columns: 1fr; }
-    }
-</style>
-@endsection
+        /* Progress bar */
+        .prog-wrap { display: flex; align-items: center; gap: 10px; }
+        .prog-bar { flex: 1; height: 6px; background: #E8EFF9; border-radius: 999px; overflow: hidden; }
+        .prog-fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+        .prog-fill.blue { background: linear-gradient(90deg, #3B82F6, #003DA5); }
+        .prog-fill.green { background: linear-gradient(90deg, #10B981, #059669); }
+        .prog-fill.red { background: linear-gradient(90deg, #F87171, #E4002B); }
+        .prog-pct { font-size: 12px; font-weight: 800; color: var(--mf-blue); min-width: 34px; text-align: right; }
 
-@section('content')
+        /* Task actions row */
+        .task-actions { display: flex; align-items: center; gap: 10px; }
+        .status-select {
+            flex: 1;
+            height: 34px;
+            border: 1px solid #D4E0F7;
+            border-radius: 8px;
+            padding: 0 10px;
+            background: #F8FAFF;
+            font-family: inherit; font-size: 12px; font-weight: 700;
+            color: var(--mf-blue-dark);
+            cursor: pointer;
+            outline: none;
+            transition: border-color .15s;
+        }
+        .status-select:focus { border-color: var(--mf-blue); background: #fff; }
+        .view-btn {
+            height: 34px; padding: 0 12px; border-radius: 8px;
+            border: 1px solid var(--mf-border);
+            background: var(--white);
+            color: var(--mf-blue); font-family: inherit; font-size: 12px; font-weight: 700;
+            cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: background .12s, border-color .12s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .view-btn:hover { background: var(--mf-light); border-color: var(--mf-blue); }
 
-<!-- ===== KPI CARDS ===== -->
-<div class="kpi-grid">
-    <div class="kpi-card blue">
-        <div>
-            <div class="kpi-label">Tổng công việc</div>
-            <div class="kpi-value" id="kpi-total">{{ $total }}</div>
-            <div class="kpi-sub" id="kpi-pending-sub">{{ $pending }} công việc chờ xử lý</div>
-        </div>
-        <div class="kpi-icon blue">
-            <i data-lucide="clipboard" style="width:22px;height:22px"></i>
-        </div>
-    </div>
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        .empty-state i { opacity: .3; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
 
-    <div class="kpi-card green">
-        <div>
-            <div class="kpi-label">Hoàn thành</div>
-            <div class="kpi-value" id="kpi-rate">{{ $completionRate }}%</div>
-            <div class="kpi-sub" id="kpi-done-sub">{{ $done }}/{{ $total }} đã hoàn thành</div>
-        </div>
-        <div class="kpi-icon green">
-            <i data-lucide="check-circle-2" style="width:22px;height:22px"></i>
-        </div>
-    </div>
+        /* ======= NOTIFICATIONS PANEL ======= */
+        .notif-item {
+            display: flex; gap: 12px;
+            padding: 14px 20px;
+            border-top: 1px solid #F1F5FD;
+            width: 100%; text-align: left;
+            background: transparent; border-left: none; border-right: none; border-bottom: none;
+            cursor: pointer; font-family: inherit;
+            transition: background .12s;
+        }
+        .notif-item:hover { background: #F8FAFF; }
+        .notif-item.unread { background: #F0F4FF; }
+        .notif-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .notif-icon.task { background: #EEF3FC; color: var(--mf-blue); }
+        .notif-icon.alert { background: var(--mf-red-light); color: var(--mf-red); }
+        .notif-icon.general { background: #F0FDF4; color: #15803D; }
+        .notif-title { font-size: 13px; font-weight: 800; color: var(--mf-blue-dark); line-height: 1.3; }
+        .notif-desc { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+        .notif-time { font-size: 10px; color: #9CA3AF; margin-top: 5px; }
+        .notif-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--mf-blue); flex-shrink: 0; margin-top: 5px;
+        }
 
-    <div class="kpi-card amber">
-        <div>
-            <div class="kpi-label">Đang thực hiện</div>
-            <div class="kpi-value" id="kpi-doing">{{ $doing }}</div>
-            <div class="kpi-sub">Công việc đang làm</div>
-        </div>
-        <div class="kpi-icon amber">
-            <i data-lucide="zap" style="width:22px;height:22px"></i>
-        </div>
-    </div>
+        /* Mark all read link */
+        .mark-read-form { padding: 12px 20px; border-top: 1px solid #F1F5FD; }
+        .mark-read-btn {
+            font-size: 12px; font-weight: 700; color: var(--mf-blue);
+            background: none; border: none; cursor: pointer; font-family: inherit;
+            padding: 0; text-decoration: underline; text-underline-offset: 3px;
+        }
 
-    <div class="kpi-card red">
-        <div>
-            <div class="kpi-label">Quá hạn</div>
-            <div class="kpi-value" id="kpi-overdue">{{ $overdue }}</div>
-            <div class="kpi-sub" id="kpi-overdue-sub" style="color:{{ $overdue > 0 ? '#E63946' : '#94A3B8' }};font-weight:{{ $overdue > 0 ? '600' : 'normal' }}">
-                {{ $overdue > 0 ? 'Cần xử lý ngay' : 'Không có công việc trễ' }}
+        /* Toast */
+        .toast {
+            position: fixed; right: 20px; bottom: 20px; z-index: 9999;
+            background: var(--mf-blue-dark); color: #fff;
+            border-radius: 10px; padding: 12px 18px;
+            font-size: 13px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 8px 30px rgba(0,31,91,.3);
+            transform: translateY(80px); opacity: 0; transition: all .25s cubic-bezier(.34,1.56,.64,1);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #065F46; }
+        .toast.error { background: #991B1B; }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .sidebar { height: auto; position: static; } }
+        @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } .hero-stats { display: none; } }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    {{-- ======= SIDEBAR ======= --}}
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">M</div>
+            <div>
+                <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="brand-sub">EMPLOYEE WORKHUB</div>
             </div>
         </div>
-        <div class="kpi-icon red">
-            <i data-lucide="alert-circle" style="width:22px;height:22px"></i>
-        </div>
-        <span id="kpi-ping" style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#E63946;animation:ping 1.2s infinite;display:{{ $overdue > 0 ? 'block' : 'none' }}"></span>
-    </div>
-</div>
 
-<!-- ===== MAIN GRID: Tasks + Notification/Accept Side Panel ===== -->
-<div class="main-grid">
-    <!-- Left Column: My Tasks -->
-    <div class="card" id="cong-viec">
-        <div class="card-header">
-            <span class="card-title">📋 Danh sách công việc của tôi</span>
-            <div class="filter-tabs">
-                <button class="tab-btn active" onclick="filterTasks('all', this)">Tất cả</button>
-                <button class="tab-btn" onclick="filterTasks('doing', this)">Đang làm</button>
-                <button class="tab-btn" onclick="filterTasks('done', this)">Xong</button>
-                <button class="tab-btn" onclick="filterTasks('overdue', this)">Quá hạn</button>
+        <div class="profile-card">
+            <div class="profile-row">
+                <div class="avatar">{{ mb_strtoupper(mb_substr(Auth::user()->name ?? 'NV', 0, 2)) }}</div>
+                <div class="profile-info">
+                    <div class="name">{{ Auth::user()->name }}</div>
+                    <div class="meta">{{ Auth::user()->email }}</div>
+                </div>
+            </div>
+            <div class="profile-dept">
+                <i data-lucide="building-2" style="width:13px;height:13px;flex-shrink:0"></i>
+                {{ Auth::user()->department->TENPHONG ?? 'MobiFone' }}
             </div>
         </div>
-        <div style="overflow-x:auto">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Mã</th>
-                        <th>Tên công việc</th>
-                        <th style="width: 140px">Tiến độ</th>
-                        <th>Hạn chót</th>
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="task-table-body">
-                    @forelse($mappedTasks as $t)
-                        @php
-                            $sc = match($t['status']) {
-                                'Hoàn thành' => 'done', 'Đang làm' => 'doing',
-                                'Đang review' => 'review', 'Quá hạn' => 'overdue',
-                                default => 'pending'
-                            };
-                            $progressColor = match($t['status']) {
-                                'Hoàn thành' => '#16A34A', 'Quá hạn' => '#E63946',
-                                'Đang làm' => '#2563EB', 'Đang review' => '#7C3AED',
-                                default => '#94A3B8'
-                            };
-                        @endphp
-                        <tr class="task-row" data-status="{{ $sc }}" id="task-row-{{ $t['id'] }}">
-                            <td style="font-size:11px;font-family:monospace;color:#94A3B8">WH-{{ str_pad($t['id'], 3, '0', STR_PAD_LEFT) }}</td>
-                            <td>
-                                <div style="font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="task-name-text-{{ $t['id'] }}" class="{{ $t['status'] === 'Hoàn thành' ? 'done-text' : '' }}">
-                                    {{ $t['name'] }}
-                                </div>
-                                <div style="font-size:11px;color:#94A3B8;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    {{ $t['description'] ?? 'Không có mô tả' }}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="progress-container">
-                                    <div class="progress-track">
-                                        <div class="progress-fill" id="bar-{{ $t['id'] }}" style="width:{{ $t['progress'] }}%;background:{{ $progressColor }}"></div>
-                                    </div>
-                                    <span class="progress-text" id="pct-{{ $t['id'] }}">{{ $t['progress'] }}%</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div style="font-size:12px;{{ ($t['days_left'] !== null && $t['days_left'] <= 2 && $t['status'] !== 'Hoàn thành') ? 'color:#E63946;font-weight:600' : 'color:#64748B' }}" id="task-deadline-{{ $t['id'] }}">
-                                    {{ $t['deadline'] }}
-                                    @if($t['days_left'] !== null && $t['status'] !== 'Hoàn thành')
-                                        <div style="font-size:10px;font-weight:normal">
-                                            @if($t['days_left'] < 0)
-                                                <span style="color:#E63946">(trễ {{ abs($t['days_left']) }} ngày)</span>
-                                            @elseif($t['days_left'] <= 2)
-                                                <span style="color:#D97706">(còn {{ $t['days_left'] }} ngày)</span>
-                                            @endif
-                                        </div>
-                                    @endif
-                                </div>
-                            </td>
-                            <td>
-                                <span class="status-pill {{ $sc }}" id="pill-{{ $t['id'] }}">{{ $t['status'] }}</span>
-                            </td>
-                            <td>
-                                <select class="status-select" id="select-{{ $t['id'] }}" onchange="updateTask({{ $t['id'] }}, this.value)">
-                                    <option value="Chờ xử lý"   {{ $t['status'] === 'Chờ xử lý'   ? 'selected' : '' }}>Chờ xử lý</option>
-                                    <option value="Đang làm"    {{ $t['status'] === 'Đang làm'    ? 'selected' : '' }}>Đang làm</option>
-                                    <option value="Đang review" {{ $t['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
-                                    <option value="Hoàn thành"  {{ $t['status'] === 'Hoàn thành'  ? 'selected' : '' }}>Hoàn thành</option>
-                                </select>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr id="task-empty-row"><td colspan="6" style="text-align:center;padding:40px;color:#94A3B8">Chưa có công việc nào được giao</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- Right Column: Notifications & New Task Receipt Panel -->
-    <div>
-        <!-- Block 1: Nhận việc mới (Tasks with status 'Chờ xử lý') -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title" style="display:flex;align-items:center;gap:6px">
-                    <i data-lucide="zap" style="width:16px;height:16px;color:#D97706"></i>
-                    Nhận công việc mới
+        <div class="sidebar-stats">
+            <div class="stat-box">
+                <div class="stat-label">Tổng việc</div>
+                <div class="stat-val">{{ $total }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Đang làm</div>
+                <div class="stat-val blue">{{ $doing }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Hoàn thành</div>
+                <div class="stat-val green">{{ $done }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Quá hạn</div>
+                <div class="stat-val red">{{ $overdue }}</div>
+            </div>
+            {{-- Progress Ring --}}
+            <div class="stat-box full" style="display:flex;align-items:center;gap:16px">
+                <svg width="56" height="56" class="ring-svg">
+                    @php $circumference = 2 * pi() * 22; $offset = $circumference - ($completionRate / 100) * $circumference; @endphp
+                    <circle class="ring-track" cx="28" cy="28" r="22"/>
+                    <circle class="ring-fill" cx="28" cy="28" r="22"
+                        stroke-dasharray="{{ $circumference }}"
+                        stroke-dashoffset="{{ $offset }}"
+                    />
+                </svg>
+                <div>
+                    <div class="ring-pct">{{ $completionRate }}%</div>
+                    <div class="ring-sub">Tỉ lệ hoàn thành</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" style="margin-top:16px">
+            <a href="{{ route('employee.dashboard') }}" class="nav-item active">
+                <i data-lucide="layout-dashboard" style="width:16px;height:16px;flex-shrink:0"></i>
+                Dashboard
+            </a>
+            <a href="#tasks-panel" class="nav-item" onclick="scrollTo('tasks-panel')">
+                <i data-lucide="clipboard-list" style="width:16px;height:16px;flex-shrink:0"></i>
+                Công việc của tôi
+                @if($total > 0)<span class="nav-badge">{{ $total }}</span>@endif
+            </a>
+            <a href="#notifications-panel" class="nav-item" onclick="scrollTo('notifications-panel')">
+                <i data-lucide="bell" style="width:16px;height:16px;flex-shrink:0"></i>
+                Thông báo
+                @if($unreadCount > 0)<span class="nav-badge">{{ $unreadCount }}</span>@endif
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="logout-btn">
+                    <i data-lucide="log-out" style="width:16px;height:16px;flex-shrink:0"></i>
+                    Đăng xuất
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    {{-- ======= MAIN ======= --}}
+    <div class="main">
+        {{-- Topbar --}}
+        <div class="topbar">
+            <div class="topbar-title">
+                Xin chào, {{ explode(' ', Auth::user()->name)[count(explode(' ', Auth::user()->name)) - 1] }}! 👋
+            </div>
+            <div class="topbar-date" id="topbar-date"></div>
+            <a href="#notifications-panel" class="topbar-bell" title="Thông báo">
+                <i data-lucide="bell" style="width:17px;height:17px"></i>
+                @if($unreadCount > 0)<span class="bell-dot"></span>@endif
+            </a>
+        </div>
+
+        <div class="content">
+
+            {{-- Hero --}}
+            <div class="hero">
+                <div>
+                    <div class="hero-kicker">Personal Execution · MobiFone WorkHub</div>
+                    <div class="hero-title">Việc của tôi, tiến độ của tôi.</div>
+                    <div class="hero-sub">Cập nhật trạng thái công việc và theo dõi tiến độ cá nhân của bạn tại đây.</div>
+                    <div class="hero-actions">
+                        <a href="#tasks-panel" class="hero-btn primary">
+                            <i data-lucide="zap" style="width:14px;height:14px"></i>
+                            Công việc ngay
+                        </a>
+                        <a href="#notifications-panel" class="hero-btn ghost">
+                            <i data-lucide="bell" style="width:14px;height:14px"></i>
+                            Thông báo @if($unreadCount > 0)({{ $unreadCount }})@endif
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-val">{{ $total }}</div>
+                        <div class="hero-stat-label">Tổng việc</div>
+                    </div>
+                    <div class="hero-stat" style="border-left:1px solid rgba(255,255,255,.15);padding-left:20px">
+                        <div class="hero-stat-val" style="color:#6EE7B7">{{ $completionRate }}%</div>
+                        <div class="hero-stat-label">Hoàn thành</div>
+                    </div>
+                    <div class="hero-stat" style="border-left:1px solid rgba(255,255,255,.15);padding-left:20px">
+                        <div class="hero-stat-val" style="color:#FCA5A5">{{ $overdue }}</div>
+                        <div class="hero-stat-label">Quá hạn</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Deadline Alert --}}
+            @php
+                $urgentTasks = collect($mappedTasks)->filter(fn($t) => isset($t['days_left']) && $t['days_left'] !== null && $t['days_left'] <= 2 && $t['days_left'] >= 0 && !str_contains($t['status'], 'Hoàn'));
+            @endphp
+            @if($urgentTasks->isNotEmpty())
+            <div class="deadline-alert">
+                <i data-lucide="alert-triangle" style="width:18px;height:18px"></i>
+                <span>
+                    <strong>{{ $urgentTasks->count() }} công việc sắp hết hạn trong 2 ngày tới.</strong>
+                    Hãy ưu tiên xử lý ngay để không bị quá hạn.
                 </span>
             </div>
-            <div class="card-body" style="padding-top: 10px; padding-bottom: 10px;">
-                <div class="todo-list" id="todo-receipt-list">
-                    @php $todoTasksCount = 0; @endphp
-                    @foreach($mappedTasks as $t)
-                        @if($t['status'] === 'Chờ xử lý')
-                            @php $todoTasksCount++; @endphp
-                            <div class="todo-item" id="todo-receipt-item-{{ $t['id'] }}">
-                                <div class="todo-details">
-                                    <div class="todo-name" title="{{ $t['name'] }}">{{ $t['name'] }}</div>
-                                    <div class="todo-meta">
-                                        <span style="font-family:monospace;font-size:10px">WH-{{ str_pad($t['id'], 3, '0', STR_PAD_LEFT) }}</span>
-                                        <span>·</span>
-                                        <span>Hạn: {{ $t['deadline'] }}</span>
-                                    </div>
-                                </div>
-                                <button class="btn-primary-sm" onclick="acceptTask({{ $t['id'] }})">
-                                    <i data-lucide="play" style="width:11px;height:11px"></i> Nhận việc
-                                </button>
-                            </div>
-                        @endif
-                    @endforeach
+            @endif
 
-                    @if($todoTasksCount === 0)
-                        <div class="empty-panel-state" id="todo-receipt-empty">
-                            <i data-lucide="check-circle" style="width:32px;height:32px;color:#10B981"></i>
-                            Chưa có công việc mới cần nhận
+            {{-- Main Grid --}}
+            <div class="content-grid">
+
+                {{-- Task Panel --}}
+                <div class="panel" id="tasks-panel">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <i data-lucide="clipboard-list"></i>
+                            Danh sách công việc cá nhân
+                        </div>
+                        <div class="tab-group">
+                            <button class="tab-btn active" onclick="filterTasks('all', this)">Tất cả</button>
+                            <button class="tab-btn" onclick="filterTasks('doing', this)">Đang làm</button>
+                            <button class="tab-btn" onclick="filterTasks('pending', this)">Chờ xử lý</button>
+                            <button class="tab-btn" onclick="filterTasks('done', this)">Xong</button>
+                        </div>
+                    </div>
+
+                    @forelse($mappedTasks as $t)
+                        @php
+                            $state = str_contains($t['status'], 'Hoàn') ? 'done'
+                                   : (str_contains($t['status'], 'Quá') ? 'overdue'
+                                   : (str_contains($t['status'], 'Đang') ? 'doing' : 'pending'));
+                            $chipClass = match($state) {
+                                'done'    => 'chip-done',
+                                'overdue' => 'chip-overdue',
+                                'doing'   => 'chip-doing',
+                                default   => 'chip-pending'
+                            };
+                            $barClass = match($state) {
+                                'done'    => 'green',
+                                'overdue' => 'red',
+                                default   => 'blue'
+                            };
+                            $daysLeft = $t['days_left'] ?? null;
+                            $isUrgent = $daysLeft !== null && $daysLeft <= 2 && $daysLeft >= 0 && $state !== 'done';
+                        @endphp
+                        <div class="task-card {{ $state }}" data-status="{{ $state }}" id="task-{{ $t['id'] }}">
+                            <div class="task-top">
+                                <div class="task-name">{{ $t['name'] }}</div>
+                                <span class="task-code">{{ $t['code'] }}</span>
+                            </div>
+
+                            <div class="task-meta-row">
+                                <span class="task-chip {{ $chipClass }}">
+                                    <i data-lucide="{{ $state === 'done' ? 'check-circle' : ($state === 'overdue' ? 'alert-circle' : ($state === 'doing' ? 'play-circle' : 'clock')) }}" style="width:11px;height:11px"></i>
+                                    {{ $t['status'] }}
+                                </span>
+                                <span class="deadline-chip {{ $isUrgent ? 'urgent' : '' }}">
+                                    <i data-lucide="calendar" style="width:11px;height:11px"></i>
+                                    Deadline: {{ $t['deadline'] }}
+                                    @if($daysLeft !== null && $state !== 'done')
+                                        @if($daysLeft < 0)
+                                            · <span style="color:var(--mf-red);font-weight:700">Quá hạn {{ abs((int)$daysLeft) }} ngày</span>
+                                        @elseif($daysLeft === 0)
+                                            · <span style="color:var(--mf-red);font-weight:700">Hôm nay!</span>
+                                        @elseif($daysLeft <= 2)
+                                            · <span style="color:#D97706;font-weight:700">Còn {{ $daysLeft }} ngày</span>
+                                        @endif
+                                    @endif
+                                </span>
+                            </div>
+
+                            <div class="prog-wrap">
+                                <div class="prog-bar">
+                                    <div class="prog-fill {{ $barClass }}" id="bar-{{ $t['id'] }}" style="width:{{ $t['progress'] }}%"></div>
+                                </div>
+                                <span class="prog-pct" id="pct-{{ $t['id'] }}">{{ $t['progress'] }}%</span>
+                            </div>
+
+                            <div class="task-actions">
+                                <select class="status-select" id="sel-{{ $t['id'] }}" onchange="updateTask({{ $t['id'] }}, this.value)">
+                                    <option value="Chờ xử lý" {{ $t['status'] === 'Chờ xử lý' ? 'selected' : '' }}>⏳ Chờ xử lý</option>
+                                    <option value="Đang làm"  {{ $t['status'] === 'Đang làm'  ? 'selected' : '' }}>▶️ Đang làm</option>
+                                    <option value="Đang review" {{ $t['status'] === 'Đang review' ? 'selected' : '' }}>🔍 Đang review</option>
+                                    <option value="Hoàn thành" {{ $t['status'] === 'Hoàn thành' ? 'selected' : '' }}>✅ Hoàn thành</option>
+                                </select>
+                                <a href="{{ route('employee.task.detail', $t['id']) }}" class="view-btn">
+                                    <i data-lucide="eye" style="width:13px;height:13px"></i>
+                                    Chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <div><i data-lucide="inbox" style="width:40px;height:40px"></i></div>
+                            <p>Bạn chưa có công việc nào được giao.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                {{-- Notifications Panel --}}
+                <div class="panel" id="notifications-panel">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <i data-lucide="bell"></i>
+                            Thông báo
+                            @if($unreadCount > 0)
+                                <span style="min-width:20px;height:20px;border-radius:10px;background:var(--mf-red);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 5px">{{ $unreadCount }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @forelse($notifications as $n)
+                        @php
+                            $titleLower = mb_strtolower($n->title ?? '');
+                            $isTask = str_contains($titleLower, 'giao') || str_contains($titleLower, 'công việc') || str_contains($titleLower, 'phân công');
+                            $isAlert = str_contains($titleLower, 'quá hạn') || str_contains($titleLower, 'deadline') || str_contains($titleLower, 'nhắc');
+                            $iconClass = $isAlert ? 'alert' : ($isTask ? 'task' : 'general');
+                            $iconName  = $isAlert ? 'alert-triangle' : ($isTask ? 'check-square' : 'bell');
+                        @endphp
+                        <form method="POST" action="{{ route('dashboard.notifications.open', $n->id) }}" style="display:block">
+                            @csrf
+                            <button type="submit" class="notif-item {{ !$n->is_read ? 'unread' : '' }}">
+                                <div class="notif-icon {{ $iconClass }}">
+                                    <i data-lucide="{{ $iconName }}" style="width:16px;height:16px"></i>
+                                </div>
+                                <div style="flex:1;min-width:0;text-align:left">
+                                    <div class="notif-title">{{ $n->title }}</div>
+                                    <div class="notif-desc">{{ $n->message }}</div>
+                                    <div class="notif-time">{{ $n->created_at->diffForHumans() }}</div>
+                                </div>
+                                @if(!$n->is_read)
+                                    <div class="notif-dot"></div>
+                                @endif
+                            </button>
+                        </form>
+                    @empty
+                        <div class="empty-state">
+                            <div><i data-lucide="bell-off" style="width:36px;height:36px"></i></div>
+                            <p>Chưa có thông báo nào.</p>
+                        </div>
+                    @endforelse
+
+                    @if($notifications->isNotEmpty())
+                        <div class="mark-read-form">
+                            <form method="POST" action="{{ route('dashboard.notifications.markAllRead') }}">
+                                @csrf
+                                <button type="submit" class="mark-read-btn">Đánh dấu tất cả đã đọc</button>
+                            </form>
                         </div>
                     @endif
                 </div>
-            </div>
-        </div>
 
-        <!-- Block 2: Thông báo mới -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title" style="display:flex;align-items:center;gap:6px">
-                    <i data-lucide="bell" style="width:16px;height:16px;color:#2563EB"></i>
-                    Thông báo mới
-                </span>
-                <a href="{{ route('dashboard.notifications') }}" class="card-link">Xem tất cả</a>
-            </div>
-            <div class="card-body" style="padding-top: 10px; padding-bottom: 10px;">
-                <div class="notif-list">
-                    @forelse($notifications as $n)
-                        <div class="notif-item hover:bg-gray-50 transition-colors cursor-pointer" onclick="location.href='{{ route('dashboard.notifications.read', $n->id) }}'">
-                            <div class="notif-details">
-                                <div class="notif-title">{{ $n->title }}</div>
-                                <div class="notif-time">
-                                    <i data-lucide="clock" style="width:10px;height:10px;vertical-align:middle;margin-right:2px"></i>
-                                    {{ $n->created_at->diffForHumans() }}
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-panel-state">
-                            <i data-lucide="message-square" style="width:32px;height:32px;color:#94A3B8"></i>
-                            Không có thông báo mới
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-
-        <!-- Block 3: Phân bổ công việc (Chart + Profile) -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">📊 Phân bổ công việc cá nhân</span>
-            </div>
-            <div class="card-body">
-                <div id="employee-donut-chart" style="margin-bottom: 15px;"></div>
-
-                <div class="profile-card">
-                    <table class="profile-table">
-                        <tr>
-                            <td class="label">Phòng ban</td>
-                            <td class="value">{{ Auth::user()->department->TENPHONG ?? 'Chưa xác định' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Email liên hệ</td>
-                            <td class="value" style="font-size:12px">{{ Auth::user()->email }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+            </div>{{-- /content-grid --}}
+        </div>{{-- /content --}}
+    </div>{{-- /main --}}
 </div>
 
-<!-- Toast Live Notification -->
-<div id="toast-live" style="position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;"></div>
+<div class="toast" id="toast-live"><i data-lucide="check-circle" style="width:15px;height:15px;flex-shrink:0"></i><span id="toast-msg"></span></div>
 
-@endsection
-
-@section('scripts')
 <script>
-    // Task numbers used to update graphs and KPIs
-    let taskStats = {
-        total: {{ $total }},
-        done: {{ $done }},
-        doing: {{ $doing }},
-        overdue: {{ $overdue }},
-        pending: {{ $pending }}
-    };
+    lucide.createIcons();
 
-    // Render Apex Donut Chart
-    let chartObj = null;
-    function renderDonutChart() {
-        const data = [
-            { name: 'Hoàn thành', value: taskStats.done, color: '#16A34A' },
-            { name: 'Đang thực hiện', value: taskStats.doing, color: '#2563EB' },
-            { name: 'Quá hạn', value: taskStats.overdue, color: '#E63946' },
-            { name: 'Chờ xử lý', value: taskStats.pending, color: '#94A3B8' }
-        ];
+    // Topbar date
+    const d = new Date();
+    const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+    document.getElementById('topbar-date').textContent = d.toLocaleDateString('vi-VN', opts);
 
-        const filteredData = data.filter(d => d.value > 0);
-        const series = filteredData.length > 0 ? filteredData.map(d => d.value) : [1];
-        const labels = filteredData.length > 0 ? filteredData.map(d => d.name) : ['Không có công việc'];
-        const colors = filteredData.length > 0 ? filteredData.map(d => d.color) : ['#E2E8F0'];
-
-        const options = {
-            series: series,
-            labels: labels,
-            colors: colors,
-            chart: { type: 'donut', height: 180, sparkline: { enabled: true } },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '70%',
-                        labels: {
-                            show: true,
-                            total: {
-                                show: true,
-                                label: 'Tổng số',
-                                color: '#0F172A',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                formatter: function () {
-                                    return taskStats.total;
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            dataLabels: { enabled: false },
-            legend: { show: true, position: 'bottom', horizontalAlign: 'center', fontSize: '11px', fontFamily: 'Inter' },
-            stroke: { show: false },
-            tooltip: { style: { fontFamily: 'Inter, sans-serif', fontSize: '11px' } }
-        };
-
-        if (chartObj) {
-            chartObj.destroy();
-        }
-        chartObj = new ApexCharts(document.querySelector('#employee-donut-chart'), options);
-        chartObj.render();
+    // Scroll to anchor
+    function scrollTo(id) {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    // Run on startup
-    document.addEventListener("DOMContentLoaded", function() {
-        renderDonutChart();
-        lucide.createIcons();
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            const id = a.getAttribute('href').slice(1);
+            const el = document.getElementById(id);
+            if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        });
     });
 
-    // Helper to filter tasks based on tabs
-    let currentFilter = 'all';
+    // Filter tasks
     function filterTasks(status, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
         btn.classList.add('active');
-        currentFilter = status;
-        
-        const rows = document.querySelectorAll('.task-row');
-        let visibleCount = 0;
-        rows.forEach(item => {
-            const isVisible = (status === 'all' || item.dataset.status === status);
-            item.style.display = isVisible ? '' : 'none';
-            if (isVisible) visibleCount++;
+        document.querySelectorAll('.task-card').forEach(card => {
+            card.style.display = (status === 'all' || card.dataset.status === status) ? 'flex' : 'none';
         });
-
-        // Toggle empty row placeholder if no rows visible
-        let emptyRow = document.getElementById('task-table-empty-row');
-        if (visibleCount === 0) {
-            if (!emptyRow) {
-                emptyRow = document.createElement('tr');
-                emptyRow.id = 'task-table-empty-row';
-                emptyRow.innerHTML = `<td colspan="6" style="text-align:center;padding:30px;color:#94A3B8">Không có công việc nào trong mục này</td>`;
-                document.getElementById('task-table-body').appendChild(emptyRow);
-            } else {
-                emptyRow.style.display = '';
-            }
-        } else if (emptyRow) {
-            emptyRow.style.display = 'none';
-        }
     }
+    // Set task-card display to flex initially
+    document.querySelectorAll('.task-card').forEach(c => c.style.display = 'flex');
+    document.querySelectorAll('.task-card').forEach(c => c.style.flexDirection = 'column');
 
-    // Accept task click handler on right panel
-    function acceptTask(id) {
-        // Find select dropdown for this task and set to 'Đang làm'
-        const selectEl = document.getElementById('select-' + id);
-        if (selectEl) {
-            selectEl.value = 'Đang làm';
-            updateTask(id, 'Đang làm');
-        }
-    }
-
-    // Update task status via Fetch API
+    // Update task status
     function updateTask(id, status) {
         const progressMap = { 'Chờ xử lý': 0, 'Đang làm': 50, 'Đang review': 80, 'Hoàn thành': 100 };
         const progress = progressMap[status] ?? 0;
@@ -562,103 +759,41 @@
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ status, progress })
         })
         .then(r => r.json())
         .then(data => {
-            if (data.ok) {
-                // Update table row styling, progress and data-status
-                const row = document.getElementById('task-row-' + id);
-                if (row) {
-                    const statusClassMap = {
-                        'Chờ xử lý': 'pending',
-                        'Đang làm': 'doing',
-                        'Đang review': 'review',
-                        'Hoàn thành': 'done',
-                        'Quá hạn': 'overdue'
-                    };
-                    const sc = statusClassMap[status] ?? 'pending';
-                    row.dataset.status = sc;
-                    
-                    // Update task text decoration
-                    const nameText = document.getElementById('task-name-text-' + id);
-                    if (nameText) {
-                        if (status === 'Hoàn thành') {
-                            nameText.classList.add('done-text');
-                            nameText.style.textDecoration = 'line-through';
-                            nameText.style.color = '#94A3B8';
-                        } else {
-                            nameText.classList.remove('done-text');
-                            nameText.style.textDecoration = '';
-                            nameText.style.color = '';
-                        }
-                    }
+            if (!data.ok) { showToast('Lỗi cập nhật trạng thái', 'error'); return; }
 
-                    // Update progress bar
-                    const bar = document.getElementById('bar-' + id);
-                    const pct = document.getElementById('pct-' + id);
-                    if (bar) {
-                        bar.style.width = data.progress + '%';
-                        const progressColor = status === 'Hoàn thành' ? '#16A34A' : (status === 'Quá hạn' ? '#E63946' : (status === 'Đang làm' ? '#2563EB' : '#7C3AED'));
-                        bar.style.backgroundColor = progressColor;
-                    }
-                    if (pct) { pct.textContent = data.progress + '%'; }
+            // Update progress bar
+            const bar = document.getElementById('bar-' + id);
+            const pct = document.getElementById('pct-' + id);
+            if (bar) { bar.style.width = data.progress + '%'; }
+            if (pct) { pct.textContent = data.progress + '%'; }
 
-                    // Update status pill
-                    const pill = document.getElementById('pill-' + id);
-                    if (pill) {
-                        pill.className = 'status-pill ' + sc;
-                        pill.textContent = status;
-                    }
+            // Update card style
+            const card = document.getElementById('task-' + id);
+            if (card) {
+                card.classList.remove('pending', 'doing', 'done', 'overdue');
+                const stateMap = { 'Hoàn thành': 'done', 'Đang làm': 'doing', 'Đang review': 'doing', 'Chờ xử lý': 'pending' };
+                const newState = stateMap[status] || 'pending';
+                card.classList.add(newState);
+                card.dataset.status = newState;
+
+                // Update bar color
+                if (bar) {
+                    bar.className = 'prog-fill ' + (newState === 'done' ? 'green' : 'blue');
                 }
-
-                // If task status changed from 'Chờ xử lý' to something else, remove from right-side accept list
-                if (status !== 'Chờ xử lý') {
-                    const receiptItem = document.getElementById('todo-receipt-item-' + id);
-                    if (receiptItem) {
-                        receiptItem.remove();
-                        // Check if no items left
-                        const items = document.querySelectorAll('#todo-receipt-list .todo-item');
-                        if (items.length === 0) {
-                            let emptyReceipt = document.getElementById('todo-receipt-empty');
-                            if (!emptyReceipt) {
-                                emptyReceipt = document.createElement('div');
-                                emptyReceipt.id = 'todo-receipt-empty';
-                                emptyReceipt.className = 'empty-panel-state';
-                                emptyReceipt.innerHTML = `<i data-lucide="check-circle" style="width:32px;height:32px;color:#10B981"></i> Chưa có công việc mới cần nhận`;
-                                document.getElementById('todo-receipt-list').appendChild(emptyReceipt);
-                                lucide.createIcons();
-                            } else {
-                                emptyReceipt.style.display = '';
-                            }
-                        }
-                    }
-                } else {
-                    // If it changed back to 'Chờ xử lý', we could rebuild the item, but simple page reload or dynamic element insertion is needed.
-                    // For safety, if user goes back to pending, reload page or create the receipt item again.
-                    // Let's just update the list to avoid complex insertion since employees rarely transition a task BACK to pending.
-                }
-
-                // Re-apply tab filtering in case the row should now be hidden
-                const currentTabBtn = document.querySelector('.tab-btn.active');
-                if (currentTabBtn) {
-                    filterTasks(currentFilter, currentTabBtn);
-                }
-
-                // Dynamically recalculate taskStats
-                recalculateStats();
-
-                // Show toast notification
-                showToast('✓ Đã cập nhật công việc: ' + status);
-            } else {
-                showToast('⚠ Cập nhật thất bại');
             }
+
+            showToast('Đã cập nhật: ' + status, 'success');
         })
-        .catch(() => showToast('⚠ Không thể kết nối máy chủ'));
+        .catch(() => showToast('Không thể kết nối máy chủ', 'error'));
     }
 
+<<<<<<< HEAD
     function recalculateStats() {
         const rows = document.querySelectorAll('.task-row');
         let total = rows.length;
@@ -725,22 +860,16 @@
                 }, 2000);
             }
         }
+=======
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast-live');
+        const msg = document.getElementById('toast-msg');
+        msg.textContent = message;
+        toast.className = 'toast ' + type;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2800);
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
     }
-
-    function showToast(msg) {
-        const t = document.getElementById('toast-live');
-        t.textContent = msg; 
-        t.style.transform = 'translateY(0)';
-        t.style.opacity = '1';
-        setTimeout(() => {
-            t.style.transform = 'translateY(80px)';
-            t.style.opacity = '0';
-        }, 3000);
-    }
-
-    // Ping animation style inject
-    const style = document.createElement('style');
-    style.textContent = '@keyframes ping { 0%,100%{transform:scale(1);opacity:.75} 50%{transform:scale(1.5);opacity:0} }';
-    document.head.appendChild(style);
 </script>
-@endsection
+</body>
+</html>

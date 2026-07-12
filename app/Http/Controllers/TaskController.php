@@ -101,6 +101,18 @@ class TaskController extends Controller
     public function show($id)
     {
         $task = Task::with(['assignee', 'creator', 'documents.uploader'])->findOrFail($id);
+        $user = Auth::user();
+
+        abort_unless($this->canViewTask($task, $user), 403);
+
+        $task->setRelation(
+            'documents',
+            $task->documents->filter(fn (Document $document) => $this->canViewDocument($document, $user))->values()
+        );
+
+        if (!$user->isDirector() && !$user->isLeader()) {
+            return view('employee.task-detail', compact('task'));
+        }
 
         return view('admin.layouts.congviec.chitiet', compact('task'));
     }
@@ -284,7 +296,7 @@ class TaskController extends Controller
 
         // Chỉ người tải lên hoặc Trưởng phòng mới được xóa
         $user = Auth::user();
-        if ($doc->user_id !== $user->id && !$user->isLeader() && !$user->isDirector()) {
+        if (!$this->canDeleteDocument($doc, $user)) {
             abort(403, 'Bạn không có quyền xóa tệp này.');
         }
 
@@ -350,12 +362,13 @@ class TaskController extends Controller
 
             // Ghi record vào bảng documents
             $doc = Document::create([
-                'task_id'   => $task->id,
-                'user_id'   => Auth::id(),
-                'file_name' => $originalName,
-                'file_path' => $storedPath,
-                'file_type' => $extension,
-                'disk'      => 'public',
+                'task_id'       => $task->id,
+                'user_id'       => Auth::id(),
+                'file_name'     => $originalName,
+                'file_path'     => $storedPath,
+                'file_type'     => $extension,
+                'disk'          => 'public',
+                'review_status' => $this->initialDocumentStatus(),
             ]);
 
             $uploaded[] = [
@@ -431,7 +444,7 @@ class TaskController extends Controller
             return;
         }
 
-        $creatorName = optional($task->creator)->name ?? 'Quản lý';
+        $creatorName = optional($task->creator)->name ?? 'Trưởng phòng';
 
         try {
             Notification::create([
@@ -447,6 +460,67 @@ class TaskController extends Controller
             // Log lỗi nhưng không crash luồng chính
             \Log::warning('Không thể tạo thông báo cho task #' . $task->id . ': ' . $e->getMessage());
         }
+    }
+
+    private function canViewTask(Task $task, User $user): bool
+    {
+        if ($user->isDirector()) {
+            return true;
+        }
+
+        if ((int) $task->assigned_to === (int) $user->id || (int) $task->assigned_by === (int) $user->id) {
+            return true;
+        }
+
+        if ($user->isLeader()) {
+            return (int) optional($task->assignee)->department_id === (int) $user->department_id;
+        }
+
+        return false;
+    }
+
+    private function canViewDocument(Document $document, User $user): bool
+    {
+        if ((int) $document->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($user->isDirector()) {
+            return $document->review_status === Document::STATUS_DIRECTOR_VISIBLE;
+        }
+
+        if ($user->isLeader()) {
+            $document->loadMissing(['task.assignee', 'uploader']);
+
+            return (int) optional($document->task?->assignee)->department_id === (int) $user->department_id
+                || (int) optional($document->uploader)->department_id === (int) $user->department_id
+                || (int) optional($document->task)->assigned_by === (int) $user->id
+                || (int) optional($document->task)->assigned_to === (int) $user->id;
+        }
+
+        return false;
+    }
+
+    private function canDeleteDocument(Document $document, User $user): bool
+    {
+        if ((int) $document->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($user->isDirector()) {
+            return $this->canViewDocument($document, $user);
+        }
+
+        return $user->isLeader();
+    }
+
+    private function initialDocumentStatus(): string
+    {
+        $user = Auth::user();
+
+        return $user && $user->isEmployee()
+            ? Document::STATUS_MANAGER_REVIEW
+            : Document::STATUS_DIRECTOR_VISIBLE;
     }
 
 

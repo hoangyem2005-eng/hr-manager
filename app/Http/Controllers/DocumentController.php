@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -42,9 +43,11 @@ class DocumentController extends Controller
     public function listByTask(int $taskId)
     {
         $docs = Document::where('task_id', $taskId)
-            ->with('uploader:id,name')
+            ->with(['task.assignee', 'uploader:id,name,department_id,role_id'])
             ->latest()
             ->get()
+            ->filter(fn (Document $doc) => $this->canView($doc, Auth::user()))
+            ->values()
             ->map(fn ($doc) => $this->formatDocResponse($doc));
 
         return response()->json([
@@ -118,12 +121,13 @@ class DocumentController extends Controller
 
                 // Ghi metadata vào DB
                 $doc = Document::create([
-                    'task_id'   => $taskId,
-                    'user_id'   => Auth::id(),
-                    'file_name' => $originalName,
-                    'file_path' => $storedPath,
-                    'file_type' => $extension,
-                    'disk'      => $disk,
+                    'task_id'       => $taskId,
+                    'user_id'       => Auth::id(),
+                    'file_name'     => $originalName,
+                    'file_path'     => $storedPath,
+                    'file_type'     => $extension,
+                    'disk'          => $disk,
+                    'review_status' => $this->initialStatus(),
                 ]);
 
                 $results[] = $this->formatDocResponse($doc);
@@ -156,11 +160,7 @@ class DocumentController extends Controller
     public function download(int $documentId)
     {
         $doc = Document::findOrFail($documentId);
-        $user = Auth::user();
-
-        if (!$this->canAccessFile($doc, $user)) {
-            abort(403, 'Bạn không có quyền tải xuống tệp này.');
-        }
+        abort_unless($this->canView($doc, Auth::user()), 403);
 
         $disk = $doc->disk ?? 'public';
 
@@ -177,12 +177,7 @@ class DocumentController extends Controller
     public function preview(int $documentId)
     {
         $doc  = Document::findOrFail($documentId);
-        $user = Auth::user();
-
-        if (!$this->canAccessFile($doc, $user)) {
-            abort(403, 'Bạn không có quyền xem tệp này.');
-        }
-
+        abort_unless($this->canView($doc, Auth::user()), 403);
         $disk = $doc->disk ?? 'public';
 
         if (!Storage::disk($disk)->exists($doc->file_path)) {
@@ -278,6 +273,8 @@ class DocumentController extends Controller
                 'name' => $doc->uploader->name,
             ] : null,
             'uploaded_at'  => $doc->created_at?->format('d/m/Y H:i'),
+            'review_status' => $doc->review_status,
+            'forwarded_at' => $doc->forwarded_at?->format('d/m/Y H:i'),
             'is_image'     => in_array($doc->file_type, ['jpg', 'jpeg', 'png', 'gif']),
             'is_pdf'       => $doc->file_type === 'pdf',
         ];
@@ -288,50 +285,48 @@ class DocumentController extends Controller
      */
     private function canDelete(Document $doc, $user): bool
     {
-        if ($user->isDirector() || $user->isLeader()) {
+        if ($user->isDirector()) {
+            return $this->canView($doc, $user);
+        }
+
+        if ($user->isLeader()) {
             return true;
         }
 
         return $doc->user_id === $user->id;
     }
 
-    /**
-     * Kiểm tra người dùng có liên quan và được phép truy cập tệp không.
-     */
-    private function canAccessFile(Document $doc, $user): bool
+    private function canView(Document $doc, ?User $user): bool
     {
         if (!$user) {
             return false;
         }
 
-        // 1. Giám đốc có toàn quyền
+        if ((int) $doc->user_id === (int) $user->id) {
+            return true;
+        }
+
         if ($user->isDirector()) {
-            return true;
+            return $doc->review_status === Document::STATUS_DIRECTOR_VISIBLE;
         }
 
-        // 2. Người tải lên tệp có quyền
-        if ($doc->user_id === $user->id) {
-            return true;
-        }
+        if ($user->isLeader()) {
+            $doc->loadMissing(['task.assignee', 'uploader']);
 
-        // 3. Người giao việc hoặc người nhận việc của Task liên quan
-        $task = $doc->task;
-        if ($task) {
-            if ($task->assigned_by === $user->id || $task->assigned_to === $user->id) {
-                return true;
-            }
-
-            // 4. Trưởng phòng thuộc bộ phận của người giao việc hoặc người nhận việc
-            if ($user->isLeader()) {
-                $creator = $task->creator;
-                $assignee = $task->assignee;
-                if (($creator && $creator->department_id === $user->department_id) ||
-                    ($assignee && $assignee->department_id === $user->department_id)) {
-                    return true;
-                }
-            }
+            return (int) optional($doc->task?->assignee)->department_id === (int) $user->department_id
+                || (int) optional($doc->uploader)->department_id === (int) $user->department_id
+                || (int) optional($doc->task)->assigned_by === (int) $user->id
+                || (int) optional($doc->task)->assigned_to === (int) $user->id;
         }
 
         return false;
+    }
+    private function initialStatus(): string
+    {
+        $user = Auth::user();
+
+        return $user && $user->isEmployee()
+            ? Document::STATUS_MANAGER_REVIEW
+            : Document::STATUS_DIRECTOR_VISIBLE;
     }
 }

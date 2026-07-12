@@ -21,6 +21,7 @@ class User extends Authenticatable
         'password',
         'role_id',
         'department_id',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -30,6 +31,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     public function role()
@@ -87,5 +89,15 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return (int) $this->role_id === self::ROLE_EMPLOYEE;
+    }
+
+    public function getRoleDisplayNameAttribute(): string
+    {
+        return match ((int) $this->role_id) {
+            self::ROLE_ADMIN => 'Giám đốc',
+            self::ROLE_MANAGER => 'Trưởng phòng',
+            self::ROLE_EMPLOYEE => 'Nhân viên',
+            default => $this->role->name ?? 'Chưa có chức vụ',
+        };
     }
 }

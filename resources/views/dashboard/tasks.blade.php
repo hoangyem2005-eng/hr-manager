@@ -1,41 +1,153 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Quản lý Công việc - MobiFone WorkHub')
+@section('title', 'Công việc - MobiFone WorkHub')
 @section('page_title', 'Công việc')
 
 @section('content')
-<div class="space-y-5">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-[#001F5B]">Quản lý Công việc</h1>
-        @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
-            <button id="open-task-modal"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8] hover:shadow-lg transition-all active:scale-95">
-                <i data-lucide="plus" class="w-4 h-4"></i> Tạo công việc mới
-            </button>
-        @endif
-    </div>
+@php
+    $roleVariant = $roleVariant ?? 'employee';
+    $isDirector = $roleVariant === 'director';
+    $isManager = $roleVariant === 'manager';
+    $isEmployee = $roleVariant === 'employee';
 
-    <!-- Toolbar: View Switcher and Filters -->
-    <div class="flex items-center gap-3 flex-wrap justify-between">
+    $page = [
+        'director' => [
+            'eyebrow' => 'Executive command',
+            'title' => 'Điều phối mục tiêu cấp công ty',
+            'desc' => 'Giao việc xuyên phòng ban, theo dõi tải công việc và ưu tiên những đầu việc ảnh hưởng toàn hệ thống.',
+            'button' => 'Giao mục tiêu',
+            'icon' => 'crown',
+            'shell' => 'mf-director-task-hero text-white',
+            'accent' => '#E4002B',
+            'formTitle' => 'Giao mục tiêu cấp công ty',
+            'formDesc' => 'Giám đốc có thể giao việc cho bất kỳ nhân sự/phòng ban nào.',
+            'submit' => 'Giao mục tiêu',
+        ],
+        'manager' => [
+            'eyebrow' => 'Team dispatch',
+            'title' => 'Giao việc trong phòng',
+            'desc' => 'Tập trung phân bổ việc cho nhân viên cùng phòng, khóa phạm vi để tránh giao nhầm ngoài đội.',
+            'button' => 'Giao việc cho đội',
+            'icon' => 'users',
+            'shell' => 'mf-manager-task-hero text-[#071325]',
+            'accent' => '#003DA5',
+            'formTitle' => 'Giao việc cho nhân viên',
+            'formDesc' => 'Danh sách người nhận chỉ gồm nhân viên trong phòng của bạn.',
+            'submit' => 'Giao việc',
+        ],
+        'employee' => [
+            'eyebrow' => 'My workbench',
+            'title' => 'Việc của tôi',
+            'desc' => 'Theo dõi việc được giao và gửi đề xuất công việc cần quản lý xem xét.',
+            'button' => 'Gửi đề xuất việc',
+            'icon' => 'clipboard-plus',
+            'shell' => 'bg-[#F0FDF4] text-[#14532D] border border-[#BBF7D0]',
+            'accent' => '#16A34A',
+            'formTitle' => 'Gửi đề xuất công việc',
+            'formDesc' => 'Đề xuất sẽ gắn với chính bạn và ở trạng thái chờ xử lý.',
+            'submit' => 'Gửi đề xuất',
+        ],
+    ][$roleVariant];
+
+    $totalTasks = count($mappedTasksList);
+    $doneTasks = collect($mappedTasksList)->where('status', 'Hoàn thành')->count();
+    $doingTasks = collect($mappedTasksList)->where('status', 'Đang làm')->count();
+    $overdueTasks = collect($mappedTasksList)->where('status', 'Quá hạn')->count();
+    $managerCols = [
+        'pending' => ['color' => '#334155', 'bg' => '#F8FAFC', 'line' => '#CBD5E1'],
+        'doing' => ['color' => '#003DA5', 'bg' => '#F4F8FF', 'line' => '#B9CDF5'],
+        'review' => ['color' => '#0057C8', 'bg' => '#EEF5FF', 'line' => '#93BDF8'],
+        'done' => ['color' => '#001F5B', 'bg' => '#F7FAFF', 'line' => '#003DA5'],
+    ];
+@endphp
+
+<div class="space-y-5">
+    <section class="{{ $page['shell'] }} rounded-[8px] overflow-hidden">
+        @if($isDirector)
+            <div class="p-6 grid grid-cols-1 xl:grid-cols-[1.3fr_.7fr] gap-6">
+                <div class="space-y-5">
+                    <div class="flex items-center gap-2 text-xs uppercase tracking-widest text-white/70 font-bold">
+                        <i data-lucide="{{ $page['icon'] }}" class="w-4 h-4"></i>
+                        {{ $page['eyebrow'] }}
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-black leading-tight">{{ $page['title'] }}</h1>
+                        <p class="mt-2 text-sm text-white/80 max-w-2xl">{{ $page['desc'] }}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="open-task-modal" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#E4002B] hover:bg-[#C70025] transition-colors">
+                            <i data-lucide="send" class="w-4 h-4"></i>{{ $page['button'] }}
+                        </button>
+                        <a href="{{ route('dashboard.reports') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white border border-white/25 bg-white/10 hover:bg-white/15 transition-colors">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>Xem báo cáo
+                        </a>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="mf-director-stat-card rounded-[8px] p-4"><span class="text-xs text-white/70">Tổng việc</span><strong class="block text-2xl mt-1">{{ $totalTasks }}</strong></div>
+                    <div class="mf-director-stat-card rounded-[8px] p-4"><span class="text-xs text-white/70">Đang làm</span><strong class="block text-2xl mt-1">{{ $doingTasks }}</strong></div>
+                    <div class="mf-director-stat-card rounded-[8px] p-4"><span class="text-xs text-white/70">Hoàn thành</span><strong class="block text-2xl mt-1">{{ $doneTasks }}</strong></div>
+                    <div class="mf-director-stat-card rounded-[8px] p-4"><span class="text-xs text-white/70">Quá hạn</span><strong class="block text-2xl mt-1 text-[#FFD0D8]">{{ $overdueTasks }}</strong></div>
+                </div>
+            </div>
+        @elseif($isManager)
+            <div class="p-6 grid grid-cols-1 xl:grid-cols-[.9fr_1.1fr] gap-5 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-[#003DA5] border border-[#B9CDF5] text-xs font-bold uppercase tracking-wider shadow-sm">
+                        <i data-lucide="{{ $page['icon'] }}" class="w-4 h-4"></i>{{ $page['eyebrow'] }}
+                    </div>
+                    <h1 class="mt-4 text-3xl font-black text-[#001F5B] tracking-tight">{{ $page['title'] }}</h1>
+                    <p class="mt-2 text-sm leading-6 text-[#40516B] max-w-2xl">{{ $page['desc'] }}</p>
+                    <button id="open-task-modal" class="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-colors shadow-[0_12px_24px_rgba(0,61,165,.18)]">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>{{ $page['button'] }}
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="mf-manager-stat-card p-4"><span class="text-xs text-[#64748B]">Trong phạm vi</span><strong class="block text-2xl mt-1 text-[#001F5B]">{{ $totalTasks }}</strong></div>
+                    <div class="mf-manager-stat-card p-4"><span class="text-xs text-[#64748B]">Đang làm</span><strong class="block text-2xl mt-1 text-[#003DA5]">{{ $doingTasks }}</strong></div>
+                    <div class="mf-manager-stat-card p-4"><span class="text-xs text-[#64748B]">Xong</span><strong class="block text-2xl mt-1 text-[#001F5B]">{{ $doneTasks }}</strong></div>
+                    <div class="mf-manager-stat-card mf-manager-stat-danger p-4"><span class="text-xs text-[#64748B]">Trễ hạn</span><strong class="block text-2xl mt-1 text-[#E4002B]">{{ $overdueTasks }}</strong></div>
+                </div>
+            </div>
+        @else
+            <div class="p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-[8px] bg-white border border-[#BBF7D0] flex items-center justify-center">
+                        <i data-lucide="{{ $page['icon'] }}" class="w-5 h-5 text-[#16A34A]"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase tracking-wider font-bold text-[#15803D]">{{ $page['eyebrow'] }}</div>
+                        <h1 class="mt-1 text-2xl font-black">{{ $page['title'] }}</h1>
+                        <p class="mt-1 text-sm text-[#166534]/80 max-w-2xl">{{ $page['desc'] }}</p>
+                    </div>
+                </div>
+                <button id="open-task-modal" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#16A34A] hover:bg-[#15803D] transition-colors">
+                    <i data-lucide="plus" class="w-4 h-4"></i>{{ $page['button'] }}
+                </button>
+            </div>
+        @endif
+    </section>
+
+    <section class="flex items-center gap-3 flex-wrap justify-between">
         <div class="flex items-center gap-3 flex-wrap">
-            <!-- View Switcher -->
-            <div class="flex rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div class="flex rounded-[8px] border border-gray-200 bg-white overflow-hidden">
                 <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
-                   class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'kanban' ? 'bg-[#003DA5] text-white' : 'text-gray-700 hover:bg-gray-50' }}">
-                    <i data-lucide="columns" class="w-3.5 h-3.5"></i> Kanban
+                   class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'kanban' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
+                   style="{{ $viewType == 'kanban' ? 'background: '.($isManager ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
+                    <i data-lucide="columns-3" class="w-3.5 h-3.5"></i> Kanban
                 </a>
                 <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
-                   class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'list' ? 'bg-[#003DA5] text-white' : 'text-gray-700 hover:bg-gray-50' }}">
+                   class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'list' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
+                   style="{{ $viewType == 'list' ? 'background: '.($isManager ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
                     <i data-lucide="list" class="w-3.5 h-3.5"></i> Danh sách
                 </a>
             </div>
 
-            <!-- Filters -->
             <div class="flex gap-2">
                 @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $f)
                     <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f, 'assignee_id' => request('assignee_id')]) }}"
-                       class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all {{ $filter == $f ? 'bg-[#003DA5] text-white border-[#003DA5]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                       class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all {{ $filter == $f ? 'text-white shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}"
+                       style="{{ $filter == $f ? 'background-color: '.($isManager && $f === 'Quá hạn' ? '#E4002B' : $page['accent']).'; border-color: '.($isManager && $f === 'Quá hạn' ? '#E4002B' : $page['accent']) : '' }}">
                         {{ $f }}
                     </a>
                 @endforeach
@@ -60,224 +172,206 @@
                 @endif
             </form>
         </div>
+    </section>
 
-        @if(session('success'))
-            <div class="px-4 py-2 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700 flex items-center gap-2">
-                <i data-lucide="check-circle" class="w-4 h-4"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-    </div>
-
-    <!-- Kanban View -->
     @if($viewType == 'kanban')
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             @foreach($cols as $key => $col)
-                <div class="rounded-2xl min-h-[300px] flex flex-col" style="background-color: {{ $col['bg'] }};">
-                    <!-- Column Header -->
-                    <div class="flex items-center justify-between px-4 py-3.5 border-b border-gray-200/50">
-                        <span class="text-sm font-bold" style="color: {{ $col['color'] }}">{{ $col['label'] }}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white" style="background-color: {{ $col['color'] }}">{{ count($col['tasks']) }}</span>
+                @php
+                    $colStyle = $isManager
+                        ? ($managerCols[$key] ?? ['color' => $page['accent'], 'bg' => '#F8FAFC', 'line' => '#CBD5E1'])
+                        : ['color' => $col['color'], 'bg' => $col['bg'], 'line' => '#E5E7EB'];
+                @endphp
+                <div class="rounded-[8px] min-h-[300px] flex flex-col border overflow-hidden {{ $isManager ? 'mf-manager-kanban-column' : '' }}" style="background-color: {{ $colStyle['bg'] }}; border-color: {{ $colStyle['line'] }};">
+                    <div class="h-1" style="background: {{ $isManager && $key === 'doing' ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200/70 bg-white/75">
+                        <span class="text-sm font-black" style="color: {{ $colStyle['color'] }}">{{ $col['label'] }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white" style="background-color: {{ $isManager && $key === 'doing' ? '#E4002B' : $colStyle['color'] }}">{{ count($col['tasks']) }}</span>
                     </div>
-
-                    <!-- Task List -->
                     <div class="p-3 space-y-3 flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar">
                         @forelse($col['tasks'] as $task)
-                            <div class="bg-white rounded-2xl p-4 border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-                                 onclick="openTaskDetail({{ json_encode($task) }})">
+                            <button type="button" class="w-full text-left bg-white rounded-[8px] p-4 border {{ $isManager ? 'border-[#D9E5F7] hover:border-[#003DA5]/40 hover:shadow-[0_14px_28px_rgba(0,61,165,.12)]' : 'border-gray-100 hover:shadow-md' }} hover:-translate-y-0.5 transition-all duration-200"
+                                    onclick="openTaskDetail({{ json_encode($task) }})">
                                 <div class="flex items-center justify-between mb-2">
-                                    <!-- Priority -->
-                                    @if($task['priority'] == 'Cao')
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">Cao</span>
-                                    @elseif($task['priority'] == 'Trung bình')
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">Trung bình</span>
-                                    @else
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700">Thấp</span>
-                                    @endif
-
-                                    <button class="text-gray-400 hover:text-gray-600"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $task['priority'] == 'Cao' ? 'bg-red-100 text-red-700' : ($task['priority'] == 'Trung bình' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700') }}">{{ $task['priority'] }}</span>
+                                    <span class="text-[10px] font-mono text-gray-400">{{ $task['code'] }}</span>
                                 </div>
-
-                                <h4 class="text-sm font-bold text-gray-700 mb-1 line-clamp-2">{{ $task['name'] }}</h4>
-                                <p class="text-xs text-gray-400 mb-3 truncate">{{ $task['description'] ?: 'Phòng Nhân sự · MobiFone' }}</p>
-
-                                <!-- Progress Bar -->
+                                <h3 class="text-sm font-bold text-gray-800 mb-1 line-clamp-2">{{ $task['name'] }}</h3>
+                                <p class="text-xs text-gray-500 mb-3 truncate">{{ $task['description'] ?: 'Chưa có mô tả chi tiết.' }}</p>
                                 <div class="mb-3">
                                     <div class="flex items-center justify-between mb-1">
                                         <span class="text-[10px] text-gray-400">Tiến độ</span>
-                                        <span class="text-[10px] font-bold" style="color: {{ $col['color'] }}">{{ $task['progress'] }}%</span>
+                                        <span class="text-[10px] font-bold" style="color: {{ $colStyle['color'] }}">{{ $task['progress'] }}%</span>
                                     </div>
                                     <div class="h-1.5 rounded-full bg-gray-100">
-                                        <div class="h-1.5 rounded-full transition-all" style="width: {{ $task['progress'] }}%; background-color: {{ $col['color'] }}"></div>
+                                        <div class="h-1.5 rounded-full" style="width: {{ $task['progress'] }}%; background: {{ $isManager ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
                                     </div>
                                 </div>
-
-                                <!-- Deadline & User Avatar -->
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1 text-[10px] {{ $task['status'] == 'Quá hạn' ? 'text-red-600 font-bold' : 'text-gray-400' }}">
-                                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                                        <span>{{ $task['deadline'] }}</span>
-                                    </div>
-                                    <div class="w-6 h-6 rounded-full bg-[#003DA5] text-white flex items-center justify-center font-bold text-[9px] cursor-pointer" title="{{ $task['assignee'] }}">
-                                        {{ $task['avatar'] }}
-                                    </div>
+                                    <span class="flex items-center gap-1 text-[10px] {{ $task['status'] == 'Quá hạn' ? 'text-red-600 font-bold' : 'text-gray-400' }}">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>{{ $task['deadline'] }}
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        @if(($task['documents_count'] ?? 0) > 0)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-gray-500" title="{{ $task['documents_count'] }} tài liệu đính kèm">
+                                                <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>{{ $task['documents_count'] }}
+                                            </span>
+                                        @endif
+                                        <span class="w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-[9px]" style="background-color: {{ $page['accent'] }}" title="{{ $task['assignee'] }}">{{ $task['avatar'] }}</span>
+                                    </span>
                                 </div>
-                            </div>
+                            </button>
                         @empty
-                            <div class="text-center py-8 text-xs text-gray-400 border border-dashed border-gray-300/40 rounded-xl">Chưa có tác vụ.</div>
+                            <div class="text-center py-8 text-xs text-gray-400 border border-dashed rounded-[8px] bg-white/65" style="border-color: {{ $colStyle['line'] }}">Chưa có công việc.</div>
                         @endforelse
 
-                        @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
-                            <button onclick="openModalForStatus('{{ $col['label'] }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#003DA5] hover:text-[#003DA5] transition-all bg-white/40">
-                                + Thêm công việc
-                            </button>
-                        @endif
+                        <button type="button" onclick="openModalForStatus('{{ $col['label'] }}')" class="w-full py-2.5 rounded-[8px] text-xs font-semibold border-2 border-dashed bg-white/70 transition-all hover:bg-white" style="border-color: {{ $colStyle['line'] }}; color: {{ $colStyle['color'] }}">
+                            {{ $isEmployee ? 'Gửi đề xuất mới' : 'Thêm vào cột này' }}
+                        </button>
                     </div>
                 </div>
             @endforeach
-        </div>
+        </section>
     @endif
 
-    <!-- List View -->
     @if($viewType == 'list')
-        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <table class="w-full text-left text-sm">
-                <thead>
-                    <tr class="bg-[#F1F3F5] text-gray-400 font-semibold text-xs uppercase tracking-wide">
-                        <th class="px-5 py-3">Mã CV</th>
-                        <th class="px-5 py-3">Tên công việc</th>
-                        <th class="px-5 py-3">Người thực hiện</th>
-                        <th class="px-5 py-3">Ưu tiên</th>
-                        <th class="px-5 py-3">Deadline</th>
-                        <th class="px-5 py-3">Trạng thái</th>
-                        <th class="px-5 py-3">Tiến độ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($mappedTasksList as $task)
-                        <tr class="hover:bg-[#E8F0FE]/30 transition-colors cursor-pointer" onclick="openTaskDetail({{ json_encode($task) }})">
-                            <td class="px-5 py-4 text-xs font-mono text-gray-400">{{ $task['code'] }}</td>
-                            <td class="px-5 py-4 font-bold text-gray-700 truncate max-w-[200px]">{{ $task['name'] }}</td>
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-7 h-7 rounded-full bg-[#0057C8] text-white flex items-center justify-center font-bold text-[10px]">
-                                        {{ $task['avatar'] }}
-                                    </div>
-                                    <span class="text-xs text-gray-700">{{ $task['assignee'] }}</span>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4">
-                                @if($task['priority'] == 'Cao')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cao</span>
-                                @elseif($task['priority'] == 'Trung bình')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Trung bình</span>
-                                @else
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Thấp</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4 text-xs font-medium {{ $task['status'] == 'Quá hạn' ? 'text-red-600 font-bold' : 'text-gray-400' }}">{{ $task['deadline'] }}</td>
-                            <td class="px-5 py-4">
-                                @if($task['status'] == 'Hoàn thành')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Hoàn thành</span>
-                                @elseif($task['status'] == 'Đang làm')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Đang làm</span>
-                                @elseif($task['status'] == 'Đang review')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Đang review</span>
-                                @elseif($task['status'] == 'Quá hạn')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Quá hạn</span>
-                                @else
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Chờ xử lý</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 h-1.5 rounded-full min-w-[80px] bg-gray-100">
-                                        <div class="h-1.5 rounded-full bg-[#003DA5]" style="width: {{ $task['progress'] }}%"></div>
-                                    </div>
-                                    <span class="text-xs w-8 text-right font-mono text-gray-400">{{ $task['progress'] }}%</span>
-                                </div>
-                            </td>
+        <section class="bg-white rounded-[8px] border border-gray-200 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="bg-[#F8FAFC] text-gray-500 font-semibold text-xs uppercase tracking-wide">
+                            <th class="px-5 py-3">Mã</th>
+                            <th class="px-5 py-3">Công việc</th>
+                            <th class="px-5 py-3">Người phụ trách</th>
+                            <th class="px-5 py-3">Ưu tiên</th>
+                            <th class="px-5 py-3">Deadline</th>
+                            <th class="px-5 py-3">Tài liệu</th>
+                            <th class="px-5 py-3">Trạng thái</th>
+                            <th class="px-5 py-3">Tiến độ</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-8 text-gray-400">Không có công việc nào.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($mappedTasksList as $task)
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="openTaskDetail({{ json_encode($task) }})">
+                                <td class="px-5 py-4 text-xs font-mono text-gray-400">{{ $task['code'] }}</td>
+                                <td class="px-5 py-4 font-bold text-gray-800 truncate max-w-[240px]">{{ $task['name'] }}</td>
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-[10px]" style="background-color: {{ $page['accent'] }}">{{ $task['avatar'] }}</span>
+                                        <span class="text-xs text-gray-700">{{ $task['assignee'] }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $task['priority'] == 'Cao' ? 'bg-red-100 text-red-700' : ($task['priority'] == 'Trung bình' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700') }}">{{ $task['priority'] }}</span></td>
+                                <td class="px-5 py-4 text-xs font-medium {{ $task['status'] == 'Quá hạn' ? 'text-red-600 font-bold' : 'text-gray-500' }}">{{ $task['deadline'] }}</td>
+                                <td class="px-5 py-4">
+                                    @if(($task['documents_count'] ?? 0) > 0)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700">
+                                            <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>{{ $task['documents_count'] }}
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-gray-400">Không có</span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $task['status'] }}</span></td>
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex-1 h-1.5 rounded-full min-w-[80px] bg-gray-100">
+                                            <div class="h-1.5 rounded-full" style="width: {{ $task['progress'] }}%; background-color: {{ $page['accent'] }}"></div>
+                                        </div>
+                                        <span class="text-xs w-8 text-right font-mono text-gray-400">{{ $task['progress'] }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="text-center py-8 text-gray-400">Không có công việc nào.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
     @endif
 </div>
 
-<!-- ==================== POPUP: CREATE TASK MODAL ==================== -->
 <div id="task-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden">
-    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-[#001F5B]" id="modal-title">Tạo công việc mới</h2>
-            <button id="close-task-modal" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors">
-                <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
-            </button>
+    <div class="bg-white rounded-[8px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="px-6 py-5 border-b border-gray-200 {{ $isDirector ? 'mf-director-task-hero text-white' : '' }}">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wider font-bold {{ $isDirector ? 'text-white/50' : 'text-gray-400' }}">{{ $page['eyebrow'] }}</p>
+                    <h2 class="mt-1 text-xl font-black">{{ $page['formTitle'] }}</h2>
+                    <p class="mt-1 text-sm {{ $isDirector ? 'text-white/65' : 'text-gray-500' }}">{{ $page['formDesc'] }}</p>
+                </div>
+                <button type="button" id="close-task-modal" class="w-8 h-8 rounded-[8px] flex items-center justify-center {{ $isDirector ? 'hover:bg-white/10' : 'hover:bg-gray-100' }}">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
 
         <form id="task-form" action="{{ route('dashboard.tasks.save') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
             @csrf
-            <!-- Task Name -->
             <div>
-                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Tên công việc *</label>
-                <input name="task_name" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]"
-                       placeholder="Nhập tên công việc..." />
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isEmployee ? 'Tên đề xuất *' : 'Tên công việc *' }}</label>
+                <input name="task_name" required class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" placeholder="{{ $isEmployee ? 'VD: Cần hỗ trợ rà soát hồ sơ...' : 'Nhập tên công việc...' }}" />
             </div>
 
-            <!-- Description -->
             <div>
-                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Mô tả</label>
-                <textarea name="description" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:border-[#003DA5]"
-                          placeholder="Mô tả chi tiết công việc..."></textarea>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isEmployee ? 'Lý do / bối cảnh' : 'Mô tả' }}</label>
+                <textarea name="description" rows="4" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none resize-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" placeholder="Mô tả chi tiết..."></textarea>
             </div>
 
-            <!-- Priority & Status -->
+            @if(!$isEmployee)
+                <div>
+                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isDirector ? 'Người phụ trách *' : 'Nhân viên trong phòng *' }}</label>
+                    <select name="assigned_to[]" required multiple size="6" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                        @foreach($allUsers as $u)
+                            <option value="{{ $u->id }}">
+                                {{ $u->name }} - {{ $u->department->TENPHONG ?? $u->department->name ?? 'Chưa có phòng' }}{{ $isDirector ? ' / '.($u->role->name ?? 'Chưa có chức vụ') : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-400">Giu Ctrl/Command hoac Shift de chon nhieu nhan vien.</p>
+                </div>
+            @else
+                <input type="hidden" name="assigned_to" value="{{ Auth::id() }}">
+            @endif
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Ưu tiên</label>
-                    <select name="priority" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none bg-white focus:border-[#003DA5]">
-                        <option value="Thấp">🔵 Thấp</option>
-                        <option value="Trung bình" selected>🟡 Trung bình</option>
-                        <option value="Cao">🔴 Cao</option>
-                    </select>
+                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Deadline *</label>
+                    <input type="date" name="deadline" required class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" />
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5 text-gray-700">Trạng thái</label>
-                    <select name="status" id="task-status" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none bg-white focus:border-[#003DA5]">
-                        <option value="Chờ xử lý">Chờ xử lý</option>
-                        <option value="Đang làm" selected>Đang làm</option>
-                        <option value="Đang review">Đang review</option>
-                        <option value="Hoàn thành">Hoàn thành</option>
-                    </select>
+                    @if($isDirector)
+                        <select name="status" id="task-status" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                            <option value="Chờ xử lý">Chờ xử lý</option>
+                            <option value="Đang làm">Đang làm</option>
+                            <option value="Đang review">Đang review</option>
+                            <option value="Hoàn thành">Hoàn thành</option>
+                        </select>
+                    @elseif($isManager)
+                        <select name="status" id="task-status" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                            <option value="Chờ xử lý">Chờ xử lý</option>
+                            <option value="Đang làm">Đang làm</option>
+                        </select>
+                    @else
+                        <input type="hidden" name="status" id="task-status" value="Chờ xử lý">
+                        <div class="px-4 py-3 rounded-[8px] bg-[#F0FDF4] text-sm font-semibold text-[#15803D] border border-[#BBF7D0]">Chờ quản lý xem xét</div>
+                    @endif
                 </div>
             </div>
 
-            <!-- Assignee -->
-            <div>
-                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Người thực hiện *</label>
-                <select name="assigned_to" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none bg-white focus:border-[#003DA5]">
-                    @foreach($allUsers as $u)
-                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <!-- Dates -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Ngày bắt đầu</label>
-                    <input type="date" name="start_date" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" />
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">Deadline *</label>
-                    <input type="date" name="deadline" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" />
+            <div class="rounded-[8px] p-4 border {{ $isDirector ? 'bg-[#F8FAFC] border-[#E2E8F0]' : ($isManager ? 'bg-[#F4F8FF] border-[#B9CDF5]' : 'bg-[#F0FDF4] border-[#BBF7D0]') }}">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="{{ $isEmployee ? 'info' : 'shield-check' }}" class="w-5 h-5 mt-0.5" style="color: {{ $page['accent'] }}"></i>
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">{{ $isEmployee ? 'Bạn không thể giao việc cho người khác' : 'Phạm vi được kiểm soát theo chức vụ' }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ $isDirector ? 'Giám đốc có phạm vi toàn công ty.' : ($isManager ? 'Trưởng phòng chỉ giao việc cho nhân viên trong phòng.' : 'Đề xuất sẽ được tạo cho chính bạn ở trạng thái chờ xử lý.') }}</p>
+                    </div>
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- File Upload -->
             <div>
                 <label class="block text-sm font-semibold mb-1.5 text-gray-700">Tài liệu đính kèm (Tối đa 5 file, < 20MB/file)</label>
@@ -308,47 +402,61 @@
             <div class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3">
                 <button type="button" id="cancel-task-modal" class="px-5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">Hủy</button>
                 <button type="submit" id="task-submit-btn" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8]">Tạo công việc</button>
+=======
+            <div class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                <button type="button" id="cancel-task-modal" class="px-5 py-2.5 rounded-[8px] text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">Hủy</button>
+                <button type="submit" class="px-5 py-2.5 rounded-[8px] text-sm font-bold text-white" style="background-color: {{ $page['accent'] }}">{{ $page['submit'] }}</button>
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
             </div>
         </form>
     </div>
 </div>
 
-<!-- ==================== POPUP: TASK DETAIL MODAL ==================== -->
 <div id="detail-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden">
-    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between p-6">
+    <div class="bg-white rounded-[8px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6">
         <div class="flex items-center justify-between border-b pb-4 mb-4">
             <div class="flex items-center gap-1.5 text-xs text-gray-400">
-                <span>Công việc</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span class="text-[#003DA5] font-bold" id="detail-code"></span>
+                <span>Công việc</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span class="font-bold" id="detail-code" style="color: {{ $page['accent'] }}"></span>
             </div>
-            <button id="close-detail-modal" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors">
+            <button type="button" id="close-detail-modal" class="w-8 h-8 rounded-[8px] flex items-center justify-center hover:bg-gray-100 transition-colors">
                 <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
             </button>
         </div>
+<<<<<<< HEAD
 
         <div class="space-y-5">
             <h2 class="text-2xl font-bold text-[#001F5B]" id="detail-name"></h2>
             
+=======
+        <div class="space-y-4">
+            <h2 class="text-2xl font-black text-[#0F172A]" id="detail-name"></h2>
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
             <div class="flex items-center gap-4">
                 <span id="detail-priority-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold"></span>
                 <span class="text-xs text-gray-400" id="detail-deadline"></span>
             </div>
-
             <div>
-                <p class="text-xs text-gray-400 font-semibold mb-1">MÔ TẢ CHI TIẾT</p>
-                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl" id="detail-desc"></p>
+                <p class="text-xs text-gray-400 font-semibold mb-1">Mô tả</p>
+                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-[8px]" id="detail-desc"></p>
             </div>
-
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-gray-400 font-semibold">Tài liệu đính kèm</p>
+                    <span class="text-xs font-bold" id="detail-documents-count" style="color: {{ $page['accent'] }}"></span>
+                </div>
+                <div id="detail-documents" class="space-y-2 rounded-[8px] border border-gray-100 bg-gray-50 p-3"></div>
+            </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <p class="text-xs text-gray-400 font-semibold mb-1">NGƯỜI THỰC HIỆN</p>
+                    <p class="text-xs text-gray-400 font-semibold mb-1">Người phụ trách</p>
                     <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full bg-[#0057C8] text-white flex items-center justify-center font-bold text-[10px]" id="detail-avatar"></div>
+                        <span class="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-[10px]" id="detail-avatar" style="background-color: {{ $page['accent'] }}"></span>
                         <span class="text-sm text-gray-700" id="detail-assignee"></span>
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-semibold mb-1">TIẾN ĐỘ</p>
-                    <div class="text-sm font-bold text-[#003DA5]" id="detail-progress"></div>
+                    <p class="text-xs text-gray-400 font-semibold mb-1">Tiến độ</p>
+                    <div class="text-sm font-bold" id="detail-progress" style="color: {{ $page['accent'] }}"></div>
                 </div>
             </div>
 
@@ -378,11 +486,11 @@
         </div>
     </div>
 </div>
-
 @endsection
 
 @section('scripts')
 <script>
+<<<<<<< HEAD
     // Serialize mapped tasks list from server to client
     const mappedTasks = @json($mappedTasksList);
 
@@ -397,6 +505,9 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+=======
+    document.addEventListener('DOMContentLoaded', function () {
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
         const modal = document.getElementById('task-modal');
         const openBtn = document.getElementById('open-task-modal');
         const closeBtn = document.getElementById('close-task-modal');
@@ -407,6 +518,7 @@
         const submitBtn = document.getElementById('task-submit-btn');
         const statusSelect = document.getElementById('task-status');
 
+<<<<<<< HEAD
         let currentTask = null;
 
         // Toggle modal
@@ -438,11 +550,91 @@
             else if (label.includes('Đang review')) statusSelect.value = 'Đang review';
             else if (label.includes('Hoàn thành')) statusSelect.value = 'Hoàn thành';
             toggleModal();
+=======
+        const openModal = () => modal.classList.remove('hidden');
+        const closeModal = () => modal.classList.add('hidden');
+
+        openBtn?.addEventListener('click', openModal);
+        closeBtn?.addEventListener('click', closeModal);
+        cancelBtn?.addEventListener('click', closeModal);
+
+        window.openModalForStatus = (label) => {
+            if (statusSelect && statusSelect.tagName === 'SELECT') {
+                if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
+                else if (label.includes('Đang review') && Array.from(statusSelect.options).some(option => option.value === 'Đang review')) statusSelect.value = 'Đang review';
+                else if (label.includes('Hoàn thành') && Array.from(statusSelect.options).some(option => option.value === 'Hoàn thành')) statusSelect.value = 'Hoàn thành';
+                else statusSelect.value = 'Chờ xử lý';
+            }
+            openModal();
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
         };
 
-        // Task Detail modal handling
         const detailModal = document.getElementById('detail-modal');
         const closeDetailBtn = document.getElementById('close-detail-modal');
+        const detailDocuments = document.getElementById('detail-documents');
+        const detailDocumentsCount = document.getElementById('detail-documents-count');
+
+        const renderDetailDocuments = (documents = []) => {
+            detailDocuments.innerHTML = '';
+            detailDocumentsCount.innerText = documents.length ? documents.length + ' file' : '';
+
+            if (!documents.length) {
+                const empty = document.createElement('div');
+                empty.className = 'flex items-center gap-2 text-xs text-gray-400';
+                empty.innerHTML = '<i data-lucide="folder-open" class="w-4 h-4"></i><span>Chưa có tài liệu đính kèm.</span>';
+                detailDocuments.appendChild(empty);
+                lucide.createIcons();
+                return;
+            }
+
+            documents.forEach((document) => {
+                const row = document.createElement('div');
+                row.className = 'flex flex-col gap-3 rounded-[8px] border border-gray-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between';
+
+                const info = document.createElement('div');
+                info.className = 'min-w-0';
+
+                const nameLine = document.createElement('div');
+                nameLine.className = 'flex min-w-0 items-center gap-2 text-sm font-bold text-gray-800';
+                nameLine.innerHTML = '<i data-lucide="paperclip" class="h-4 w-4 shrink-0 text-gray-400"></i>';
+
+                const fileName = document.createElement('span');
+                fileName.className = 'truncate';
+                fileName.textContent = document.file_name || 'Tài liệu';
+                nameLine.appendChild(fileName);
+
+                const meta = document.createElement('div');
+                meta.className = 'mt-1 text-xs text-gray-400';
+                meta.textContent = [document.file_type, document.uploader, document.uploaded_at].filter(Boolean).join(' · ');
+
+                info.appendChild(nameLine);
+                info.appendChild(meta);
+
+                const actions = document.createElement('div');
+                actions.className = 'flex shrink-0 gap-2';
+
+                const preview = document.createElement('a');
+                preview.className = 'inline-flex items-center gap-1.5 rounded-[8px] border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50';
+                preview.href = document.preview_url;
+                preview.target = '_blank';
+                preview.rel = 'noopener';
+                preview.innerHTML = '<i data-lucide="eye" class="w-3.5 h-3.5"></i>Xem';
+
+                const download = document.createElement('a');
+                download.className = 'inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold text-white';
+                download.style.backgroundColor = '{{ $page['accent'] }}';
+                download.href = document.download_url;
+                download.innerHTML = '<i data-lucide="download" class="w-3.5 h-3.5"></i>Tải';
+
+                actions.appendChild(preview);
+                actions.appendChild(download);
+                row.appendChild(info);
+                row.appendChild(actions);
+                detailDocuments.appendChild(row);
+            });
+
+            lucide.createIcons();
+        };
 
         window.openTaskDetail = (task) => {
             currentTask = task;
@@ -455,18 +647,14 @@
             document.getElementById('detail-avatar').innerText = task.avatar;
             document.getElementById('detail-progress').innerText = task.progress + '%';
 
-            // Style priority badge
             const badge = document.getElementById('detail-priority-badge');
             badge.innerText = task.priority;
-            badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold";
-            if (task.priority === 'Cao') {
-                badge.classList.add('bg-red-100', 'text-red-700');
-            } else if (task.priority === 'Trung bình') {
-                badge.classList.add('bg-amber-100', 'text-amber-700');
-            } else {
-                badge.classList.add('bg-blue-100', 'text-blue-700');
-            }
+            badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold';
+            if (task.priority === 'Cao') badge.classList.add('bg-red-100', 'text-red-700');
+            else if (task.priority === 'Trung bình') badge.classList.add('bg-amber-100', 'text-amber-700');
+            else badge.classList.add('bg-blue-100', 'text-blue-700');
 
+<<<<<<< HEAD
             // Render attachments in detail modal
             const attachBox = document.getElementById('detail-attachments-box');
             const attachList = document.getElementById('detail-attachments-list');
@@ -566,6 +754,13 @@
                 openTaskDetail(foundTask);
             }
         }
+=======
+            renderDetailDocuments(task.documents || []);
+            detailModal.classList.remove('hidden');
+        };
+
+        closeDetailBtn?.addEventListener('click', () => detailModal.classList.add('hidden'));
+>>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
     });
 </script>
 @endsection

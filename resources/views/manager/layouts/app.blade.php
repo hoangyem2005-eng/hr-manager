@@ -13,13 +13,13 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body { height: 100%; overflow: hidden; }
-        body { font-family: 'Inter', sans-serif; background: #EFF6FF; display: flex; }
+        body { font-family: 'Inter', sans-serif; background: #F2F6FC; display: flex; }
 
         /* SIDEBAR */
         .sidebar {
             width: 230px;
             height: 100vh;
-            background: linear-gradient(180deg, #1E3A5F 0%, #2563EB 100%);
+            background: linear-gradient(180deg, #001F5B 0%, #003DA5 100%);
             display: flex; flex-direction: column; flex-shrink: 0;
             z-index: 30;
             transition: width .25s cubic-bezier(.4,0,.2,1);
@@ -30,20 +30,23 @@
         .sidebar.collapsed .s-user-info { display: none; }
 
         .sidebar-logo {
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; gap: 10px;
             padding: 20px 16px 18px;
             border-bottom: 1px solid rgba(255,255,255,.1);
         }
         .logo-icon {
             width: 38px; height: 38px;
-            background: rgba(255,255,255,.2);
-            border-radius: 12px;
+            background: #fff;
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 14px; color: #fff;
+            font-weight: 900; font-size: 15px; color: #003DA5;
             flex-shrink: 0;
+            box-shadow: inset 5px 0 0 #E4002B;
         }
-        .s-logo-text .brand { font-size: 14px; font-weight: 700; color: #fff; }
-        .s-logo-text .sub   { font-size: 10px; color: rgba(255,255,255,.5); letter-spacing: .12em; font-weight: 600; }
+        .mf-logo-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+        .mf-logo-word .blue { color: #003DA5; font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .mf-logo-word .red { color: #E4002B; font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+        .s-logo-text .sub   { margin-top: 6px; font-size: 10px; color: #BFD8FF; letter-spacing: .12em; font-weight: 700; }
 
         nav.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
         nav.sidebar-nav::-webkit-scrollbar { width: 3px; }
@@ -58,7 +61,7 @@
             text-decoration: none; transition: all .18s; margin-bottom: 2px;
         }
         .nav-item:hover { background: rgba(255,255,255,.1); color: #fff; }
-        .nav-item.active { background: rgba(255,255,255,.2); color: #fff; font-weight: 600; }
+        .nav-item.active { background: #fff; color: #003DA5; font-weight: 800; box-shadow: inset 3px 0 0 #E4002B; }
 
         .sidebar-footer {
             border-top: 1px solid rgba(255,255,255,.1);
@@ -83,28 +86,28 @@
 
         .topbar {
             height: 64px; background: #fff;
-            border-bottom: 1px solid #DBEAFE;
+            border-bottom: 1px solid #D8E4F5;
             display: flex; align-items: center;
             padding: 0 24px; gap: 16px; flex-shrink: 0;
         }
-        .topbar-title { font-size: 16px; font-weight: 700; color: #1E3A5F; flex: 1; }
+        .topbar-title { font-size: 16px; font-weight: 800; color: #001F5B; flex: 1; }
         .role-badge {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 6px 14px; border-radius: 99px;
-            background: #DBEAFE; border: 1px solid #BFDBFE;
-            font-size: 11px; font-weight: 600; color: #1D4ED8;
+            background: #E8F0FE; border: 1px solid #B9CDF5;
+            font-size: 11px; font-weight: 700; color: #003DA5;
         }
         .dept-chip {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 5px 12px; border-radius: 99px;
-            background: #EFF6FF; border: 1px solid #BFDBFE;
-            font-size: 11px; font-weight: 600; color: #2563EB;
+            background: #F5F8FE; border: 1px solid #C7D8F8;
+            font-size: 11px; font-weight: 700; color: #003DA5;
         }
 
         main.manager-main {
             flex: 1; overflow-y: auto;
             padding: 24px 28px;
-            background: #EFF6FF;
+            background: #F2F6FC;
         }
         main.manager-main::-webkit-scrollbar { width: 5px; }
         main.manager-main::-webkit-scrollbar-thumb { background: rgba(37,99,235,.15); border-radius:99px; }
@@ -117,12 +120,16 @@
     @yield('head_extra')
 </head>
 <body>
+@php
+    $authUser = Auth::user();
+    $authRoleName = $authUser->role_display_name ?? 'Trưởng phòng';
+@endphp
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-icon">TP</div>
+        <div class="logo-icon">M</div>
         <div class="s-logo-text">
-            <div class="brand">MobiFone</div>
-            <div class="sub">TRƯỞNG PHÒNG</div>
+            <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+            <div class="sub">MANAGER CONSOLE</div>
         </div>
     </div>
 
@@ -160,10 +167,10 @@
 
     <div class="sidebar-footer">
         <div class="user-card">
-            <div class="user-avatar-sm">{{ substr(Auth::user()->name ?? 'TP', 0, 2) }}</div>
+            <div class="user-avatar-sm">{{ substr($authUser->name ?? 'QL', 0, 2) }}</div>
             <div class="s-user-info">
-                <div class="s-name">{{ Auth::user()->name ?? 'Trưởng phòng' }}</div>
-                <div class="s-role">Trưởng phòng</div>
+                <div class="s-name">{{ $authUser->name ?? 'Trưởng phòng' }}</div>
+                <div class="s-role">{{ $authRoleName }}</div>
             </div>
         </div>
         <form action="{{ route('logout') }}" method="POST" style="margin-top:8px">
@@ -184,11 +191,11 @@
         <h1 class="topbar-title">@yield('page_title', 'Dashboard Trưởng phòng')</h1>
         <div class="dept-chip">
             <i data-lucide="building-2" style="width:12px;height:12px"></i>
-            Phòng: {{ Auth::user()->department->TENPHONG ?? 'Chưa xác định' }}
+            Phòng: {{ $authUser->department->TENPHONG ?? 'Chưa xác định' }}
         </div>
         <div class="role-badge">
             <i data-lucide="crown" style="width:12px;height:12px"></i>
-            Trưởng phòng
+            {{ $authRoleName }}
         </div>
     </header>
 
