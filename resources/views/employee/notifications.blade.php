@@ -30,7 +30,8 @@
         .brand-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
         .brand-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
         .brand-sub { margin-top: 6px; color: #BFD8FF; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
-        .profile-card { margin: 18px 14px; padding: 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.08); }
+        .profile-card { display:block; color:inherit; text-decoration:none; margin: 18px 14px; padding: 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.08); }
+        .profile-card:hover { background: rgba(255,255,255,.13); }
         .profile-row { display: flex; align-items: center; gap: 12px; }
         .avatar { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #E4002B, #FF5A7A); color: #fff; font-weight: 900; font-size: 15px; }
         .profile-name { font-size: 14px; font-weight: 900; }
@@ -122,7 +123,7 @@
             </div>
         </div>
 
-        <div class="profile-card">
+        <a href="{{ route('profile.show') }}" class="profile-card" title="Trang cá nhân">
             <div class="profile-row">
                 <div class="avatar">{{ mb_strtoupper(mb_substr($user->name ?? 'NV', 0, 2)) }}</div>
                 <div>
@@ -131,7 +132,7 @@
                 </div>
             </div>
             <div class="profile-dept"><i data-lucide="building-2" style="width:15px;height:15px"></i>{{ $user->department->TENPHONG ?? 'MobiFone' }}</div>
-        </div>
+        </a>
 
         <div class="sidebar-stats">
             <div class="stat-box"><div class="stat-label">Tổng báo</div><div class="stat-val">{{ $totalNotifications }}</div></div>

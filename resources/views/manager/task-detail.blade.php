@@ -74,7 +74,7 @@
             </div>
             <div class="info-list">
                 <div class="info-row"><div class="info-label">Người giao</div><div class="info-value">{{ $task->creator->name ?? 'Hệ thống' }}</div></div>
-                <div class="info-row"><div class="info-label">Người nhận</div><div class="info-value">{{ $task->assignee->name ?? 'Chưa gán' }}</div></div>
+                <div class="info-row"><div class="info-label">Người cùng làm</div><div class="info-value">{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Chưa gán') }}</div></div>
                 <div class="info-row"><div class="info-label">Deadline</div><div class="info-value">{{ $deadline }}</div></div>
                 <div class="info-row"><div class="info-label">Trạng thái</div><div class="info-value"><span class="status-pill">{{ $task->status }}</span></div></div>
                 <div class="info-row">

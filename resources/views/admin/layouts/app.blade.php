@@ -69,13 +69,13 @@
     </nav>
 
     <div class="mf-sidebar-footer">
-        <div class="mf-user-card">
+        <a href="{{ route('profile.show') }}" class="mf-user-card" title="Trang cá nhân" style="text-decoration:none;color:inherit">
             <div class="mf-avatar">{{ substr($authUser->name ?? 'GĐ', 0, 2) }}</div>
             <div class="s-user-info">
                 <div class="mf-user-name">{{ $authUser->name ?? 'Giám đốc' }}</div>
                 <div class="mf-user-role">{{ $authRoleName }}</div>
             </div>
-        </div>
+        </a>
         <form action="{{ route('logout') }}" method="POST" style="margin-top:8px">
             @csrf
             <button type="submit" class="mf-nav-item" style="border:none;background:transparent;cursor:pointer;color:rgba(255,255,255,.62);font-family:inherit">

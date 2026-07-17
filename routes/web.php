@@ -12,6 +12,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Manager\ManagerController;
 use App\Http\Controllers\Employee\EmployeeController;
+use App\Http\Controllers\ProfileController;
 
 // ==================== FRONTEND LANDING PAGE ====================
 Route::get('/', [DashboardController::class, 'landing'])->name('landing');
@@ -24,6 +25,14 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile/edit', [ProfileController::class, 'updateInfo'])->name('profile.update');
+    Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password.edit');
+    Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+});
 
 // ==================== ROLE-BASED DASHBOARDS ====================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {

@@ -87,10 +87,10 @@
             <a class="{{ request()->routeIs('tiendo.*') ? 'active' : '' }}" href="{{ route('tiendo.index') }}"><i data-lucide="activity"></i>Tiến độ</a>
             <a href="{{ route('admin.notifications') }}"><i data-lucide="bell"></i>Thông báo</a>
         </nav>
-        <div class="side-foot">
+        <a class="side-foot" href="{{ route('profile.show') }}" title="Trang cá nhân" style="display:block;text-decoration:none;color:inherit">
             <strong>{{ Auth::user()->name ?? 'Giám đốc' }}</strong><br>
             Phiên điều hành Giám đốc
-        </div>
+        </a>
     </aside>
     <section class="admin-main">
         <header class="topbar">

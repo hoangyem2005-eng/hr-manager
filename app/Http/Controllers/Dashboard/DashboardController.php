@@ -324,20 +324,27 @@ class DashboardController extends Controller
         $viewType = $request->query('view', 'kanban');
         $filter = $request->query('filter', 'Tất cả');
 
-        $query = Task::with(['assignee', 'documents.uploader']);
+        $query = Task::with(['assignee', 'assignees.department', 'documents.uploader']);
 
         if ($currentUser->isLeader() && !$currentUser->isDirector()) {
             $teamMemberIds = User::where('department_id', $currentUser->department_id)->pluck('id');
             $query->where(function ($q) use ($currentUser, $teamMemberIds) {
                 $q->where('assigned_by', $currentUser->id)
-                    ->orWhereIn('assigned_to', $teamMemberIds);
+                    ->orWhereIn('assigned_to', $teamMemberIds)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereIn('users.id', $teamMemberIds));
             });
         } elseif ($currentUser->isEmployee()) {
-            $query->where('assigned_to', $currentUser->id);
+            $query->where(function ($q) use ($currentUser) {
+                $q->where('assigned_to', $currentUser->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
+            });
         }
 
         if ($filter === 'Của tôi') {
-            $query->where('assigned_to', $currentUser->id);
+            $query->where(function ($q) use ($currentUser) {
+                $q->where('assigned_to', $currentUser->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
+            });
         } elseif ($filter === 'Quá hạn') {
             $query->where(function ($q) {
                 $q->where('status', 'Quá hạn')
@@ -351,7 +358,10 @@ class DashboardController extends Controller
         // Lọc theo nhân viên phụ trách
         $assigneeId = $request->query('assignee_id');
         if ($assigneeId) {
-            $query->where('assigned_to', $assigneeId);
+            $query->where(function ($q) use ($assigneeId) {
+                $q->where('assigned_to', $assigneeId)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $assigneeId));
+            });
         }
 
         $allTasks = $query->orderBy('created_at', 'desc')->get();
@@ -366,10 +376,13 @@ class DashboardController extends Controller
         $mappedTasksList = [];
 
         foreach ($allTasks as $t) {
-            $user = $t->assignee ?? $currentUser;
+            $assignees = $t->assignees->isNotEmpty()
+                ? $t->assignees
+                : collect([$t->assignee ?? $currentUser])->filter();
+            $user = $assignees->first() ?? $currentUser;
             $status = $this->cleanVietnameseText($t->status);
             $visibleDocuments = $t->documents
-                ->filter(function ($document) use ($currentUser, $t) {
+                ->filter(function ($document) use ($currentUser, $t, $assignees) {
                     if ((int) $document->user_id === (int) $currentUser->id) {
                         return true;
                     }
@@ -381,6 +394,7 @@ class DashboardController extends Controller
                     if ($currentUser->isLeader()) {
                         return (int) optional($document->uploader)->department_id === (int) $currentUser->department_id
                             || (int) optional($t->assignee)->department_id === (int) $currentUser->department_id
+                            || $assignees->contains(fn ($assignee) => (int) $assignee->department_id === (int) $currentUser->department_id)
                             || (int) $t->assigned_by === (int) $currentUser->id
                             || (int) $t->assigned_to === (int) $currentUser->id;
                     }
@@ -395,8 +409,9 @@ class DashboardController extends Controller
                 'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                 'name' => $this->cleanVietnameseText($t->task_name),
                 'description' => $this->cleanVietnameseText($t->description),
-                'assignee' => $this->cleanVietnameseText($user->name),
+                'assignee' => $this->cleanVietnameseText($assignees->pluck('name')->join(', ')),
                 'avatar' => $this->getInitials($user->name),
+                'assignee_count' => $assignees->count(),
                 'priority' => $t->id % 3 == 0 ? 'Cao' : ($t->id % 3 == 1 ? 'Trung bình' : 'Thấp'),
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'status' => $status,
@@ -514,32 +529,35 @@ class DashboardController extends Controller
             $successMessage = 'Đã gửi đề xuất công việc để quản lý xem xét!';
         }
 
-        $createdTasks = collect($assignedToIds)->map(function (int $assignedTo) use ($request, $currentUser, $status) {
-            $task = Task::create([
-                'task_name' => $request->task_name,
-                'description' => $request->description,
-                'assigned_by' => $currentUser->id,
-                'assigned_to' => $assignedTo,
-                'deadline' => $request->deadline,
-                'status' => $status,
-                'progress' => 0,
-            ]);
+        $primaryAssignee = $assignedToIds[0] ?? $currentUser->id;
+        $task = Task::create([
+            'task_name' => $request->task_name,
+            'description' => $request->description,
+            'assigned_by' => $currentUser->id,
+            'assigned_to' => $primaryAssignee,
+            'deadline' => $request->deadline,
+            'status' => $status,
+            'progress' => 0,
+        ]);
 
-            if ($assignedTo !== (int) $currentUser->id) {
-                Notification::create([
-                    'user_id' => $assignedTo,
-                    'task_id' => $task->id,
-                    'title' => 'Bạn vừa được giao công việc mới',
-                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
-                    'is_read' => false,
-                ]);
+        $task->assignees()->sync($assignedToIds);
+
+        foreach ($assignedToIds as $assignedTo) {
+            if ($assignedTo === (int) $currentUser->id) {
+                continue;
             }
 
-            return $task;
-        });
+            Notification::create([
+                'user_id' => $assignedTo,
+                'task_id' => $task->id,
+                'title' => 'Bạn vừa được giao công việc mới',
+                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
+                'is_read' => false,
+            ]);
+        }
 
-        if ($createdTasks->count() > 1) {
-            $successMessage .= ' (' . $createdTasks->count() . ' nhân viên)';
+        if (count($assignedToIds) > 1) {
+            $successMessage .= ' (' . count($assignedToIds) . ' người cùng làm)';
         }
 
         $taskIndexRoute = $this->roleRouteName($request, 'tasks');
@@ -993,7 +1011,10 @@ class DashboardController extends Controller
 
     protected function syncDeadlineReminderNotifications(User $user): void
     {
-        $upcomingTasks = Task::where('assigned_to', $user->id)
+        $upcomingTasks = Task::where(function ($query) use ($user) {
+                $query->where('assigned_to', $user->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $user->id));
+            })
             ->whereNotIn('status', ['Hoàn thành'])
             ->whereNotNull('deadline')
             ->whereDate('deadline', '>=', now()->toDateString())
@@ -1021,7 +1042,10 @@ class DashboardController extends Controller
 
     protected function syncOverdueTaskNotifications(User $user): void
     {
-        $overdueTasks = Task::where('assigned_to', $user->id)
+        $overdueTasks = Task::where(function ($query) use ($user) {
+                $query->where('assigned_to', $user->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $user->id));
+            })
             ->whereNotIn('status', [
                 'Done',
                 'Hoàn thành',

@@ -66,7 +66,11 @@
             border-radius: 12px;
             padding: 16px;
             backdrop-filter: blur(8px);
+            display: block;
+            color: inherit;
+            text-decoration: none;
         }
+        .profile-card:hover { background: rgba(255,255,255,.13); }
         .profile-row { display: flex; align-items: center; gap: 12px; }
         .avatar {
             width: 46px; height: 46px; border-radius: 10px;
@@ -660,7 +664,7 @@
             </div>
         </div>
 
-        <div class="profile-card">
+        <a href="{{ route('profile.show') }}" class="profile-card" title="Trang cá nhân">
             <div class="profile-row">
                 <div class="avatar">{{ mb_strtoupper(mb_substr(Auth::user()->name ?? 'NV', 0, 2)) }}</div>
                 <div class="profile-info">
@@ -672,7 +676,7 @@
                 <i data-lucide="building-2" style="width:13px;height:13px;flex-shrink:0"></i>
                 {{ Auth::user()->department->TENPHONG ?? 'MobiFone' }}
             </div>
-        </div>
+        </a>
 
         <div class="sidebar-stats">
             <div class="stat-box">

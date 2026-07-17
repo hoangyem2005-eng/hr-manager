@@ -71,7 +71,9 @@
             display: flex; align-items: center; gap: 10px;
             padding: 10px; border-radius: 10px;
             background: rgba(255,255,255,.1);
+            text-decoration: none; color: inherit;
         }
+        .user-card:hover { background: rgba(255,255,255,.16); }
         .user-avatar-sm {
             width: 34px; height: 34px; border-radius: 10px;
             background: rgba(255,255,255,.3);
@@ -166,13 +168,13 @@
     </nav>
 
     <div class="sidebar-footer">
-        <div class="user-card">
+        <a href="{{ route('profile.show') }}" class="user-card" title="Trang cá nhân">
             <div class="user-avatar-sm">{{ substr($authUser->name ?? 'QL', 0, 2) }}</div>
             <div class="s-user-info">
                 <div class="s-name">{{ $authUser->name ?? 'Trưởng phòng' }}</div>
                 <div class="s-role">{{ $authRoleName }}</div>
             </div>
-        </div>
+        </a>
         <form action="{{ route('logout') }}" method="POST" style="margin-top:8px">
             @csrf
             <button type="submit" class="nav-item" style="width:100%;border:none;background:none;cursor:pointer;font-family:inherit">

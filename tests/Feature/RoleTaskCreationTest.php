@@ -44,6 +44,10 @@ class RoleTaskCreationTest extends TestCase
             'assigned_by' => $director->id,
             'assigned_to' => $employee->id,
         ]);
+        $this->assertDatabaseHas('task_assignees', [
+            'task_id' => Task::where('task_name', 'Kiem tra tien do toan cong ty')->value('id'),
+            'user_id' => $employee->id,
+        ]);
     }
 
     public function test_director_can_assign_one_task_to_multiple_users(): void
@@ -60,17 +64,13 @@ class RoleTaskCreationTest extends TestCase
             'status' => 'Chờ xử lý',
         ])->assertRedirect(route('dashboard.tasks'));
 
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Lap bao cao lien phong',
-            'assigned_by' => $director->id,
-            'assigned_to' => $firstEmployee->id,
-        ]);
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Lap bao cao lien phong',
-            'assigned_by' => $director->id,
-            'assigned_to' => $secondEmployee->id,
-        ]);
-        $this->assertSame(2, Task::where('task_name', 'Lap bao cao lien phong')->count());
+        $task = Task::where('task_name', 'Lap bao cao lien phong')->firstOrFail();
+
+        $this->assertSame($director->id, (int) $task->assigned_by);
+        $this->assertSame($firstEmployee->id, (int) $task->assigned_to);
+        $this->assertSame(1, Task::where('task_name', 'Lap bao cao lien phong')->count());
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $firstEmployee->id]);
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $secondEmployee->id]);
         $this->assertSame(2, Notification::where('title', 'Bạn vừa được giao công việc mới')->count());
     }
 
@@ -109,19 +109,14 @@ class RoleTaskCreationTest extends TestCase
             'status' => 'Đang làm',
         ])->assertRedirect(route('dashboard.tasks'));
 
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Kiem tra ho so nhan su',
-            'assigned_by' => $manager->id,
-            'assigned_to' => $firstEmployee->id,
-            'status' => 'Đang làm',
-        ]);
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Kiem tra ho so nhan su',
-            'assigned_by' => $manager->id,
-            'assigned_to' => $secondEmployee->id,
-            'status' => 'Đang làm',
-        ]);
-        $this->assertSame(2, Task::where('task_name', 'Kiem tra ho so nhan su')->count());
+        $task = Task::where('task_name', 'Kiem tra ho so nhan su')->firstOrFail();
+
+        $this->assertSame($manager->id, (int) $task->assigned_by);
+        $this->assertSame($firstEmployee->id, (int) $task->assigned_to);
+        $this->assertSame('Đang làm', $task->status);
+        $this->assertSame(1, Task::where('task_name', 'Kiem tra ho so nhan su')->count());
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $firstEmployee->id]);
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $secondEmployee->id]);
     }
 
     public function test_manager_dashboard_assign_form_accepts_multiple_department_employees(): void
@@ -132,6 +127,12 @@ class RoleTaskCreationTest extends TestCase
         $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
         $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
 
+        $this->actingAs($manager)
+            ->get(route('manager.dashboard'))
+            ->assertOk()
+            ->assertSee('type="checkbox"', false)
+            ->assertSee('Tích nhiều nhân viên');
+
         $this->actingAs($manager)->post(route('manager.task.assign'), [
             'task_name' => 'Sap xep lich phong van',
             'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
@@ -140,17 +141,13 @@ class RoleTaskCreationTest extends TestCase
             'status' => 'Chờ xử lý',
         ])->assertRedirect(route('manager.dashboard'));
 
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Sap xep lich phong van',
-            'assigned_by' => $manager->id,
-            'assigned_to' => $firstEmployee->id,
-        ]);
-        $this->assertDatabaseHas('tasks', [
-            'task_name' => 'Sap xep lich phong van',
-            'assigned_by' => $manager->id,
-            'assigned_to' => $secondEmployee->id,
-        ]);
-        $this->assertSame(2, Task::where('task_name', 'Sap xep lich phong van')->count());
+        $task = Task::where('task_name', 'Sap xep lich phong van')->firstOrFail();
+
+        $this->assertSame($manager->id, (int) $task->assigned_by);
+        $this->assertSame($firstEmployee->id, (int) $task->assigned_to);
+        $this->assertSame(1, Task::where('task_name', 'Sap xep lich phong van')->count());
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $firstEmployee->id]);
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $secondEmployee->id]);
     }
 
     public function test_employee_task_submission_is_for_themselves_only(): void
@@ -199,6 +196,44 @@ class RoleTaskCreationTest extends TestCase
                 'status' => 'Chờ xử lý',
             ])
             ->assertRedirect(route('employee.tasks'));
+    }
+
+    public function test_employee_can_upload_file_from_task_detail_modal(): void
+    {
+        Storage::fake('public');
+
+        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+        $manager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 1]);
+
+        $task = Task::create([
+            'task_name' => 'Nop minh chung cong viec',
+            'assigned_by' => $manager->id,
+            'assigned_to' => $employee->id,
+            'deadline' => now()->addDays(2)->toDateString(),
+            'status' => 'Đang làm',
+            'progress' => 50,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.tasks'))
+            ->assertOk()
+            ->assertSee('detail-upload-form')
+            ->assertSee('detail-attachments');
+
+        $this->actingAs($employee)
+            ->post(route('employee.task.upload', $task), [
+                'redirect_to' => 'employee.tasks',
+                'attachments' => [
+                    UploadedFile::fake()->create('minh-chung.pdf', 120, 'application/pdf'),
+                ],
+            ])
+            ->assertRedirect(route('employee.tasks'));
+
+        $document = Document::where('task_id', $task->id)->firstOrFail();
+
+        $this->assertSame('minh-chung.pdf', $document->file_name);
+        $this->assertSame(Document::STATUS_MANAGER_REVIEW, $document->review_status);
+        Storage::disk('public')->assertExists($document->file_path);
     }
 
     public function test_role_dashboards_use_role_specific_task_routes(): void
@@ -430,6 +465,48 @@ class RoleTaskCreationTest extends TestCase
             'id' => $task->id,
             'status' => 'Đang review',
             'progress' => 80,
+        ]);
+    }
+
+    public function test_second_collaborator_can_see_and_update_shared_task(): void
+    {
+        Department::create(['id' => 1, 'TENPHONG' => 'Nhan su', 'name' => 'HR']);
+
+        $manager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 1]);
+        $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+        $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
+
+        $this->actingAs($manager)->post(route('manager.tasks.save'), [
+            'task_name' => 'Don ve sinh',
+            'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
+            'deadline' => now()->addWeek()->toDateString(),
+            'status' => 'Chờ xử lý',
+        ])->assertRedirect(route('manager.tasks'));
+
+        $task = Task::where('task_name', 'Don ve sinh')->firstOrFail();
+        $this->assertSame(1, Task::where('task_name', 'Don ve sinh')->count());
+
+        $this->actingAs($secondEmployee)
+            ->get(route('employee.tasks'))
+            ->assertOk()
+            ->assertSee('Don ve sinh');
+
+        $this->actingAs($secondEmployee)
+            ->patchJson(route('employee.task.progress', $task->id), [
+                'status' => 'Đang làm',
+                'progress' => 40,
+            ])
+            ->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'status' => 'Đang làm',
+                'progress' => 40,
+            ]);
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'status' => 'Đang làm',
+            'progress' => 40,
         ]);
     }
 

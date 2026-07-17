@@ -30,7 +30,8 @@
         .brand-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
         .brand-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
         .brand-sub { margin-top: 6px; color: #BFD8FF; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
-        .profile-card { margin: 18px 14px; padding: 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.08); }
+        .profile-card { display:block; color:inherit; text-decoration:none; margin: 18px 14px; padding: 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.08); }
+        .profile-card:hover { background: rgba(255,255,255,.13); }
         .profile-row { display: flex; align-items: center; gap: 12px; }
         .avatar { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #E4002B, #FF5A7A); color: #fff; font-weight: 900; font-size: 15px; }
         .profile-name { font-size: 14px; font-weight: 900; }
@@ -111,6 +112,15 @@
         .doc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #E5EAF5; border-radius: 8px; padding: 10px; }
         .doc-actions { display: flex; gap: 8px; }
         .doc-actions a { border-radius: 8px; padding: 7px 10px; background: #F4F8FF; color: var(--mf-blue); font-size: 12px; font-weight: 900; }
+        .upload-panel { border: 1px solid #D8E2F4; border-radius: 8px; padding: 14px; background: #F8FAFF; }
+        .upload-label { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 78px; border: 1px dashed #9DBBF2; border-radius: 8px; color: var(--mf-blue); background: #fff; font-weight: 900; cursor: pointer; }
+        .upload-label:hover { background: #F4F8FF; border-color: var(--mf-blue); }
+        .upload-label input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .upload-selected { margin-top: 10px; display: none; gap: 8px; align-items: center; color: #40516B; font-size: 12px; font-weight: 800; }
+        .upload-selected.open { display: flex; }
+        .upload-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+        .upload-submit { border: 0; border-radius: 8px; padding: 10px 14px; background: var(--mf-blue); color: #fff; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+        .upload-submit:disabled { opacity: .45; cursor: not-allowed; }
         @media (max-width: 1200px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { height: auto; position: static; } .hero { flex-direction: column; } .board { grid-template-columns: 1fr; } }
     </style>
@@ -134,7 +144,7 @@
             </div>
         </div>
 
-        <div class="profile-card">
+        <a href="{{ route('profile.show') }}" class="profile-card" title="Trang cá nhân">
             <div class="profile-row">
                 <div class="avatar">{{ mb_strtoupper(mb_substr($user->name ?? 'NV', 0, 2)) }}</div>
                 <div>
@@ -143,7 +153,7 @@
                 </div>
             </div>
             <div class="profile-dept"><i data-lucide="building-2" style="width:15px;height:15px"></i>{{ $user->department->TENPHONG ?? 'MobiFone' }}</div>
-        </div>
+        </a>
 
         <div class="sidebar-stats">
             <div class="stat-box"><div class="stat-label">Tổng việc</div><div class="stat-val">{{ $totalTasks }}</div></div>
@@ -349,6 +359,26 @@
                 <div style="font-size:12px;font-weight:900;color:#64748B;margin-bottom:8px">Tài liệu đính kèm</div>
                 <div class="doc-list" id="detail-documents"></div>
             </div>
+            <form method="POST" action="#" enctype="multipart/form-data" id="detail-upload-form" class="upload-panel">
+                @csrf
+                <input type="hidden" name="redirect_to" value="employee.tasks">
+                <div style="font-size:12px;font-weight:900;color:#64748B;margin-bottom:8px">Tải file cho công việc này</div>
+                <label class="upload-label" for="detail-attachments">
+                    <i data-lucide="upload-cloud" style="width:22px;height:22px"></i>
+                    <span>Nhấn để chọn file đính kèm</span>
+                    <input id="detail-attachments" name="attachments[]" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.rar,.txt">
+                </label>
+                <div class="upload-selected" id="detail-selected-files">
+                    <i data-lucide="paperclip" style="width:15px;height:15px"></i>
+                    <span id="detail-selected-text"></span>
+                </div>
+                <div class="upload-actions">
+                    <button class="upload-submit" id="detail-upload-submit" type="submit" disabled>
+                        <i data-lucide="upload" style="width:15px;height:15px"></i>
+                        Tải lên file
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -358,9 +388,21 @@
 
     const createModal = document.getElementById('create-modal');
     const detailModal = document.getElementById('detail-modal');
+    const detailUploadForm = document.getElementById('detail-upload-form');
+    const detailAttachments = document.getElementById('detail-attachments');
+    const detailSelectedFiles = document.getElementById('detail-selected-files');
+    const detailSelectedText = document.getElementById('detail-selected-text');
+    const detailUploadSubmit = document.getElementById('detail-upload-submit');
     document.querySelectorAll('[data-open-create]').forEach(btn => btn.addEventListener('click', () => createModal.classList.add('open')));
     document.querySelectorAll('[data-close-create]').forEach(btn => btn.addEventListener('click', () => createModal.classList.remove('open')));
     document.querySelectorAll('[data-close-detail]').forEach(btn => btn.addEventListener('click', () => detailModal.classList.remove('open')));
+
+    detailAttachments?.addEventListener('change', () => {
+        const files = Array.from(detailAttachments.files || []);
+        detailUploadSubmit.disabled = files.length === 0;
+        detailSelectedFiles.classList.toggle('open', files.length > 0);
+        detailSelectedText.textContent = files.length ? files.map(file => file.name).join(', ') : '';
+    });
 
     const employeeProgressByStatus = {
         'Chờ xử lý': 0,
@@ -408,6 +450,12 @@
         document.getElementById('detail-desc').textContent = task.description || 'Không có mô tả chi tiết.';
         document.getElementById('detail-deadline').textContent = task.deadline || 'Không có';
         document.getElementById('detail-progress').textContent = `${task.progress || 0}%`;
+
+        detailUploadForm.action = `{{ url('/employee/tasks') }}/${task.id}/upload`;
+        detailUploadForm.reset();
+        detailUploadSubmit.disabled = true;
+        detailSelectedFiles.classList.remove('open');
+        detailSelectedText.textContent = '';
 
         const docs = document.getElementById('detail-documents');
         docs.innerHTML = '';

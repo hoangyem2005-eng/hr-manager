@@ -85,7 +85,7 @@ class AdminController extends Controller
         ];
 
         // Công việc gần đây toàn công ty
-        $recentTasks = Task::with(['assignee', 'creator'])
+        $recentTasks = Task::with(['assignee.department', 'assignees.department', 'creator'])
             ->orderBy('created_at', 'desc')
             ->take(8)
             ->get()
@@ -95,8 +95,8 @@ class AdminController extends Controller
                 return [
                     'id'       => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                     'name'     => $this->cleanVietnameseText($t->task_name),
-                    'assignee' => $this->cleanVietnameseText($t->assignee->name ?? '—'),
-                    'dept'     => $this->cleanVietnameseText($t->assignee->department->TENPHONG ?? '—'),
+                    'assignee' => $this->cleanVietnameseText($t->assignees->isNotEmpty() ? $t->assignees->pluck('name')->join(', ') : ($t->assignee->name ?? '—')),
+                    'dept'     => $this->cleanVietnameseText($t->assignees->isNotEmpty() ? $t->assignees->map(fn ($user) => $user->department->TENPHONG ?? null)->filter()->unique()->join(', ') : ($t->assignee->department->TENPHONG ?? '—')),
                     'status'   => $status,
                     'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
                     'is_overdue' => $status === 'Quá hạn',

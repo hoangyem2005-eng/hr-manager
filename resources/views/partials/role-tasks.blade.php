@@ -123,6 +123,11 @@
     .field label { display:block; margin-bottom:6px; color:#64748B; font-size:12px; font-weight:900; }
     .field input, .field textarea, .field select { width:100%; border:1px solid #D4E0F7; border-radius:8px; padding:12px; outline:none; }
     .field textarea { min-height:110px; resize:vertical; }
+    .assignee-check-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:230px; overflow:auto; padding:10px; border:1px solid #D4E0F7; border-radius:8px; background:#F8FBFF; }
+    .assignee-check { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #E2EAF8; border-radius:8px; background:#fff; cursor:pointer; font-weight:900; color:#001F5B; }
+    .assignee-check input { width:16px; height:16px; accent-color:#003DA5; }
+    .assignee-check span { display:block; }
+    .assignee-check small { display:block; margin-top:2px; color:#64748B; font-size:11px; font-weight:700; }
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .ghost-btn { border:1px solid #D4E0F7; border-radius:8px; padding:11px 16px; background:#fff; color:#334155; font-weight:900; cursor:pointer; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; padding:0 20px 20px; }
@@ -362,14 +367,16 @@
                     <input name="task_name" required placeholder="Nhập tên công việc">
                 </div>
                 <div class="field">
-                    <label>Người nhận việc *</label>
-                    <select name="assigned_to[]" multiple required size="6">
+                    <label>Người cùng làm *</label>
+                    <div class="assignee-check-grid">
                         @foreach($allUsers as $assignee)
-                            <option value="{{ $assignee->id }}">
-                                {{ $assignee->name }} - {{ $assignee->department->TENPHONG ?? 'Chưa xếp phòng' }} / {{ $assignee->role->name ?? 'Nhân viên' }}
-                            </option>
+                            <label class="assignee-check">
+                                <input type="checkbox" name="assigned_to[]" value="{{ $assignee->id }}">
+                                <span>{{ $assignee->name }}<small>{{ $assignee->department->TENPHONG ?? 'Chưa xếp phòng' }} / {{ $assignee->role->name ?? 'Nhân viên' }}</small></span>
+                            </label>
                         @endforeach
-                    </select>
+                    </div>
+                    <div style="margin-top:6px;color:#64748B;font-size:12px;font-weight:700">Tích nhiều nhân viên để cùng làm chung một công việc.</div>
                 </div>
                 <div class="form-grid">
                     <div class="field">
