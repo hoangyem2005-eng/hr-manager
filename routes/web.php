@@ -28,6 +28,15 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ==================== ROLE-BASED DASHBOARDS ====================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/members', [DashboardController::class, 'members'])->name('members');
+    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('tasks.save');
+    Route::get('/reports', [DashboardController::class, 'reports'])->name('reports');
+    Route::get('/notifications', [DashboardController::class, 'notifications'])->name('notifications');
+    Route::post('/notifications/broadcast', [DashboardController::class, 'broadcastNotification'])->name('notifications.broadcast');
+    Route::post('/notifications/mark-all-read', [DashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/{notification}/open', [DashboardController::class, 'openNotification'])->name('notifications.open');
+    Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('notifications.read');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('user.store');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('user.update');
     Route::delete('/users/{id}', [AdminController::class, 'destroyUser'])->name('user.destroy');
@@ -35,6 +44,16 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
 Route::middleware(['auth'])->prefix('manager')->name('manager.')->group(function () {
     Route::get('/dashboard', [ManagerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/members', [ManagerController::class, 'members'])->name('members');
+    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('tasks.save');
+    Route::get('/tasks/{task}/detail', [TaskController::class, 'managerShow'])->name('tasks.show');
+    Route::get('/reports', [DashboardController::class, 'reports'])->name('reports');
+    Route::get('/notifications', [DashboardController::class, 'notifications'])->name('notifications');
+    Route::post('/notifications/broadcast', [DashboardController::class, 'broadcastNotification'])->name('notifications.broadcast');
+    Route::post('/notifications/mark-all-read', [DashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/{notification}/open', [DashboardController::class, 'openNotification'])->name('notifications.open');
+    Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('notifications.read');
     Route::post('/employees', [ManagerController::class, 'storeEmployee'])->name('employee.store');
     Route::post('/tasks', [ManagerController::class, 'assignTask'])->name('task.assign');
     Route::patch('/tasks/{task}/delegate', [ManagerController::class, 'delegateIncomingTask'])->name('task.delegate');
@@ -43,6 +62,12 @@ Route::middleware(['auth'])->prefix('manager')->name('manager.')->group(function
 
 Route::middleware(['auth'])->prefix('employee')->name('employee.')->group(function () {
     Route::get('/dashboard', [EmployeeController::class, 'dashboard'])->name('dashboard');
+    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('tasks.save');
+    Route::get('/notifications', [DashboardController::class, 'notifications'])->name('notifications');
+    Route::post('/notifications/mark-all-read', [DashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/{notification}/open', [DashboardController::class, 'openNotification'])->name('notifications.open');
+    Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('notifications.read');
     Route::patch('/tasks/{id}/progress', [EmployeeController::class, 'updateProgress'])->name('task.progress');
     // Nhân viên xem chi tiết task của mình (không dùng layout admin)
     Route::get('/tasks/{id}', [EmployeeController::class, 'taskDetail'])->name('task.detail');

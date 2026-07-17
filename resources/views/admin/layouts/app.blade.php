@@ -41,27 +41,25 @@
         </a>
 
         <span class="mf-nav-section s-label">Nhân sự</span>
-        @if(false)
-        <a href="{{ route('admin.dashboard') }}#nhan-su" class="mf-nav-item">
+        <a href="{{ route('admin.members') }}" class="mf-nav-item {{ request()->routeIs('admin.members') ? 'active' : '' }}">
             <i data-lucide="users" style="width:17px;height:17px"></i>
             <span class="s-label">Tất cả nhân viên</span>
         </a>
-        @endif
         <a href="{{ route('phongban.danhsach') }}" class="mf-nav-item {{ request()->routeIs('phongban.*') ? 'active' : '' }}">
             <i data-lucide="building-2" style="width:17px;height:17px"></i>
             <span class="s-label">Phòng ban</span>
         </a>
 
         <span class="mf-nav-section s-label">Vận hành</span>
-        <a href="{{ route('dashboard.tasks') }}" class="mf-nav-item {{ request()->routeIs('dashboard.tasks') ? 'active' : '' }}">
+        <a href="{{ route('admin.tasks') }}" class="mf-nav-item {{ request()->routeIs('admin.tasks') ? 'active' : '' }}">
             <i data-lucide="kanban" style="width:17px;height:17px"></i>
             <span class="s-label">Công việc</span>
         </a>
-        <a href="{{ route('dashboard.reports') }}" class="mf-nav-item">
+        <a href="{{ route('admin.reports') }}" class="mf-nav-item {{ request()->routeIs('admin.reports') ? 'active' : '' }}">
             <i data-lucide="bar-chart-2" style="width:17px;height:17px"></i>
             <span class="s-label">Báo cáo</span>
         </a>
-        <a href="{{ route('dashboard.notifications') }}" class="mf-nav-item">
+        <a href="{{ route('admin.notifications') }}" class="mf-nav-item {{ request()->routeIs('admin.notifications') ? 'active' : '' }}">
             <i data-lucide="bell" style="width:17px;height:17px"></i>
             <span class="s-label">Thông báo</span>
             @if(($unreadCount ?? 0) > 0)
@@ -104,7 +102,7 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:8px">
-            <a href="{{ route('dashboard.notifications') }}" class="mf-icon-btn" aria-label="Thông báo">
+            <a href="{{ route('admin.notifications') }}" class="mf-icon-btn" aria-label="Thông báo">
                 <i data-lucide="bell" style="width:17px;height:17px"></i>
                 @if(($unreadCount ?? 0) > 0)<span class="mf-dot"></span>@endif
             </a>

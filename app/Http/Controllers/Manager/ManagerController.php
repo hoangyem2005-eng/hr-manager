@@ -114,6 +114,68 @@ class ManagerController extends Controller
         ));
     }
 
+    public function members(Request $request)
+    {
+        $manager = Auth::user();
+        $department = $manager->department;
+        $search = trim((string) $request->query('search', ''));
+
+        $query = User::with('role')
+            ->where('department_id', $manager->department_id)
+            ->where('id', '!=', $manager->id);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $teamMembers = $query
+            ->orderBy('role_id')
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $teamMembers->setCollection($teamMembers->getCollection()->map(function (User $member) {
+            $total = Task::where('assigned_to', $member->id)->count();
+            $done = Task::where('assigned_to', $member->id)->where('status', 'Hoàn thành')->count();
+            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'Đang review'])->count();
+            $overdue = Task::where('assigned_to', $member->id)
+                ->whereNotIn('status', ['Hoàn thành'])
+                ->whereNotNull('deadline')
+                ->whereDate('deadline', '<', now()->toDateString())
+                ->count();
+
+            return [
+                'id' => $member->id,
+                'code' => 'NV' . str_pad((string) $member->id, 3, '0', STR_PAD_LEFT),
+                'name' => $member->name,
+                'email' => $member->email,
+                'role_name' => $member->role_display_name,
+                'avatar' => $this->getInitials($member->name),
+                'total' => $total,
+                'done' => $done,
+                'doing' => $doing,
+                'overdue' => $overdue,
+                'rate' => $total > 0 ? round(($done / $total) * 100) : 0,
+                'joined' => $member->created_at ? $member->created_at->format('d/m/Y') : '—',
+                'status' => $member->is_active ? 'active' : 'inactive',
+            ];
+        }));
+
+        $visibleMembers = collect($teamMembers->items());
+        $summary = [
+            'visible' => $visibleMembers->count(),
+            'total' => $teamMembers->total(),
+            'active' => $visibleMembers->where('status', 'active')->count(),
+            'tasks' => $visibleMembers->sum('total'),
+            'overdue' => $visibleMembers->sum('overdue'),
+        ];
+
+        return view('manager.members', compact('department', 'teamMembers', 'search', 'summary'));
+    }
+
     /**
      * Thêm nhân viên mới – department_id bị LOCK theo phòng của Trưởng phòng.
      */

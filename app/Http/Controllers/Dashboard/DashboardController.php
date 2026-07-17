@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Document;
 use App\Models\Notification;
 use App\Models\Role;
 use App\Models\Task;
@@ -445,6 +446,18 @@ class DashboardController extends Controller
             $roleVariant = 'employee';
         }
 
+        if ($request->routeIs('employee.*')) {
+            return view('employee.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant'));
+        }
+
+        if ($request->routeIs('admin.*')) {
+            return view('admin.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant'));
+        }
+
+        if ($request->routeIs('manager.*')) {
+            return view('manager.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant'));
+        }
+
         return view('dashboard.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant'));
     }
 
@@ -529,7 +542,9 @@ class DashboardController extends Controller
             $successMessage .= ' (' . $createdTasks->count() . ' nhân viên)';
         }
 
-        return redirect()->route('dashboard.tasks')->with('success', $successMessage);
+        $taskIndexRoute = $this->roleRouteName($request, 'tasks');
+
+        return redirect()->route($taskIndexRoute)->with('success', $successMessage);
     }
 
     public function members(Request $request)
@@ -598,6 +613,10 @@ class DashboardController extends Controller
 
         $departments = Department::all();
         $roles = Role::all();
+
+        if ($request->routeIs('admin.*')) {
+            return view('admin.members', compact('usersList', 'departments', 'roles', 'search', 'deptFilter'));
+        }
 
         return view('dashboard.members', compact('usersList', 'departments', 'roles', 'search', 'deptFilter'));
     }
@@ -686,46 +705,186 @@ class DashboardController extends Controller
     {
         $this->ensureMockDataExists();
 
-        $total = Task::count();
-        $doneRate = $total > 0 ? round((Task::where('status', 'Hoàn thành')->count() / $total) * 100) : 0;
-        $overdueRate = $total > 0 ? round((Task::where('status', 'Quá hạn')->count() / $total) * 100) : 0;
+        $today = Carbon::today();
+        $allTasks = Task::with(['assignee.department', 'assigner', 'documents'])->get();
+        $allUsers = User::with('department')->get();
+        $employeeUploadedDocuments = Document::with(['uploader.department', 'task'])
+            ->whereHas('uploader', fn ($query) => $query->where('role_id', User::ROLE_EMPLOYEE))
+            ->latest()
+            ->get();
 
-        $lineData = [
-            ['week' => 'T1', 'assigned' => 18, 'completed' => 12],
-            ['week' => 'T2', 'assigned' => 25, 'completed' => 20],
-            ['week' => 'T3', 'assigned' => 22, 'completed' => 18],
-            ['week' => 'T4', 'assigned' => 30, 'completed' => 25],
-            ['week' => 'T5', 'assigned' => 28, 'completed' => 22],
-            ['week' => 'T6', 'assigned' => 35, 'completed' => 30],
-            ['week' => 'T7', 'assigned' => 32, 'completed' => 28],
-        ];
+        $normalizedStatus = function (Task $task): string {
+            return mb_strtolower($this->cleanVietnameseText($task->status ?? ''));
+        };
 
-        $priorityDistribution = [
-            ['priority' => 'Cao', 'value' => 45],
-            ['priority' => 'Trung bình', 'value' => 62],
-            ['priority' => 'Thấp', 'value' => 35],
-        ];
+        $isDone = function (Task $task) use ($normalizedStatus): bool {
+            $status = $normalizedStatus($task);
 
-        $perfData = User::take(5)->get()->map(function ($u) {
-            $totalUserTasks = Task::where('assigned_to', $u->id)->count();
-            $done = $totalUserTasks > 0 ? round((Task::where('assigned_to', $u->id)->where('status', 'Hoàn thành')->count() / $totalUserTasks) * 100) : 60;
-            $overdue = 100 - $done;
+            return in_array($status, ['hoàn thành', 'done'], true) || (int) ($task->progress ?? 0) >= 100;
+        };
 
-            return [
-                'name' => $this->cleanVietnameseText($u->name),
-                'completion' => $done,
-                'overdue' => $overdue,
-            ];
+        $isOverdue = function (Task $task) use ($today, $isDone): bool {
+            return !$isDone($task)
+                && $task->deadline
+                && Carbon::parse($task->deadline)->lt($today);
+        };
+
+        $total = $allTasks->count();
+        $completedTasks = $allTasks->filter($isDone);
+        $overdueTasks = $allTasks->filter($isOverdue);
+        $inProgressTasks = $allTasks->filter(function (Task $task) use ($normalizedStatus, $isDone, $isOverdue) {
+            $status = $normalizedStatus($task);
+
+            return !$isDone($task)
+                && !$isOverdue($task)
+                && (str_contains($status, 'đang làm') || str_contains($status, 'review') || (int) ($task->progress ?? 0) > 0);
+        });
+        $pendingTasks = $allTasks->filter(function (Task $task) use ($normalizedStatus, $isDone, $isOverdue) {
+            $status = $normalizedStatus($task);
+
+            return !$isDone($task)
+                && !$isOverdue($task)
+                && (str_contains($status, 'chờ') || $status === 'todo' || (int) ($task->progress ?? 0) === 0);
         });
 
-        $pieData = [
-            ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count() ?: 58, 'color' => '#16A34A'],
-            ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count() ?: 42, 'color' => '#D97706'],
-            ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count() ?: 22, 'color' => '#003DA5'],
-            ['name' => 'Chờ xử lý', 'value' => Task::where('status', 'Chờ xử lý')->count() ?: 20, 'color' => '#6B7280'],
+        $doneRate = $total > 0 ? round(($completedTasks->count() / $total) * 100) : 0;
+        $overdueRate = $total > 0 ? round(($overdueTasks->count() / $total) * 100) : 0;
+        $activeUsers = $allUsers->where('is_active', true)->count();
+        $documentCount = $employeeUploadedDocuments->count();
+
+        $completedWithDates = $completedTasks->filter(fn (Task $task) => $task->created_at && $task->updated_at);
+        $avgCompletionDays = $completedWithDates->count() > 0
+            ? round($completedWithDates->avg(fn (Task $task) => max(0, $task->created_at->diffInHours($task->updated_at) / 24)), 1)
+            : 0;
+
+        $monthStart = $today->copy()->startOfMonth();
+        $previousMonthStart = $today->copy()->subMonthNoOverflow()->startOfMonth();
+        $previousMonthEnd = $today->copy()->subMonthNoOverflow()->endOfMonth();
+        $tasksThisMonth = $allTasks->filter(fn (Task $task) => $task->created_at && $task->created_at->gte($monthStart))->count();
+        $tasksPreviousMonth = $allTasks->filter(fn (Task $task) => $task->created_at && $task->created_at->betweenIncluded($previousMonthStart, $previousMonthEnd))->count();
+        $monthlyTaskChange = $tasksPreviousMonth > 0
+            ? round((($tasksThisMonth - $tasksPreviousMonth) / $tasksPreviousMonth) * 100)
+            : ($tasksThisMonth > 0 ? 100 : 0);
+
+        $lineData = collect(range(6, 0))->map(function (int $daysAgo) use ($today, $allTasks, $isDone) {
+            $date = $today->copy()->subDays($daysAgo);
+
+            return [
+                'label' => $date->format('d/m'),
+                'assigned' => $allTasks->filter(fn (Task $task) => $task->created_at && $task->created_at->isSameDay($date))->count(),
+                'completed' => $allTasks->filter(fn (Task $task) => $isDone($task) && $task->updated_at && $task->updated_at->isSameDay($date))->count(),
+            ];
+        })->values();
+
+        $departmentData = Department::orderBy('TENPHONG')->get()->map(function (Department $department) use ($allTasks, $isDone, $isOverdue) {
+            $departmentTasks = $allTasks->filter(fn (Task $task) => (int) optional($task->assignee)->department_id === (int) $department->id);
+            $totalDepartmentTasks = $departmentTasks->count();
+            $completedDepartmentTasks = $departmentTasks->filter($isDone)->count();
+
+            return [
+                'name' => $this->cleanVietnameseText($department->TENPHONG ?: $department->name),
+                'total' => $totalDepartmentTasks,
+                'completed' => $completedDepartmentTasks,
+                'overdue' => $departmentTasks->filter($isOverdue)->count(),
+                'completion_rate' => $totalDepartmentTasks > 0 ? round(($completedDepartmentTasks / $totalDepartmentTasks) * 100) : 0,
+            ];
+        })->filter(fn ($department) => $department['total'] > 0)->values();
+
+        $perfData = $allUsers->map(function (User $user) use ($allTasks, $isDone, $isOverdue) {
+            $userTasks = $allTasks->where('assigned_to', $user->id);
+            $totalUserTasks = $userTasks->count();
+            $completedUserTasks = $userTasks->filter($isDone)->count();
+            $overdueUserTasks = $userTasks->filter($isOverdue)->count();
+
+            return [
+                'name' => $this->cleanVietnameseText($user->name),
+                'department' => $this->cleanVietnameseText(optional($user->department)->TENPHONG ?? 'Chưa xếp phòng'),
+                'total' => $totalUserTasks,
+                'completed' => $completedUserTasks,
+                'overdue' => $overdueUserTasks,
+                'completion' => $totalUserTasks > 0 ? round(($completedUserTasks / $totalUserTasks) * 100) : 0,
+                'overdue_rate' => $totalUserTasks > 0 ? round(($overdueUserTasks / $totalUserTasks) * 100) : 0,
+            ];
+        })->filter(fn ($user) => $user['total'] > 0)
+            ->sortByDesc('total')
+            ->take(8)
+            ->values();
+
+        $documentUploaderData = $employeeUploadedDocuments
+            ->groupBy('user_id')
+            ->map(function ($documents) {
+                $uploader = $documents->first()->uploader;
+
+                return [
+                    'name' => $this->cleanVietnameseText(optional($uploader)->name ?? 'Không rõ'),
+                    'department' => $this->cleanVietnameseText(optional(optional($uploader)->department)->TENPHONG ?? 'Chưa xếp phòng'),
+                    'total' => $documents->count(),
+                    'waiting' => $documents->where('review_status', Document::STATUS_MANAGER_REVIEW)->count(),
+                    'forwarded' => $documents->where('review_status', Document::STATUS_DIRECTOR_VISIBLE)->count(),
+                    'latest_at' => optional($documents->first()->created_at)->format('d/m/Y H:i') ?? 'Không rõ',
+                ];
+            })
+            ->sortByDesc('total')
+            ->values();
+
+        $recentEmployeeDocuments = $employeeUploadedDocuments
+            ->take(6)
+            ->map(fn (Document $document) => [
+                'file_name' => $document->file_name,
+                'file_type' => strtoupper($document->file_type ?? 'FILE'),
+                'uploader' => $this->cleanVietnameseText(optional($document->uploader)->name ?? 'Không rõ'),
+                'department' => $this->cleanVietnameseText(optional(optional($document->uploader)->department)->TENPHONG ?? 'Chưa xếp phòng'),
+                'task_code' => $document->task ? 'WH-' . str_pad($document->task->id, 3, '0', STR_PAD_LEFT) : 'Không có',
+                'task_name' => $this->cleanVietnameseText(optional($document->task)->task_name ?? 'Không gắn công việc'),
+                'uploaded_at' => optional($document->created_at)->format('d/m/Y H:i') ?? 'Không rõ',
+                'status' => $document->review_status === Document::STATUS_DIRECTOR_VISIBLE ? 'Đã chuyển lên Giám đốc' : 'Chờ trưởng phòng duyệt',
+            ])
+            ->values();
+
+        $pieData = collect([
+            ['name' => 'Chờ xử lý', 'value' => $pendingTasks->count(), 'color' => '#64748B'],
+            ['name' => 'Đang làm', 'value' => $inProgressTasks->count(), 'color' => '#003DA5'],
+            ['name' => 'Hoàn thành', 'value' => $completedTasks->count(), 'color' => '#16A34A'],
+            ['name' => 'Quá hạn', 'value' => $overdueTasks->count(), 'color' => '#E4002B'],
+        ]);
+
+        $summary = [
+            'total' => $total,
+            'completed' => $completedTasks->count(),
+            'in_progress' => $inProgressTasks->count(),
+            'pending' => $pendingTasks->count(),
+            'overdue' => $overdueTasks->count(),
+            'done_rate' => $doneRate,
+            'overdue_rate' => $overdueRate,
+            'active_users' => $activeUsers,
+            'departments' => Department::count(),
+            'documents' => $documentCount,
+            'documents_waiting' => $employeeUploadedDocuments->where('review_status', Document::STATUS_MANAGER_REVIEW)->count(),
+            'documents_forwarded' => $employeeUploadedDocuments->where('review_status', Document::STATUS_DIRECTOR_VISIBLE)->count(),
+            'avg_completion_days' => $avgCompletionDays,
+            'monthly_task_change' => $monthlyTaskChange,
         ];
 
-        return view('dashboard.reports', compact('total', 'doneRate', 'overdueRate', 'lineData', 'priorityDistribution', 'perfData', 'pieData'));
+        $reportView = 'dashboard.reports';
+
+        if (request()->routeIs('admin.*')) {
+            $reportView = 'admin.reports';
+        } elseif (request()->routeIs('manager.*')) {
+            $reportView = 'manager.reports';
+        }
+
+        return view($reportView, compact(
+            'total',
+            'doneRate',
+            'overdueRate',
+            'lineData',
+            'departmentData',
+            'perfData',
+            'pieData',
+            'documentUploaderData',
+            'recentEmployeeDocuments',
+            'summary'
+        ));
     }
 
     public function roles()
@@ -739,11 +898,8 @@ class DashboardController extends Controller
 
         $user = Auth::user();
 
-        // Nhân viên không có quyền truy cập trang notifications WorkHub → redirect về employee dashboard
-        if (!$user->isDirector() && !$user->isLeader()) {
-            return redirect()->route('employee.dashboard');
-        }
         $this->syncDeadlineReminderNotifications($user);
+        $this->syncOverdueTaskNotifications($user);
 
         $canBroadcastNotifications = $user->isDirector() || $user->isLeader();
         $broadcastRecipientCount = User::where('is_active', true)->count();
@@ -774,7 +930,17 @@ class DashboardController extends Controller
             'deadline' => $notifications->where('type', 'deadline')->count(),
         ];
 
-        return view('dashboard.notifications', compact(
+        $notificationView = 'dashboard.notifications';
+
+        if (request()->routeIs('employee.*')) {
+            $notificationView = 'employee.notifications';
+        } elseif (request()->routeIs('admin.*')) {
+            $notificationView = 'admin.notifications';
+        } elseif (request()->routeIs('manager.*')) {
+            $notificationView = 'manager.notifications';
+        }
+
+        return view($notificationView, compact(
             'notifications',
             'unreadCount',
             'canBroadcastNotifications',
@@ -821,7 +987,7 @@ class DashboardController extends Controller
         Notification::insert($rows);
 
         return redirect()
-            ->route('dashboard.notifications')
+            ->route($this->roleRouteName($request, 'notifications'))
             ->with('success', 'Đã gửi thông báo đến ' . $recipients->count() . ' nhân viên.');
     }
 
@@ -853,11 +1019,47 @@ class DashboardController extends Controller
         }
     }
 
+    protected function syncOverdueTaskNotifications(User $user): void
+    {
+        $overdueTasks = Task::where('assigned_to', $user->id)
+            ->whereNotIn('status', [
+                'Done',
+                'Hoàn thành',
+                'HoÃ n thÃ nh',
+                'HoÃƒÂ n thÃƒÂ nh',
+                'HoÃƒÆ’Ã‚Â n thÃƒÆ’Ã‚Â nh',
+            ])
+            ->whereNotNull('deadline')
+            ->whereDate('deadline', '<', now()->toDateString())
+            ->where(function ($query) {
+                $query->whereNull('progress')->orWhere('progress', '<', 100);
+            })
+            ->get();
+
+        foreach ($overdueTasks as $task) {
+            $deadline = Carbon::parse($task->deadline)->format('d/m/Y');
+
+            Notification::firstOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'task_id' => $task->id,
+                    'title' => 'Công việc đã quá hạn',
+                ],
+                [
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT)
+                        . ': ' . $this->cleanVietnameseText($task->task_name)
+                        . ' - Đã quá hạn từ: ' . $deadline,
+                    'is_read' => false,
+                ]
+            );
+        }
+    }
+
     protected function notificationType(Notification $notification, string $title): string
     {
         $titleLower = mb_strtolower($title);
 
-        if (str_contains($titleLower, 'quá hạn')) {
+        if (str_contains($titleLower, 'quá hạn') || str_contains($titleLower, 'quÃ¡ háº¡n')) {
             return 'overdue';
         }
 
@@ -897,14 +1099,10 @@ class DashboardController extends Controller
             return redirect()->route('congviec.chitiet', $notification->task_id);
         }
 
-        if (!Auth::user()->isDirector() && !Auth::user()->isLeader()) {
-            return redirect()
-                ->route('employee.dashboard')
-                ->with('success', 'Thông báo đã được đánh dấu là đã đọc.');
-        }
+        $notificationIndexRoute = $this->roleRouteName(request(), 'notifications');
 
         return redirect()
-            ->route('dashboard.notifications')
+            ->route($notificationIndexRoute)
             ->with('success', 'Thông báo đã được đánh dấu là đã đọc.');
     }
 
@@ -916,15 +1114,10 @@ class DashboardController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        // Nhân viên redirect về employee dashboard
-        if (!$user->isDirector() && !$user->isLeader()) {
-            return redirect()
-                ->route('employee.dashboard')
-                ->with('success', 'Đã đánh dấu tất cả thông báo là đã đọc.');
-        }
+        $notificationIndexRoute = $this->roleRouteName(request(), 'notifications');
 
         return redirect()
-            ->route('dashboard.notifications')
+            ->route($notificationIndexRoute)
             ->with('success', 'Đã đánh dấu tất cả thông báo là đã đọc.');
     }
 
@@ -936,11 +1129,32 @@ class DashboardController extends Controller
             $notif->update(['is_read' => 1]);
         }
 
+        if ($notif->task_id && !Auth::user()->isDirector() && !Auth::user()->isLeader()) {
+            return redirect()->route('employee.task.detail', $notif->task_id);
+        }
+
         if ($notif->task_id) {
             return redirect()->route('congviec.chitiet', $notif->task_id);
         }
 
-        return redirect()->route('dashboard.notifications');
+        return redirect()->route($this->roleRouteName(request(), 'notifications'));
+    }
+
+    protected function roleRouteName(Request $request, string $page): string
+    {
+        if ($request->routeIs('employee.*')) {
+            return 'employee.' . $page;
+        }
+
+        if ($request->routeIs('admin.*')) {
+            return 'admin.' . $page;
+        }
+
+        if ($request->routeIs('manager.*')) {
+            return 'manager.' . $page;
+        }
+
+        return 'dashboard.' . $page;
     }
 
     // Helper tạo chữ viết tắt Avatar

@@ -288,11 +288,11 @@
                 <i data-lucide="layout-dashboard" style="width:16px;height:16px;flex-shrink:0"></i>
                 Dashboard
             </a>
-            <a href="{{ route('employee.dashboard') }}#tasks-panel" class="nav-item active">
+            <a href="{{ route('employee.tasks') }}" class="nav-item active">
                 <i data-lucide="clipboard-list" style="width:16px;height:16px;flex-shrink:0"></i>
                 Công việc của tôi
             </a>
-            <a href="{{ route('employee.dashboard') }}#notifications-panel" class="nav-item">
+            <a href="{{ route('employee.notifications') }}" class="nav-item">
                 <i data-lucide="bell" style="width:16px;height:16px;flex-shrink:0"></i>
                 Thông báo
             </a>

@@ -117,6 +117,22 @@ class TaskController extends Controller
         return view('admin.layouts.congviec.chitiet', compact('task'));
     }
 
+    public function managerShow(Task $task)
+    {
+        $task->load(['assignee', 'creator', 'documents.uploader']);
+        $user = Auth::user();
+
+        abort_unless($user && $user->isLeader() && !$user->isDirector(), 403);
+        abort_unless($this->canViewTask($task, $user), 403);
+
+        $task->setRelation(
+            'documents',
+            $task->documents->filter(fn (Document $document) => $this->canViewDocument($document, $user))->values()
+        );
+
+        return view('manager.task-detail', compact('task'));
+    }
+
     // ==================== CHỈNH SỬA CÔNG VIỆC ====================
 
     /**

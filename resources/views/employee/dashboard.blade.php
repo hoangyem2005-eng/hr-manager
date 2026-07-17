@@ -248,6 +248,240 @@
         /* Content Grid */
         .content-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
 
+        .dashboard-overview {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+        .overview-panel { min-height: 220px; }
+        .overview-date {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 800;
+            background: #F1F5FD;
+            border-radius: 999px;
+            padding: 5px 10px;
+        }
+        .overview-body {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1.2fr .8fr;
+            gap: 16px;
+            height: calc(100% - 58px);
+        }
+        .focus-card {
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            border: 1px solid #D4E0F7;
+            background:
+                linear-gradient(135deg, rgba(0,61,165,.08), rgba(255,255,255,.96)),
+                #fff;
+        }
+        .focus-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--mf-blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: inset 4px 0 0 var(--mf-red);
+        }
+        .focus-icon i,
+        .priority-item i,
+        .shortcut-icon i,
+        .shortcut-card > i,
+        .priority-empty i { width: 18px; height: 18px; }
+        .focus-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--text-muted);
+            font-weight: 800;
+        }
+        .focus-card h3 {
+            margin-top: 4px;
+            font-size: 42px;
+            line-height: 1;
+            color: var(--mf-blue-dark);
+            font-weight: 900;
+        }
+        .focus-desc {
+            margin-top: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .mini-metrics {
+            display: grid;
+            gap: 10px;
+        }
+        .mini-metric {
+            border-radius: 12px;
+            border: 1px solid #E5EDF8;
+            background: #F8FAFF;
+            padding: 14px;
+        }
+        .mini-metric span {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 800;
+        }
+        .mini-metric strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 24px;
+            line-height: 1;
+            color: var(--mf-blue);
+            font-weight: 900;
+        }
+        .mini-metric.danger strong { color: var(--mf-red); }
+        .priority-body {
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+        .priority-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            min-height: 64px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #F4C2CC;
+            background: #FFF7F9;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .priority-item.calm {
+            border-color: #D4E0F7;
+            background: #F8FAFF;
+        }
+        .priority-item:hover {
+            border-color: var(--mf-blue);
+            background: #fff;
+        }
+        .priority-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--mf-red);
+            box-shadow: 0 0 0 5px rgba(228,0,43,.1);
+        }
+        .priority-item.calm .priority-dot {
+            background: var(--mf-blue);
+            box-shadow: 0 0 0 5px rgba(0,61,165,.1);
+        }
+        .priority-item strong {
+            display: block;
+            font-size: 13px;
+            color: var(--mf-blue-dark);
+            line-height: 1.35;
+        }
+        .priority-item small {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .priority-item > i {
+            color: var(--mf-blue);
+        }
+        .priority-empty {
+            min-height: 138px;
+            border-radius: 12px;
+            border: 1px dashed #D4E0F7;
+            background: #F8FAFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 18px;
+            color: var(--text-muted);
+            gap: 8px;
+        }
+        .priority-empty i { color: #16A34A; width: 28px; height: 28px; }
+        .priority-empty strong { color: var(--mf-blue-dark); font-size: 14px; }
+        .priority-empty span { font-size: 12px; line-height: 1.5; }
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .shortcut-card {
+            min-height: 108px;
+            border-radius: 14px;
+            border: 1px solid #E5EDF8;
+            background: #fff;
+            color: var(--text);
+            text-decoration: none;
+            padding: 18px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 14px;
+            align-items: center;
+            transition: border-color .15s, transform .15s, box-shadow .15s;
+        }
+        .shortcut-card:hover {
+            border-color: var(--mf-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 18px 36px rgba(0,31,91,.08);
+        }
+        .shortcut-card.static {
+            grid-template-columns: auto 1fr;
+            pointer-events: none;
+        }
+        .shortcut-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+        .shortcut-icon.blue { background: var(--mf-blue); }
+        .shortcut-icon.red { background: var(--mf-red); }
+        .shortcut-icon.navy { background: var(--mf-blue-dark); }
+        .shortcut-card strong {
+            display: block;
+            color: var(--mf-blue-dark);
+            font-size: 14px;
+            line-height: 1.35;
+        }
+        .shortcut-card small {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .shortcut-card > i { color: var(--mf-blue); }
+        .shortcut-card em {
+            min-width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            background: var(--mf-red);
+            color: #fff;
+            font-style: normal;
+            font-size: 11px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 7px;
+        }
+
         /* Panel */
         .panel {
             background: var(--white);
@@ -408,9 +642,9 @@
         .toast.error { background: #991B1B; }
 
         /* Responsive */
-        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 1200px) { .content-grid, .dashboard-overview { grid-template-columns: 1fr; } .shortcut-grid { grid-template-columns: 1fr; } }
         @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .sidebar { height: auto; position: static; } }
-        @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } .hero-stats { display: none; } }
+        @media (max-width: 640px) { .hero, .overview-body { grid-template-columns: 1fr; } .hero-stats { display: none; } .shortcut-card { grid-template-columns: auto 1fr; } .shortcut-card > i { display: none; } }
     </style>
 </head>
 <body>
@@ -479,12 +713,12 @@
                 <i data-lucide="layout-dashboard" style="width:16px;height:16px;flex-shrink:0"></i>
                 Dashboard
             </a>
-            <a href="#tasks-panel" class="nav-item" onclick="scrollTo('tasks-panel')">
+            <a href="{{ route('employee.tasks') }}" class="nav-item">
                 <i data-lucide="clipboard-list" style="width:16px;height:16px;flex-shrink:0"></i>
                 Công việc của tôi
                 @if($total > 0)<span class="nav-badge">{{ $total }}</span>@endif
             </a>
-            <a href="#notifications-panel" class="nav-item" onclick="scrollTo('notifications-panel')">
+            <a href="{{ route('employee.notifications') }}" class="nav-item">
                 <i data-lucide="bell" style="width:16px;height:16px;flex-shrink:0"></i>
                 Thông báo
                 @if($unreadCount > 0)<span class="nav-badge">{{ $unreadCount }}</span>@endif
@@ -510,7 +744,7 @@
                 Xin chào, {{ explode(' ', Auth::user()->name)[count(explode(' ', Auth::user()->name)) - 1] }}! 👋
             </div>
             <div class="topbar-date" id="topbar-date"></div>
-            <a href="#notifications-panel" class="topbar-bell" title="Thông báo">
+            <a href="{{ route('employee.notifications') }}" class="topbar-bell" title="Thông báo">
                 <i data-lucide="bell" style="width:17px;height:17px"></i>
                 @if($unreadCount > 0)<span class="bell-dot"></span>@endif
             </a>
@@ -525,11 +759,11 @@
                     <div class="hero-title">Việc của tôi, tiến độ của tôi.</div>
                     <div class="hero-sub">Cập nhật trạng thái công việc và theo dõi tiến độ cá nhân của bạn tại đây.</div>
                     <div class="hero-actions">
-                        <a href="#tasks-panel" class="hero-btn primary">
+                        <a href="{{ route('employee.tasks') }}" class="hero-btn primary">
                             <i data-lucide="zap" style="width:14px;height:14px"></i>
                             Công việc ngay
                         </a>
-                        <a href="#notifications-panel" class="hero-btn ghost">
+                        <a href="{{ route('employee.notifications') }}" class="hero-btn ghost">
                             <i data-lucide="bell" style="width:14px;height:14px"></i>
                             Thông báo @if($unreadCount > 0)({{ $unreadCount }})@endif
                         </a>
@@ -565,151 +799,114 @@
             </div>
             @endif
 
-            {{-- Main Grid --}}
-            <div class="content-grid">
-
-                {{-- Task Panel --}}
-                <div class="panel" id="tasks-panel">
+            {{-- Overview Grid --}}
+            @php
+                $activeTasks = collect($mappedTasks)->filter(fn($t) => !str_contains($t['status'], 'Hoàn'));
+                $nextTask = $activeTasks
+                    ->sortBy(fn($t) => $t['deadline_raw'] ?: '9999-12-31')
+                    ->first();
+                $todayFocus = $urgentTasks->take(3);
+            @endphp
+            <div class="dashboard-overview">
+                <section class="panel overview-panel">
                     <div class="panel-head">
                         <div class="panel-title">
-                            <i data-lucide="clipboard-list"></i>
-                            Danh sách công việc cá nhân
+                            <i data-lucide="activity"></i>
+                            Tổng quan hôm nay
                         </div>
-                        <div class="tab-group">
-                            <button class="tab-btn active" onclick="filterTasks('all', this)">Tất cả</button>
-                            <button class="tab-btn" onclick="filterTasks('doing', this)">Đang làm</button>
-                            <button class="tab-btn" onclick="filterTasks('pending', this)">Chờ xử lý</button>
-                            <button class="tab-btn" onclick="filterTasks('done', this)">Xong</button>
+                        <span class="overview-date">{{ now()->format('d/m/Y') }}</span>
+                    </div>
+                    <div class="overview-body">
+                        <div class="focus-card primary">
+                            <div class="focus-icon"><i data-lucide="target"></i></div>
+                            <div>
+                                <p class="focus-label">Tiến độ cá nhân</p>
+                                <h3>{{ $completionRate }}%</h3>
+                                <p class="focus-desc">Bạn đã hoàn thành {{ $done }}/{{ $total }} công việc được giao.</p>
+                            </div>
+                        </div>
+                        <div class="mini-metrics">
+                            <div class="mini-metric">
+                                <span>Chờ xử lý</span>
+                                <strong>{{ $pending }}</strong>
+                            </div>
+                            <div class="mini-metric">
+                                <span>Đang làm</span>
+                                <strong>{{ $doing }}</strong>
+                            </div>
+                            <div class="mini-metric danger">
+                                <span>Quá hạn</span>
+                                <strong>{{ $overdue }}</strong>
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    @forelse($mappedTasks as $t)
-                        @php
-                            $state = str_contains($t['status'], 'Hoàn') ? 'done'
-                                   : (str_contains($t['status'], 'Quá') ? 'overdue'
-                                   : (str_contains($t['status'], 'Đang') ? 'doing' : 'pending'));
-                            $chipClass = match($state) {
-                                'done'    => 'chip-done',
-                                'overdue' => 'chip-overdue',
-                                'doing'   => 'chip-doing',
-                                default   => 'chip-pending'
-                            };
-                            $barClass = match($state) {
-                                'done'    => 'green',
-                                'overdue' => 'red',
-                                default   => 'blue'
-                            };
-                            $daysLeft = $t['days_left'] ?? null;
-                            $isUrgent = $daysLeft !== null && $daysLeft <= 2 && $daysLeft >= 0 && $state !== 'done';
-                        @endphp
-                        <div class="task-card {{ $state }}" data-status="{{ $state }}" id="task-{{ $t['id'] }}">
-                            <div class="task-top">
-                                <div class="task-name">{{ $t['name'] }}</div>
-                                <span class="task-code">{{ $t['code'] }}</span>
-                            </div>
-
-                            <div class="task-meta-row">
-                                <span class="task-chip {{ $chipClass }}">
-                                    <i data-lucide="{{ $state === 'done' ? 'check-circle' : ($state === 'overdue' ? 'alert-circle' : ($state === 'doing' ? 'play-circle' : 'clock')) }}" style="width:11px;height:11px"></i>
-                                    {{ $t['status'] }}
-                                </span>
-                                <span class="deadline-chip {{ $isUrgent ? 'urgent' : '' }}">
-                                    <i data-lucide="calendar" style="width:11px;height:11px"></i>
-                                    Deadline: {{ $t['deadline'] }}
-                                    @if($daysLeft !== null && $state !== 'done')
-                                        @if($daysLeft < 0)
-                                            · <span style="color:var(--mf-red);font-weight:700">Quá hạn {{ abs((int)$daysLeft) }} ngày</span>
-                                        @elseif($daysLeft === 0)
-                                            · <span style="color:var(--mf-red);font-weight:700">Hôm nay!</span>
-                                        @elseif($daysLeft <= 2)
-                                            · <span style="color:#D97706;font-weight:700">Còn {{ $daysLeft }} ngày</span>
-                                        @endif
-                                    @endif
-                                </span>
-                            </div>
-
-                            <div class="prog-wrap">
-                                <div class="prog-bar">
-                                    <div class="prog-fill {{ $barClass }}" id="bar-{{ $t['id'] }}" style="width:{{ $t['progress'] }}%"></div>
-                                </div>
-                                <span class="prog-pct" id="pct-{{ $t['id'] }}">{{ $t['progress'] }}%</span>
-                            </div>
-
-                            <div class="task-actions">
-                                <select class="status-select" id="sel-{{ $t['id'] }}" onchange="updateTask({{ $t['id'] }}, this.value)">
-                                    <option value="Chờ xử lý" {{ $t['status'] === 'Chờ xử lý' ? 'selected' : '' }}>⏳ Chờ xử lý</option>
-                                    <option value="Đang làm"  {{ $t['status'] === 'Đang làm'  ? 'selected' : '' }}>▶️ Đang làm</option>
-                                    <option value="Đang review" {{ $t['status'] === 'Đang review' ? 'selected' : '' }}>🔍 Đang review</option>
-                                    <option value="Hoàn thành" {{ $t['status'] === 'Hoàn thành' ? 'selected' : '' }}>✅ Hoàn thành</option>
-                                </select>
-                                <a href="{{ route('employee.task.detail', $t['id']) }}" class="view-btn">
-                                    <i data-lucide="eye" style="width:13px;height:13px"></i>
-                                    Chi tiết
+                <section class="panel overview-panel">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <i data-lucide="flag"></i>
+                            Ưu tiên cần chú ý
+                        </div>
+                    </div>
+                    <div class="priority-body">
+                        @if($todayFocus->isNotEmpty())
+                            @foreach($todayFocus as $task)
+                                <a href="{{ route('employee.task.detail', $task['id']) }}" class="priority-item">
+                                    <span class="priority-dot"></span>
+                                    <span>
+                                        <strong>{{ $task['name'] }}</strong>
+                                        <small>Deadline {{ $task['deadline'] }} · còn {{ $task['days_left'] }} ngày</small>
+                                    </span>
+                                    <i data-lucide="chevron-right"></i>
                                 </a>
+                            @endforeach
+                        @elseif($nextTask)
+                            <a href="{{ route('employee.task.detail', $nextTask['id']) }}" class="priority-item calm">
+                                <span class="priority-dot"></span>
+                                <span>
+                                    <strong>{{ $nextTask['name'] }}</strong>
+                                    <small>Việc tiếp theo · deadline {{ $nextTask['deadline'] }}</small>
+                                </span>
+                                <i data-lucide="chevron-right"></i>
+                            </a>
+                        @else
+                            <div class="priority-empty">
+                                <i data-lucide="check-circle-2"></i>
+                                <strong>Không có việc cần xử lý ngay</strong>
+                                <span>Trang công việc sẽ hiển thị khi bạn được giao nhiệm vụ mới.</span>
                             </div>
-                        </div>
-                    @empty
-                        <div class="empty-state">
-                            <div><i data-lucide="inbox" style="width:40px;height:40px"></i></div>
-                            <p>Bạn chưa có công việc nào được giao.</p>
-                        </div>
-                    @endforelse
-                </div>
-
-                {{-- Notifications Panel --}}
-                <div class="panel" id="notifications-panel">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <i data-lucide="bell"></i>
-                            Thông báo
-                            @if($unreadCount > 0)
-                                <span style="min-width:20px;height:20px;border-radius:10px;background:var(--mf-red);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 5px">{{ $unreadCount }}</span>
-                            @endif
-                        </div>
+                        @endif
                     </div>
+                </section>
+            </div>
 
-                    @forelse($notifications as $n)
-                        @php
-                            $titleLower = mb_strtolower($n->title ?? '');
-                            $isTask = str_contains($titleLower, 'giao') || str_contains($titleLower, 'công việc') || str_contains($titleLower, 'phân công');
-                            $isAlert = str_contains($titleLower, 'quá hạn') || str_contains($titleLower, 'deadline') || str_contains($titleLower, 'nhắc');
-                            $iconClass = $isAlert ? 'alert' : ($isTask ? 'task' : 'general');
-                            $iconName  = $isAlert ? 'alert-triangle' : ($isTask ? 'check-square' : 'bell');
-                        @endphp
-                        <form method="POST" action="{{ route('dashboard.notifications.open', $n->id) }}" style="display:block">
-                            @csrf
-                            <button type="submit" class="notif-item {{ !$n->is_read ? 'unread' : '' }}">
-                                <div class="notif-icon {{ $iconClass }}">
-                                    <i data-lucide="{{ $iconName }}" style="width:16px;height:16px"></i>
-                                </div>
-                                <div style="flex:1;min-width:0;text-align:left">
-                                    <div class="notif-title">{{ $n->title }}</div>
-                                    <div class="notif-desc">{{ $n->message }}</div>
-                                    <div class="notif-time">{{ $n->created_at->diffForHumans() }}</div>
-                                </div>
-                                @if(!$n->is_read)
-                                    <div class="notif-dot"></div>
-                                @endif
-                            </button>
-                        </form>
-                    @empty
-                        <div class="empty-state">
-                            <div><i data-lucide="bell-off" style="width:36px;height:36px"></i></div>
-                            <p>Chưa có thông báo nào.</p>
-                        </div>
-                    @endforelse
-
-                    @if($notifications->isNotEmpty())
-                        <div class="mark-read-form">
-                            <form method="POST" action="{{ route('dashboard.notifications.markAllRead') }}">
-                                @csrf
-                                <button type="submit" class="mark-read-btn">Đánh dấu tất cả đã đọc</button>
-                            </form>
-                        </div>
-                    @endif
+            <div class="shortcut-grid">
+                <a href="{{ route('employee.tasks') }}" class="shortcut-card">
+                    <span class="shortcut-icon blue"><i data-lucide="clipboard-list"></i></span>
+                    <span>
+                        <strong>Mở trang công việc</strong>
+                        <small>Cập nhật trạng thái, xem chi tiết và upload tài liệu.</small>
+                    </span>
+                    <i data-lucide="arrow-right"></i>
+                </a>
+                <a href="{{ route('employee.notifications') }}" class="shortcut-card">
+                    <span class="shortcut-icon red"><i data-lucide="bell"></i></span>
+                    <span>
+                        <strong>Mở hộp thông báo</strong>
+                        <small>Theo dõi nhắc deadline và thông báo từ quản lý.</small>
+                    </span>
+                    @if($unreadCount > 0)<em>{{ $unreadCount }}</em>@endif
+                    <i data-lucide="arrow-right"></i>
+                </a>
+                <div class="shortcut-card static">
+                    <span class="shortcut-icon navy"><i data-lucide="shield-check"></i></span>
+                    <span>
+                        <strong>Không gian cá nhân</strong>
+                        <small>Dashboard chỉ giữ phần tổng quan, các tác vụ nằm ở trang riêng.</small>
+                    </span>
                 </div>
-
-            </div>{{-- /content-grid --}}
+            </div>
         </div>{{-- /content --}}
     </div>{{-- /main --}}
 </div>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\TaskOverdueMail;
+use App\Models\Notification;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
@@ -51,6 +52,12 @@ class OverdueTaskEmailTest extends TestCase
         });
 
         $this->assertNotNull($task->fresh()->overdue_email_sent_at);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $employee->id,
+            'task_id' => $task->id,
+            'title' => 'Công việc đã quá hạn',
+            'is_read' => false,
+        ]);
     }
 
     public function test_overdue_task_email_is_not_sent_again_after_marked_sent(): void
@@ -75,5 +82,6 @@ class OverdueTaskEmailTest extends TestCase
             ->assertExitCode(0);
 
         Mail::assertNothingSent();
+        $this->assertSame(0, Notification::count());
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Mail\TaskOverdueMail;
+use App\Models\Notification;
 use App\Models\Task;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +41,20 @@ class SendOverdueTaskEmails extends Command
                             'overdue_email_sent_at' => now(),
                         ])->save();
 
+                        Notification::firstOrCreate(
+                            [
+                                'user_id' => $task->assigned_to,
+                                'task_id' => $task->id,
+                                'title' => 'Công việc đã quá hạn',
+                            ],
+                            [
+                                'message' => 'WH-' . str_pad((string) $task->id, 3, '0', STR_PAD_LEFT)
+                                    . ': ' . $task->task_name
+                                    . ' - Đã quá hạn từ: ' . optional($task->deadline)->format('d/m/Y'),
+                                'is_read' => false,
+                            ]
+                        );
+
                         $sent++;
                     } catch (Throwable $exception) {
                         $failed++;
@@ -66,6 +81,7 @@ class SendOverdueTaskEmails extends Command
     {
         return [
             'Done',
+            'Hoàn thành',
             'Hoàn thành',
             'HoÃ n thÃ nh',
             'HoÃƒÂ n thÃƒÂ nh',

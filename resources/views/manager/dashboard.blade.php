@@ -153,7 +153,7 @@
                                     <td><strong>{{ $t['progress'] }}%</strong></td>
                                     <td><strong>{{ $t['documents_count'] }}</strong></td>
                                     <td><span class="status-pill">{{ $t['status'] }}</span></td>
-                                    <td><a class="team-btn light" style="height:32px" href="{{ route('congviec.chitiet', $t['id']) }}">Chi tiết</a></td>
+                                    <td><a class="team-btn light" style="height:32px" href="{{ route('manager.tasks.show', $t['id']) }}">Chi tiết</a></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="8" style="padding:24px;text-align:center;color:#94A3B8">Chưa giao công việc nào.</td></tr>
