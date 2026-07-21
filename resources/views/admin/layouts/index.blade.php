@@ -85,18 +85,18 @@
             <a class="{{ request()->routeIs('congviec.*') ? 'active' : '' }}" href="{{ route('congviec.danhsach') }}"><i data-lucide="clipboard-list"></i>Công việc</a>
             <a class="{{ request()->routeIs('phongban.*') ? 'active' : '' }}" href="{{ route('phongban.danhsach') }}"><i data-lucide="building-2"></i>Phòng ban</a>
             <a class="{{ request()->routeIs('tiendo.*') ? 'active' : '' }}" href="{{ route('tiendo.index') }}"><i data-lucide="activity"></i>Tiến độ</a>
-            <a href="{{ route('dashboard.notifications') }}"><i data-lucide="bell"></i>Thông báo</a>
+            <a href="{{ route('admin.notifications') }}"><i data-lucide="bell"></i>Thông báo</a>
         </nav>
-        <div class="side-foot">
+        <a class="side-foot" href="{{ route('profile.show') }}" title="Trang cá nhân" style="display:block;text-decoration:none;color:inherit">
             <strong>{{ Auth::user()->name ?? 'Giám đốc' }}</strong><br>
             Phiên điều hành Giám đốc
-        </div>
+        </a>
     </aside>
     <section class="admin-main">
         <header class="topbar">
             <div><div class="crumb">Giám đốc / Điều hành</div><div class="top-title">@yield('page_title', 'Quản trị')</div></div>
             <div class="top-actions">
-                <a class="icon-btn" href="{{ route('dashboard.notifications') }}" title="Thông báo"><i data-lucide="bell"></i></a>
+                <a class="icon-btn" href="{{ route('admin.notifications') }}" title="Thông báo"><i data-lucide="bell"></i></a>
                 <form action="{{ route('logout') }}" method="POST">@csrf<button class="icon-btn" type="submit" title="Đăng xuất"><i data-lucide="log-out"></i></button></form>
             </div>
         </header>

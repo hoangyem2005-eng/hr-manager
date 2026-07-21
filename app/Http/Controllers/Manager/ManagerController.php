@@ -44,10 +44,14 @@ class ManagerController extends Controller
             ->where('id', '!=', $user->id) // bỏ bản thân
             ->get()
             ->map(function ($u) {
-                $total  = Task::where('assigned_to', $u->id)->count();
-                $done   = Task::where('assigned_to', $u->id)->where('status', 'Hoàn thành')->count();
-                $doing  = Task::where('assigned_to', $u->id)->where('status', 'Đang làm')->count();
-                $overdue = Task::where('assigned_to', $u->id)->where('status', 'Quá hạn')->count();
+                $memberTasks = fn () => Task::where(function ($query) use ($u) {
+                    $query->where('assigned_to', $u->id)
+                        ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $u->id));
+                });
+                $total  = $memberTasks()->count();
+                $done   = $memberTasks()->where('status', 'Hoàn thành')->count();
+                $doing  = $memberTasks()->where('status', 'Đang làm')->count();
+                $overdue = $memberTasks()->where('status', 'Quá hạn')->count();
                 return [
                     'id'         => $u->id,
                     'name'       => $u->name,
@@ -63,7 +67,7 @@ class ManagerController extends Controller
             });
 
         // Công việc trong phòng mình đã giao (assigned_by = tôi)
-        $myAssignedTasks = Task::with(['assignee', 'documents'])
+        $myAssignedTasks = Task::with(['assignee', 'assignees', 'documents'])
             ->where('assigned_by', $user->id)
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -72,7 +76,7 @@ class ManagerController extends Controller
                 'id'       => $t->id,
                 'code'     => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                 'name'     => $t->task_name,
-                'assignee' => $t->assignee->name ?? '—',
+                'assignee' => ($t->assignees->isNotEmpty() ? $t->assignees->pluck('name')->join(', ') : ($t->assignee->name ?? '—')),
                 'status'   => $t->status,
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
                 'progress' => $t->progress ?? 0,
@@ -98,10 +102,14 @@ class ManagerController extends Controller
 
         // Công việc được giao cho nhân viên trong phòng
         $teamMemberIds = User::where('department_id', $deptId)->pluck('id');
-        $pendingCount  = Task::whereIn('assigned_to', $teamMemberIds)->where('status', 'Chờ xử lý')->count();
-        $doingCount    = Task::whereIn('assigned_to', $teamMemberIds)->where('status', 'Đang làm')->count();
-        $doneCount     = Task::whereIn('assigned_to', $teamMemberIds)->where('status', 'Hoàn thành')->count();
-        $overdueCount  = Task::whereIn('assigned_to', $teamMemberIds)->where('status', 'Quá hạn')->count();
+        $teamTasks = fn () => Task::where(function ($query) use ($teamMemberIds) {
+            $query->whereIn('assigned_to', $teamMemberIds)
+                ->orWhereHas('assignees', fn ($assignees) => $assignees->whereIn('users.id', $teamMemberIds));
+        });
+        $pendingCount  = $teamTasks()->where('status', 'Chờ xử lý')->count();
+        $doingCount    = $teamTasks()->where('status', 'Đang làm')->count();
+        $doneCount     = $teamTasks()->where('status', 'Hoàn thành')->count();
+        $overdueCount  = $teamTasks()->where('status', 'Quá hạn')->count();
 
         $department = $user->department;
         $allTeamMembers = User::where('department_id', $deptId)->get(); // cho form giao việc
@@ -112,6 +120,68 @@ class ManagerController extends Controller
             'pendingCount', 'doingCount', 'doneCount', 'overdueCount',
             'department', 'allTeamMembers', 'roles'
         ));
+    }
+
+    public function members(Request $request)
+    {
+        $manager = Auth::user();
+        $department = $manager->department;
+        $search = trim((string) $request->query('search', ''));
+
+        $query = User::with('role')
+            ->where('department_id', $manager->department_id)
+            ->where('id', '!=', $manager->id);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $teamMembers = $query
+            ->orderBy('role_id')
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $teamMembers->setCollection($teamMembers->getCollection()->map(function (User $member) {
+            $total = Task::where('assigned_to', $member->id)->count();
+            $done = Task::where('assigned_to', $member->id)->where('status', 'Hoàn thành')->count();
+            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'Đang review'])->count();
+            $overdue = Task::where('assigned_to', $member->id)
+                ->whereNotIn('status', ['Hoàn thành'])
+                ->whereNotNull('deadline')
+                ->whereDate('deadline', '<', now()->toDateString())
+                ->count();
+
+            return [
+                'id' => $member->id,
+                'code' => 'NV' . str_pad((string) $member->id, 3, '0', STR_PAD_LEFT),
+                'name' => $member->name,
+                'email' => $member->email,
+                'role_name' => $member->role_display_name,
+                'avatar' => $this->getInitials($member->name),
+                'total' => $total,
+                'done' => $done,
+                'doing' => $doing,
+                'overdue' => $overdue,
+                'rate' => $total > 0 ? round(($done / $total) * 100) : 0,
+                'joined' => $member->created_at ? $member->created_at->format('d/m/Y') : '—',
+                'status' => $member->is_active ? 'active' : 'inactive',
+            ];
+        }));
+
+        $visibleMembers = collect($teamMembers->items());
+        $summary = [
+            'visible' => $visibleMembers->count(),
+            'total' => $teamMembers->total(),
+            'active' => $visibleMembers->where('status', 'active')->count(),
+            'tasks' => $visibleMembers->sum('total'),
+            'overdue' => $visibleMembers->sum('overdue'),
+        ];
+
+        return view('manager.members', compact('department', 'teamMembers', 'search', 'summary'));
     }
 
     /**
@@ -197,6 +267,7 @@ class ManagerController extends Controller
             return back()->with('error', 'Bạn chỉ có thể giao việc cho nhân viên trong phòng của mình!');
         }
 
+<<<<<<< HEAD
         $createdTasks = [];
         foreach ($assignedToIds as $assignedTo) {
             $task = Task::create([
@@ -207,6 +278,27 @@ class ManagerController extends Controller
                 'deadline'    => $request->deadline,
                 'status'      => $request->status ?? 'Chờ xử lý',
                 'progress'    => 0,
+=======
+        $task = Task::create([
+            'task_name'   => $request->task_name,
+            'description' => $request->description,
+            'assigned_by' => $manager->id,
+            'assigned_to' => $assignedToIds[0],
+            'deadline'    => $request->deadline,
+            'status'      => $request->status ?? 'Chờ xử lý',
+            'progress'    => 0,
+        ]);
+
+        $task->assignees()->sync($assignedToIds);
+
+        foreach ($assignedToIds as $assignedTo) {
+            Notification::create([
+                'user_id' => $assignedTo,
+                'task_id' => $task->id,
+                'title' => 'Bạn vừa được giao công việc mới',
+                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
+                'is_read' => false,
+>>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
             ]);
             $createdTasks[] = $task;
 
@@ -250,7 +342,7 @@ class ManagerController extends Controller
         }
 
         return redirect()->route('manager.dashboard')
-            ->with('success', 'Đã giao công việc cho ' . count($assignedToIds) . ' nhân viên!');
+            ->with('success', 'Đã giao một công việc chung cho ' . count($assignedToIds) . ' nhân viên!');
     }
 
     public function delegateIncomingTask(Request $request, Task $task)
@@ -277,6 +369,7 @@ class ManagerController extends Controller
             'status' => 'Chờ xử lý',
             'progress' => 0,
         ]);
+        $task->assignees()->sync([$assignee->id]);
 
         Notification::create([
             'user_id' => $assignee->id,
@@ -320,7 +413,7 @@ class ManagerController extends Controller
     public function forwardDocumentToDirector(Document $document)
     {
         $manager = Auth::user();
-        $document->loadMissing(['task.assignee', 'uploader']);
+        $document->loadMissing(['task.assignee', 'task.assignees', 'uploader']);
 
         if (!$this->canManageDocument($document, $manager)) {
             abort(403, 'Bạn không có quyền chuyển file này lên Giám đốc.');
@@ -352,6 +445,7 @@ class ManagerController extends Controller
     private function canManageDocument(Document $document, User $manager): bool
     {
         return (int) optional($document->task?->assignee)->department_id === (int) $manager->department_id
+            || optional($document->task)->assignees?->contains(fn (User $assignee) => (int) $assignee->department_id === (int) $manager->department_id)
             || (int) optional($document->uploader)->department_id === (int) $manager->department_id
             || (int) optional($document->task)->assigned_by === (int) $manager->id
             || (int) optional($document->task)->assigned_to === (int) $manager->id;

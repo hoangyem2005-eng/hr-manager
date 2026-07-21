@@ -73,8 +73,8 @@
             <p class="exec-copy">Theo dõi năng lực vận hành theo phòng ban, nắm nhanh việc quá hạn và xử lý các điểm nghẽn ảnh hưởng đến mục tiêu chung.</p>
             <div class="exec-actions">
                 <button class="exec-btn primary" onclick="openModal('addUserModal')"><i data-lucide="user-plus"></i> Thêm nhân sự</button>
-                <a class="exec-btn secondary" href="{{ route('dashboard.tasks') }}"><i data-lucide="send"></i> Giao mục tiêu</a>
-                <a class="exec-btn secondary" href="{{ route('dashboard.reports') }}"><i data-lucide="bar-chart-3"></i> Báo cáo</a>
+                <a class="exec-btn secondary" href="{{ route('admin.tasks') }}"><i data-lucide="send"></i> Giao mục tiêu</a>
+                <a class="exec-btn secondary" href="{{ route('admin.reports') }}"><i data-lucide="bar-chart-3"></i> Báo cáo</a>
             </div>
         </div>
         <div class="exec-scoreboard">
@@ -89,7 +89,7 @@
         <div class="exec-panel">
             <div class="exec-panel-header">
                 <div class="exec-panel-title"><i data-lucide="radar"></i> Việc nóng toàn công ty</div>
-                <a class="mini-btn" href="{{ route('dashboard.tasks') }}">Xem tất cả</a>
+                <a class="mini-btn" href="{{ route('admin.tasks') }}">Xem tất cả</a>
             </div>
             <table class="exec-table">
                 <thead><tr><th>Mã</th><th>Công việc</th><th>Phụ trách</th><th>Phòng</th><th>Hạn</th><th>Trạng thái</th></tr></thead>

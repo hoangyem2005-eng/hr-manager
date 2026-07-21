@@ -75,13 +75,19 @@
         <div class="mf-sidebar-footer space-y-2">
             <!-- User Profile (Quick View) -->
             <div class="mf-user-card">
-                <div class="mf-avatar">
-                    {{ substr($authUser->name ?? 'AD', 0, 2) }}
+                <a href="{{ route('profile.show') }}" title="Trang cá nhân" style="display:contents;color:inherit;text-decoration:none">
+                <div class="mf-avatar" style="overflow:hidden">
+                    @if($authUser?->avatar_path)
+                        <img src="{{ asset('storage/'.$authUser->avatar_path) }}" alt="Ảnh đại diện" style="width:100%;height:100%;object-fit:cover">
+                    @else
+                        {{ substr($authUser->name ?? 'AD', 0, 2) }}
+                    @endif
                 </div>
                 <div class="flex-1 min-w-0 user-info">
                     <div class="mf-user-name">{{ $authUser->name ?? 'Hoàng Thị Em' }}</div>
                     <div class="mf-user-role">{{ $authRoleName }}</div>
                 </div>
+                </a>
                 <!-- Logout form link -->
                 <form action="{{ route('logout') }}" method="POST" id="logout-form" class="inline">
                     @csrf
@@ -152,9 +158,13 @@
                 <button class="mf-icon-btn" aria-label="Lịch làm việc">
                     <i data-lucide="calendar" class="w-[18px] h-[18px]"></i>
                 </button>
-                <div class="mf-avatar">
-                    {{ substr($authUser->name ?? 'AD', 0, 2) }}
-                </div>
+                <a href="{{ route('profile.show') }}" class="mf-avatar" title="Trang cá nhân" style="text-decoration:none;overflow:hidden">
+                    @if($authUser?->avatar_path)
+                        <img src="{{ asset('storage/'.$authUser->avatar_path) }}" alt="Ảnh đại diện" style="width:100%;height:100%;object-fit:cover">
+                    @else
+                        {{ substr($authUser->name ?? 'AD', 0, 2) }}
+                    @endif
+                </a>
             </div>
         </header>
 

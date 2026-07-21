@@ -7,9 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;  
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class ForgotPasswordController extends Controller
@@ -20,7 +17,7 @@ class ForgotPasswordController extends Controller
         return view('auth.forgot-password');
     }
 
-    // 2. Xử lý lưu mã xác thực (OTP) vào bảng password_resets và gửi email + ghi log
+    // 2. Xử lý lưu mã xác thực (OTP) vào bảng password_resets và gửi email.
     public function sendResetLinkEmail(Request $request)
     {
         $request->validate([
@@ -32,21 +29,19 @@ class ForgotPasswordController extends Controller
         $email = $request->email;
 
         // Tạo mã xác thực ngẫu nhiên 6 chữ số
-        $otp = strval(mt_rand(100000, 999999));
+        $otp = (string) random_int(100000, 999999);
+        $expiresAt = Carbon::now()->addMinutes(19);
 
         // Lưu mã xác thực vào DB
         DB::table('password_resets')->updateOrInsert(
             ['email' => $email],
             [
                 'token' => $otp,
-                'created_at' => Carbon::now()
+                'created_at' => Carbon::now(),
+                'expires_at' => $expiresAt,
+                'used_at' => null,
             ]
         );
-
-        // Ghi thẳng mã xác thực vào log hệ thống để đề phòng local dev
-        Log::info("=================================================================");
-        Log::info("MA_XAC_THUC_CUA_BAN_LA: " . $otp);
-        Log::info("=================================================================");
 
         // Gửi email HTML thực tế
         try {
@@ -64,7 +59,7 @@ class ForgotPasswordController extends Controller
                                     <div style='text-align: center; margin: 25px 0;'>
                                         <span style='display: inline-block; font-family: monospace; font-size: 32px; font-weight: 700; color: #0054A6; letter-spacing: 5px; background: #e2e8f0; padding: 10px 20px; border-radius: 6px;'>{$otp}</span>
                                     </div>
-                                    <p style='font-size: 14px; color: #64748b;'>Mã xác thực này có hiệu lực trong vòng 15 phút. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+                                    <p style='font-size: 14px; color: #64748b;'>Mã xác thực này có hiệu lực trong vòng 19 phút. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
                                 </div>
                                 <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
                                 <p style='font-size: 12px; color: #94a3b8; text-align: center;'>Email này được gửi tự động từ hệ thống MobiFone WorkHub. Vui lòng không trả lời email này.</p>
@@ -72,8 +67,13 @@ class ForgotPasswordController extends Controller
                         ");
             });
         } catch (\Exception $e) {
-            Log::error("Lỗi gửi mail: " . $e->getMessage());
-            // Vẫn tiếp tục chạy để người dùng có thể lấy mã từ log nếu cấu hình SMTP bị lỗi
+            report($e);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'email' => 'Chưa gửi được mã OTP vì hệ thống email chưa được cấu hình đúng. Vui lòng kiểm tra MAIL_HOST/SMTP rồi thử lại.',
+                ]);
         }
 
         return redirect()->route('password.reset', ['email' => $email])->with([
@@ -93,7 +93,7 @@ class ForgotPasswordController extends Controller
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
-            'token' => 'required|string|size:6',
+            'token' => ['required', 'string', 'size:6', 'regex:/^\d{6}$/'],
             'password' => 'required|string|min:8|confirmed',
         ], [
             'email.required' => 'Vui lòng nhập email.',
@@ -110,12 +110,16 @@ class ForgotPasswordController extends Controller
             ->where('email', $request->email)
             ->first();
 
-        if (!$record || $record->token !== $request->token) {
+        if (!$record || $record->used_at || $record->token !== $request->token) {
             return back()->withErrors(['token' => 'Mã xác thực OTP không chính xác!'])->withInput();
         }
 
-        // Kiểm tra hết hạn (15 phút)
-        if (Carbon::parse($record->created_at)->addMinutes(15)->isPast()) {
+        // Kiểm tra hết hạn (19 phút)
+        $expiresAt = $record->expires_at
+            ? Carbon::parse($record->expires_at)
+            : Carbon::parse($record->created_at)->addMinutes(19);
+
+        if ($expiresAt->isPast()) {
             return back()->withErrors(['token' => 'Mã xác thực OTP đã hết hạn!'])->withInput();
         }
 
@@ -124,8 +128,10 @@ class ForgotPasswordController extends Controller
             'password' => Hash::make($request->password)
         ]);
 
-        // Xóa mã OTP sau khi sử dụng thành công
-        DB::table('password_resets')->where('email', $request->email)->delete();
+        // Đánh dấu OTP đã sử dụng để không thể dùng lại.
+        DB::table('password_resets')
+            ->where('email', $request->email)
+            ->update(['used_at' => Carbon::now()]);
 
         return redirect()->route('login')->with('success', 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
     }

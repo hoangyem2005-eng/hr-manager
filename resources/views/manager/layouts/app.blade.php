@@ -71,7 +71,9 @@
             display: flex; align-items: center; gap: 10px;
             padding: 10px; border-radius: 10px;
             background: rgba(255,255,255,.1);
+            text-decoration: none; color: inherit;
         }
+        .user-card:hover { background: rgba(255,255,255,.16); }
         .user-avatar-sm {
             width: 34px; height: 34px; border-radius: 10px;
             background: rgba(255,255,255,.3);
@@ -141,38 +143,38 @@
         </a>
 
         <span class="nav-section s-label">Phòng ban</span>
-        <a href="{{ route('manager.dashboard') }}#team" class="nav-item">
+        <a href="{{ route('manager.members') }}" class="nav-item {{ request()->routeIs('manager.members') ? 'active' : '' }}">
             <i data-lucide="users" style="width:17px;height:17px"></i>
             <span class="s-label">Nhân viên phòng</span>
         </a>
-        <a href="{{ route('manager.dashboard') }}#giao-viec" class="nav-item">
+        <a href="{{ route('manager.tasks') }}" class="nav-item {{ (request()->routeIs('manager.tasks') && request('mode') !== 'progress') || (request()->routeIs('manager.tasks.show') && request('from') !== 'progress') ? 'active' : '' }}">
             <i data-lucide="clipboard-list" style="width:17px;height:17px"></i>
             <span class="s-label">Giao công việc</span>
         </a>
-        <a href="{{ route('manager.dashboard') }}#cong-viec" class="nav-item">
+        <a href="{{ route('manager.tasks', ['mode' => 'progress', 'view' => 'list']) }}" class="nav-item {{ (request()->routeIs('manager.tasks') && request('mode') === 'progress') || (request()->routeIs('manager.tasks.show') && request('from') === 'progress') ? 'active' : '' }}">
             <i data-lucide="kanban" style="width:17px;height:17px"></i>
             <span class="s-label">Tiến độ công việc</span>
         </a>
 
         <span class="nav-section s-label">Báo cáo</span>
-        <a href="{{ route('dashboard.reports') }}" class="nav-item">
+        <a href="{{ route('manager.reports') }}" class="nav-item {{ request()->routeIs('manager.reports') ? 'active' : '' }}">
             <i data-lucide="bar-chart-2" style="width:17px;height:17px"></i>
             <span class="s-label">Báo cáo</span>
         </a>
-        <a href="{{ route('dashboard.notifications') }}" class="nav-item">
+        <a href="{{ route('manager.notifications') }}" class="nav-item {{ request()->routeIs('manager.notifications') ? 'active' : '' }}">
             <i data-lucide="bell" style="width:17px;height:17px"></i>
             <span class="s-label">Thông báo</span>
         </a>
     </nav>
 
     <div class="sidebar-footer">
-        <div class="user-card">
+        <a href="{{ route('profile.show') }}" class="user-card" title="Trang cá nhân">
             <div class="user-avatar-sm">{{ substr($authUser->name ?? 'QL', 0, 2) }}</div>
             <div class="s-user-info">
                 <div class="s-name">{{ $authUser->name ?? 'Trưởng phòng' }}</div>
                 <div class="s-role">{{ $authRoleName }}</div>
             </div>
-        </div>
+        </a>
         <form action="{{ route('logout') }}" method="POST" style="margin-top:8px">
             @csrf
             <button type="submit" class="nav-item" style="width:100%;border:none;background:none;cursor:pointer;font-family:inherit">

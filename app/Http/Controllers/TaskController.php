@@ -79,6 +79,7 @@ class TaskController extends Controller
             'status'      => $validated['status'],
             'progress'    => $validated['progress'] ?? 0,
         ]);
+        $task->assignees()->sync(array_filter([$validated['assigned_to'] ?? null]));
 
         // Xử lý upload file đính kèm (nhiều file)
         if ($request->hasFile('attachments')) {
@@ -100,7 +101,7 @@ class TaskController extends Controller
      */
     public function show($id)
     {
-        $task = Task::with(['assignee', 'creator', 'documents.uploader'])->findOrFail($id);
+        $task = Task::with(['assignee', 'assignees.department', 'creator', 'documents.uploader'])->findOrFail($id);
         $user = Auth::user();
 
         abort_unless($this->canViewTask($task, $user), 403);
@@ -115,6 +116,22 @@ class TaskController extends Controller
         }
 
         return view('admin.layouts.congviec.chitiet', compact('task'));
+    }
+
+    public function managerShow(Task $task)
+    {
+        $task->load(['assignee', 'assignees.department', 'creator', 'documents.uploader']);
+        $user = Auth::user();
+
+        abort_unless($user && $user->isLeader() && !$user->isDirector(), 403);
+        abort_unless($this->canViewTask($task, $user), 403);
+
+        $task->setRelation(
+            'documents',
+            $task->documents->filter(fn (Document $document) => $this->canViewDocument($document, $user))->values()
+        );
+
+        return view('manager.task-detail', compact('task'));
     }
 
     // ==================== CHỈNH SỬA CÔNG VIỆC ====================
@@ -149,6 +166,7 @@ class TaskController extends Controller
             'status'      => $validated['status'],
             'progress'    => $validated['progress'] ?? $task->progress,
         ]);
+        $task->assignees()->sync(array_filter([$validated['assigned_to'] ?? null]));
 
         // Thêm file đính kèm mới (nếu có)
         if ($request->hasFile('attachments')) {
@@ -468,12 +486,15 @@ class TaskController extends Controller
             return true;
         }
 
-        if ((int) $task->assigned_to === (int) $user->id || (int) $task->assigned_by === (int) $user->id) {
+        if ((int) $task->assigned_to === (int) $user->id
+            || (int) $task->assigned_by === (int) $user->id
+            || $task->assignees->contains('id', $user->id)) {
             return true;
         }
 
         if ($user->isLeader()) {
-            return (int) optional($task->assignee)->department_id === (int) $user->department_id;
+            return (int) optional($task->assignee)->department_id === (int) $user->department_id
+                || $task->assignees->contains(fn (User $assignee) => (int) $assignee->department_id === (int) $user->department_id);
         }
 
         return false;
@@ -491,11 +512,14 @@ class TaskController extends Controller
 
         if ($user->isLeader()) {
             $document->loadMissing(['task.assignee', 'uploader']);
+            $document->task?->loadMissing('assignees');
 
             return (int) optional($document->task?->assignee)->department_id === (int) $user->department_id
+                || optional($document->task)->assignees?->contains(fn (User $assignee) => (int) $assignee->department_id === (int) $user->department_id)
                 || (int) optional($document->uploader)->department_id === (int) $user->department_id
                 || (int) optional($document->task)->assigned_by === (int) $user->id
-                || (int) optional($document->task)->assigned_to === (int) $user->id;
+                || (int) optional($document->task)->assigned_to === (int) $user->id
+                || optional($document->task)->assignees?->contains('id', $user->id);
         }
 
         return false;

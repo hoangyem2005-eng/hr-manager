@@ -47,6 +47,11 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignees()
+    {
+        return $this->belongsToMany(User::class, 'task_assignees')->withTimestamps();
+    }
+
     /** File đính kèm của công việc */
     public function documents()
     {

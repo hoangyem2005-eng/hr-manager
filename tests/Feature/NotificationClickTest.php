@@ -38,7 +38,7 @@ class NotificationClickTest extends TestCase
             'is_read' => false,
         ]);
 
-        $response = $this->actingAs($user)->post(route('dashboard.notifications.open', $notification));
+        $response = $this->actingAs($user)->post(route('employee.notifications.open', $notification));
 
         $response->assertRedirect(route('employee.task.detail', $task));
         $this->assertTrue($notification->fresh()->is_read);
@@ -59,7 +59,7 @@ class NotificationClickTest extends TestCase
             'is_read' => false,
         ]);
 
-        $response = $this->actingAs($otherUser)->post(route('dashboard.notifications.open', $notification));
+        $response = $this->actingAs($otherUser)->post(route('employee.notifications.open', $notification));
 
         $response->assertForbidden();
         $this->assertFalse($notification->fresh()->is_read);
@@ -131,7 +131,7 @@ class NotificationClickTest extends TestCase
         ]);
 
         $this->actingAs($employee)
-            ->get(route('dashboard.notifications'))
+            ->get(route('employee.notifications'))
             ->assertOk()
             ->assertSee('Nhắc deadline công việc sắp đến')
             ->assertSee('Nop bao cao deadline');
@@ -143,12 +143,57 @@ class NotificationClickTest extends TestCase
             'is_read' => false,
         ]);
 
-        $this->actingAs($employee)->get(route('dashboard.notifications'))->assertOk();
+        $this->actingAs($employee)->get(route('employee.notifications'))->assertOk();
 
         $this->assertSame(1, Notification::where('user_id', $employee->id)
             ->where('task_id', $upcomingTask->id)
             ->where('title', 'Nhắc deadline công việc sắp đến')
             ->count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_notifications_page_generates_overdue_task_notifications(): void
+    {
+        Carbon::setTestNow('2026-07-14 09:00:00');
+
+        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'is_active' => true]);
+        $overdueTask = Task::create([
+            'task_name' => 'Chuan bi phong hop',
+            'assigned_to' => $employee->id,
+            'deadline' => Carbon::now()->subDay()->toDateString(),
+            'status' => 'Đang làm',
+            'progress' => 50,
+        ]);
+        Task::create([
+            'task_name' => 'Viec da hoan thanh',
+            'assigned_to' => $employee->id,
+            'deadline' => Carbon::now()->subDays(2)->toDateString(),
+            'status' => 'Hoàn thành',
+            'progress' => 100,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.notifications'))
+            ->assertOk()
+            ->assertSee('Công việc đã quá hạn')
+            ->assertSee('Chuan bi phong hop');
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $employee->id,
+            'task_id' => $overdueTask->id,
+            'title' => 'Công việc đã quá hạn',
+            'is_read' => false,
+        ]);
+
+        $this->actingAs($employee)->get(route('employee.notifications'))->assertOk();
+
+        $this->assertSame(1, Notification::where('user_id', $employee->id)
+            ->where('task_id', $overdueTask->id)
+            ->where('title', 'Công việc đã quá hạn')
+            ->count());
+
+        $this->assertSame(1, Notification::where('user_id', $employee->id)->count());
 
         Carbon::setTestNow();
     }
@@ -168,7 +213,39 @@ class NotificationClickTest extends TestCase
             ->assertDontSee('Trưởng phòng');
     }
 
-    public function test_employee_workbench_shows_recent_notifications_even_after_they_are_read(): void
+    public function test_employee_notification_nav_uses_employee_notification_route(): void
+    {
+        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE]);
+        $notification = Notification::create([
+            'user_id' => $employee->id,
+            'title' => 'Thong bao rieng cua nhan vien',
+            'message' => 'Noi dung thong bao chi hien trong khong gian nhan vien.',
+            'is_read' => false,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.dashboard'))
+            ->assertOk()
+            ->assertSee(route('employee.notifications'), false)
+            ->assertDontSee(route('dashboard.notifications'), false);
+
+        $this->actingAs($employee)
+            ->get(route('employee.notifications'))
+            ->assertOk()
+            ->assertSee('Thông báo của tôi')
+            ->assertSee('Employee WorkHub')
+            ->assertSee(route('employee.notifications.open', $notification), false)
+            ->assertSee(route('employee.notifications.markAllRead'), false)
+            ->assertDontSee(route('dashboard.notifications'), false);
+
+        $this->actingAs($employee)
+            ->post(route('employee.notifications.open', $notification))
+            ->assertRedirect(route('employee.notifications'));
+
+        $this->assertTrue($notification->fresh()->is_read);
+    }
+
+    public function test_employee_notifications_page_shows_recent_notifications_even_after_they_are_read(): void
     {
         $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE]);
 
@@ -186,10 +263,11 @@ class NotificationClickTest extends TestCase
         ]);
 
         $this->actingAs($employee)
-            ->get(route('employee.dashboard'))
+            ->get(route('dashboard.notifications'))
             ->assertOk()
             ->assertSee('Thong bao da doc')
             ->assertSee('Thong bao chua doc')
-            ->assertSee('Thông báo (1)');
+            ->assertSee('Chưa đọc')
+            ->assertSee('1');
     }
 }

@@ -57,6 +57,9 @@
     .password-toggle:hover { background: #E8F0FE; color: #003DA5; }
     .password-toggle:focus-visible { outline: 2px solid #5EEAD4; outline-offset: 2px; }
     .field textarea { min-height: 82px; padding-top: 10px; resize: vertical; }
+    .assignee-check-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:220px; overflow:auto; padding:10px; border:1px solid #D4E0F7; border-radius:8px; background:#F8FBFF; }
+    .assignee-check { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #E2EAF8; border-radius:8px; background:#fff; cursor:pointer; font-weight:900; color:#001F5B; }
+    .assignee-check input { width:16px; height:16px; accent-color:#003DA5; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .modal-actions { border-top: 1px solid #E2E8F0; padding: 16px 18px; display: flex; justify-content: flex-end; gap: 10px; }
     .note { border: 1px solid #B9CDF5; background: #F6FAFF; color: #003DA5; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
@@ -153,7 +156,7 @@
                                     <td><strong>{{ $t['progress'] }}%</strong></td>
                                     <td><strong>{{ $t['documents_count'] }}</strong></td>
                                     <td><span class="status-pill">{{ $t['status'] }}</span></td>
-                                    <td><a class="team-btn light" style="height:32px" href="{{ route('congviec.chitiet', $t['id']) }}">Chi tiết</a></td>
+                                    <td><a class="team-btn light" style="height:32px" href="{{ route('manager.tasks.show', $t['id']) }}">Chi tiết</a></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="8" style="padding:24px;text-align:center;color:#94A3B8">Chưa giao công việc nào.</td></tr>
@@ -189,7 +192,18 @@
             @csrf
             <div class="modal-body">
                 <div class="field"><label>Tên công việc</label><input name="task_name" required></div>
-                <div class="field"><label>Giao cho</label><select name="assigned_to[]" required multiple size="6">@foreach($allTeamMembers as $m)<option value="{{ $m->id }}">{{ $m->name }}</option>@endforeach</select><div style="font-size:11px;color:#64748B;margin-top:6px">Giu Ctrl/Command hoac Shift de chon nhieu nhan vien.</div></div>
+                <div class="field">
+                    <label>Người cùng làm</label>
+                    <div class="assignee-check-grid">
+                        @foreach($allTeamMembers as $m)
+                            <label class="assignee-check">
+                                <input type="checkbox" name="assigned_to[]" value="{{ $m->id }}">
+                                <span>{{ $m->name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <div style="font-size:11px;color:#64748B;margin-top:6px">Tích nhiều nhân viên để cùng làm chung một công việc.</div>
+                </div>
                 <div class="form-grid">
                     <div class="field"><label>Deadline</label><input type="date" name="deadline" required></div>
                     <div class="field"><label>Trạng thái</label><select name="status"><option value="Chờ xử lý">Chờ xử lý</option><option value="Đang làm">Đang làm</option></select></div>

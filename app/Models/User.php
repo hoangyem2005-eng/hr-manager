@@ -21,6 +21,7 @@ class User extends Authenticatable
         'password',
         'role_id',
         'department_id',
+        'avatar_path',
         'is_active',
     ];
 
@@ -47,6 +48,11 @@ class User extends Authenticatable
     public function assignedTasks()
     {
         return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    public function collaborativeTasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_assignees')->withTimestamps();
     }
 
     public function createdTasks()

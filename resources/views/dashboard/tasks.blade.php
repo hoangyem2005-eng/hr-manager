@@ -41,8 +41,8 @@
             'desc' => 'Theo dõi việc được giao và gửi đề xuất công việc cần quản lý xem xét.',
             'button' => 'Gửi đề xuất việc',
             'icon' => 'clipboard-plus',
-            'shell' => 'bg-[#F0FDF4] text-[#14532D] border border-[#BBF7D0]',
-            'accent' => '#16A34A',
+            'shell' => 'mf-employee-task-hero text-[#071325]',
+            'accent' => '#003DA5',
             'formTitle' => 'Gửi đề xuất công việc',
             'formDesc' => 'Đề xuất sẽ gắn với chính bạn và ở trạng thái chờ xử lý.',
             'submit' => 'Gửi đề xuất',
@@ -59,6 +59,14 @@
         'review' => ['color' => '#0057C8', 'bg' => '#EEF5FF', 'line' => '#93BDF8'],
         'done' => ['color' => '#001F5B', 'bg' => '#F7FAFF', 'line' => '#003DA5'],
     ];
+    $employeeCols = [
+        'pending' => ['color' => '#64748B', 'bg' => '#F8FAFC', 'line' => '#CBD5E1'],
+        'doing' => ['color' => '#003DA5', 'bg' => '#F4F8FF', 'line' => '#B9CDF5'],
+        'review' => ['color' => '#0057C8', 'bg' => '#EEF5FF', 'line' => '#93BDF8'],
+        'done' => ['color' => '#001F5B', 'bg' => '#F7FAFF', 'line' => '#003DA5'],
+    ];
+    $taskIndexRoute = $isEmployee ? 'employee.tasks' : 'dashboard.tasks';
+    $taskSaveRoute = $isEmployee ? 'employee.tasks.save' : 'dashboard.tasks.save';
 @endphp
 
 <div class="space-y-5">
@@ -112,16 +120,16 @@
         @else
             <div class="p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 rounded-[8px] bg-white border border-[#BBF7D0] flex items-center justify-center">
-                        <i data-lucide="{{ $page['icon'] }}" class="w-5 h-5 text-[#16A34A]"></i>
+                    <div class="w-12 h-12 rounded-[8px] bg-white border border-[#B9CDF5] flex items-center justify-center shadow-sm">
+                        <i data-lucide="{{ $page['icon'] }}" class="w-5 h-5 text-[#003DA5]"></i>
                     </div>
                     <div>
-                        <div class="text-xs uppercase tracking-wider font-bold text-[#15803D]">{{ $page['eyebrow'] }}</div>
-                        <h1 class="mt-1 text-2xl font-black">{{ $page['title'] }}</h1>
-                        <p class="mt-1 text-sm text-[#166534]/80 max-w-2xl">{{ $page['desc'] }}</p>
+                        <div class="text-xs uppercase tracking-wider font-bold text-[#003DA5]">{{ $page['eyebrow'] }}</div>
+                        <h1 class="mt-1 text-3xl font-black text-[#001F5B] tracking-tight">{{ $page['title'] }}</h1>
+                        <p class="mt-1 text-sm text-[#40516B] max-w-2xl leading-6">{{ $page['desc'] }}</p>
                     </div>
                 </div>
-                <button id="open-task-modal" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#16A34A] hover:bg-[#15803D] transition-colors">
+                <button id="open-task-modal" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-colors shadow-[0_12px_24px_rgba(0,61,165,.18)]">
                     <i data-lucide="plus" class="w-4 h-4"></i>{{ $page['button'] }}
                 </button>
             </div>
@@ -131,30 +139,30 @@
     <section class="flex items-center gap-3 flex-wrap justify-between">
         <div class="flex items-center gap-3 flex-wrap">
             <div class="flex rounded-[8px] border border-gray-200 bg-white overflow-hidden">
-                <a href="{{ route('dashboard.tasks', ['view' => 'kanban', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
+                <a href="{{ route($taskIndexRoute, ['view' => 'kanban', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'kanban' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
-                   style="{{ $viewType == 'kanban' ? 'background: '.($isManager ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
+                   style="{{ $viewType == 'kanban' ? 'background: '.(($isManager || $isEmployee) ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
                     <i data-lucide="columns-3" class="w-3.5 h-3.5"></i> Kanban
                 </a>
-                <a href="{{ route('dashboard.tasks', ['view' => 'list', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
+                <a href="{{ route($taskIndexRoute, ['view' => 'list', 'filter' => $filter, 'assignee_id' => request('assignee_id')]) }}"
                    class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors {{ $viewType == 'list' ? 'text-white' : 'text-gray-700 hover:bg-gray-50' }}"
-                   style="{{ $viewType == 'list' ? 'background: '.($isManager ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
+                   style="{{ $viewType == 'list' ? 'background: '.(($isManager || $isEmployee) ? 'linear-gradient(135deg,#001F5B,#003DA5)' : $page['accent']) : '' }}">
                     <i data-lucide="list" class="w-3.5 h-3.5"></i> Danh sách
                 </a>
             </div>
 
             <div class="flex gap-2">
                 @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $f)
-                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $f, 'assignee_id' => request('assignee_id')]) }}"
+                    <a href="{{ route($taskIndexRoute, ['view' => $viewType, 'filter' => $f, 'assignee_id' => request('assignee_id')]) }}"
                        class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all {{ $filter == $f ? 'text-white shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}"
-                       style="{{ $filter == $f ? 'background-color: '.($isManager && $f === 'Quá hạn' ? '#E4002B' : $page['accent']).'; border-color: '.($isManager && $f === 'Quá hạn' ? '#E4002B' : $page['accent']) : '' }}">
+                       style="{{ $filter == $f ? 'background-color: '.(($isManager || $isEmployee) && $f === 'Quá hạn' ? '#E4002B' : $page['accent']).'; border-color: '.(($isManager || $isEmployee) && $f === 'Quá hạn' ? '#E4002B' : $page['accent']) : '' }}">
                         {{ $f }}
                     </a>
                 @endforeach
             </div>
 
             <!-- Assignee Dropdown -->
-            <form action="{{ route('dashboard.tasks') }}" method="GET" class="flex items-center gap-2">
+            <form action="{{ route($taskIndexRoute) }}" method="GET" class="flex items-center gap-2">
                 <input type="hidden" name="view" value="{{ $viewType }}">
                 <input type="hidden" name="filter" value="{{ $filter }}">
                 <select name="assignee_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-700 outline-none focus:border-[#003DA5] transition-all">
@@ -166,7 +174,7 @@
                     @endforeach
                 </select>
                 @if(request('assignee_id'))
-                    <a href="{{ route('dashboard.tasks', ['view' => $viewType, 'filter' => $filter]) }}" class="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1">
+                    <a href="{{ route($taskIndexRoute, ['view' => $viewType, 'filter' => $filter]) }}" class="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1">
                         <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Xóa lọc
                     </a>
                 @endif
@@ -178,20 +186,28 @@
         <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             @foreach($cols as $key => $col)
                 @php
-                    $colStyle = $isManager
-                        ? ($managerCols[$key] ?? ['color' => $page['accent'], 'bg' => '#F8FAFC', 'line' => '#CBD5E1'])
-                        : ['color' => $col['color'], 'bg' => $col['bg'], 'line' => '#E5E7EB'];
+                    if ($isManager) {
+                        $colStyle = $managerCols[$key] ?? ['color' => $page['accent'], 'bg' => '#F8FAFC', 'line' => '#CBD5E1'];
+                    } elseif ($isEmployee) {
+                        $colStyle = $employeeCols[$key] ?? ['color' => $page['accent'], 'bg' => '#F8FAFC', 'line' => '#CBD5E1'];
+                    } else {
+                        $colStyle = ['color' => $col['color'], 'bg' => $col['bg'], 'line' => '#E5E7EB'];
+                    }
                 @endphp
-                <div class="rounded-[8px] min-h-[300px] flex flex-col border overflow-hidden {{ $isManager ? 'mf-manager-kanban-column' : '' }}" style="background-color: {{ $colStyle['bg'] }}; border-color: {{ $colStyle['line'] }};">
-                    <div class="h-1" style="background: {{ $isManager && $key === 'doing' ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
+                <div class="rounded-[8px] min-h-[300px] flex flex-col border overflow-hidden {{ ($isManager || $isEmployee) ? 'mf-manager-kanban-column' : '' }}" style="background-color: {{ $colStyle['bg'] }}; border-color: {{ $colStyle['line'] }};">
+                    <div class="h-1" style="background: {{ ($isManager || $isEmployee) && $key === 'doing' ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200/70 bg-white/75">
                         <span class="text-sm font-black" style="color: {{ $colStyle['color'] }}">{{ $col['label'] }}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white" style="background-color: {{ $isManager && $key === 'doing' ? '#E4002B' : $colStyle['color'] }}">{{ count($col['tasks']) }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white" style="background-color: {{ ($isManager || $isEmployee) && $key === 'doing' ? '#E4002B' : $colStyle['color'] }}">{{ count($col['tasks']) }}</span>
                     </div>
                     <div class="p-3 space-y-3 flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar">
                         @forelse($col['tasks'] as $task)
-                            <button type="button" class="w-full text-left bg-white rounded-[8px] p-4 border {{ $isManager ? 'border-[#D9E5F7] hover:border-[#003DA5]/40 hover:shadow-[0_14px_28px_rgba(0,61,165,.12)]' : 'border-gray-100 hover:shadow-md' }} hover:-translate-y-0.5 transition-all duration-200"
-                                    onclick="openTaskDetail({{ json_encode($task) }})">
+                            @if($isEmployee)
+                                <div class="w-full text-left bg-white rounded-[8px] p-4 border border-[#D9E5F7] hover:border-[#003DA5]/40 hover:shadow-[0_14px_28px_rgba(0,61,165,.12)] hover:-translate-y-0.5 transition-all duration-200" id="task-card-{{ $task['id'] }}">
+                            @else
+                                <button type="button" class="w-full text-left bg-white rounded-[8px] p-4 border {{ $isManager ? 'border-[#D9E5F7] hover:border-[#003DA5]/40 hover:shadow-[0_14px_28px_rgba(0,61,165,.12)]' : 'border-gray-100 hover:shadow-md' }} hover:-translate-y-0.5 transition-all duration-200"
+                                        onclick="openTaskDetail({{ json_encode($task) }})">
+                            @endif
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $task['priority'] == 'Cao' ? 'bg-red-100 text-red-700' : ($task['priority'] == 'Trung bình' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700') }}">{{ $task['priority'] }}</span>
                                     <span class="text-[10px] font-mono text-gray-400">{{ $task['code'] }}</span>
@@ -201,10 +217,10 @@
                                 <div class="mb-3">
                                     <div class="flex items-center justify-between mb-1">
                                         <span class="text-[10px] text-gray-400">Tiến độ</span>
-                                        <span class="text-[10px] font-bold" style="color: {{ $colStyle['color'] }}">{{ $task['progress'] }}%</span>
+                                        <span class="text-[10px] font-bold" data-progress-text="{{ $task['id'] }}" style="color: {{ $colStyle['color'] }}">{{ $task['progress'] }}%</span>
                                     </div>
                                     <div class="h-1.5 rounded-full bg-gray-100">
-                                        <div class="h-1.5 rounded-full" style="width: {{ $task['progress'] }}%; background: {{ $isManager ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
+                                        <div class="h-1.5 rounded-full" data-progress-bar="{{ $task['id'] }}" style="width: {{ $task['progress'] }}%; background: {{ ($isManager || $isEmployee) ? 'linear-gradient(90deg,#E4002B,#003DA5)' : $colStyle['color'] }}"></div>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -220,7 +236,27 @@
                                         <span class="w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-[9px]" style="background-color: {{ $page['accent'] }}" title="{{ $task['assignee'] }}">{{ $task['avatar'] }}</span>
                                     </span>
                                 </div>
-                            </button>
+                                @if($isEmployee)
+                                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                                        <select
+                                            class="px-3 py-2 rounded-[8px] border border-[#D9E5F7] bg-[#F8FAFF] text-xs font-bold text-[#001F5B] outline-none focus:border-[#003DA5]"
+                                            data-task-status="{{ $task['id'] }}"
+                                            data-previous-status="{{ $task['status'] }}"
+                                            onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)"
+                                        >
+                                            <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
+                                            <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
+                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }}>Hoàn thành</option>
+                                        </select>
+                                        <button type="button" onclick="openTaskDetail({{ json_encode($task) }})" class="inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-[#B9CDF5] bg-white px-3 py-2 text-xs font-bold text-[#003DA5] hover:bg-[#F4F8FF]">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>Chi tiết
+                                        </button>
+                                    </div>
+                                </div>
+                                @else
+                                </button>
+                                @endif
                         @empty
                             <div class="text-center py-8 text-xs text-gray-400 border border-dashed rounded-[8px] bg-white/65" style="border-color: {{ $colStyle['line'] }}">Chưa có công việc.</div>
                         @endforelse
@@ -252,7 +288,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($mappedTasksList as $task)
-                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="openTaskDetail({{ json_encode($task) }})">
+                            <tr class="hover:bg-gray-50 transition-colors {{ $isEmployee ? '' : 'cursor-pointer' }}" @if(!$isEmployee) onclick="openTaskDetail({{ json_encode($task) }})" @endif>
                                 <td class="px-5 py-4 text-xs font-mono text-gray-400">{{ $task['code'] }}</td>
                                 <td class="px-5 py-4 font-bold text-gray-800 truncate max-w-[240px]">{{ $task['name'] }}</td>
                                 <td class="px-5 py-4">
@@ -272,13 +308,34 @@
                                         <span class="text-xs text-gray-400">Không có</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $task['status'] }}</span></td>
+                                <td class="px-5 py-4">
+                                    @if($isEmployee)
+                                        <select
+                                            class="min-w-[132px] rounded-[8px] border border-[#D9E5F7] bg-[#F8FAFF] px-3 py-2 text-xs font-bold text-[#001F5B] outline-none focus:border-[#003DA5]"
+                                            data-task-status="{{ $task['id'] }}"
+                                            data-previous-status="{{ $task['status'] }}"
+                                            onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)"
+                                        >
+                                            <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
+                                            <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
+                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }}>Hoàn thành</option>
+                                        </select>
+                                    @else
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $task['status'] }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-2">
                                         <div class="flex-1 h-1.5 rounded-full min-w-[80px] bg-gray-100">
-                                            <div class="h-1.5 rounded-full" style="width: {{ $task['progress'] }}%; background-color: {{ $page['accent'] }}"></div>
+                                            <div class="h-1.5 rounded-full" data-progress-bar="{{ $task['id'] }}" style="width: {{ $task['progress'] }}%; background-color: {{ $page['accent'] }}"></div>
                                         </div>
-                                        <span class="text-xs w-8 text-right font-mono text-gray-400">{{ $task['progress'] }}%</span>
+                                        <span class="text-xs w-8 text-right font-mono text-gray-400" data-progress-text="{{ $task['id'] }}">{{ $task['progress'] }}%</span>
+                                        @if($isEmployee)
+                                            <button type="button" onclick="openTaskDetail({{ json_encode($task) }})" class="ml-2 inline-flex items-center gap-1 rounded-[8px] border border-[#B9CDF5] bg-white px-2.5 py-1.5 text-xs font-bold text-[#003DA5] hover:bg-[#F4F8FF]">
+                                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -307,7 +364,11 @@
             </div>
         </div>
 
+<<<<<<< HEAD
         <form id="task-form" action="{{ route('dashboard.tasks.save') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+=======
+        <form action="{{ route($taskSaveRoute) }}" method="POST" class="p-6 space-y-5">
+>>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
             @csrf
             <div>
                 <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isEmployee ? 'Tên đề xuất *' : 'Tên công việc *' }}</label>
@@ -321,15 +382,19 @@
 
             @if(!$isEmployee)
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isDirector ? 'Người phụ trách *' : 'Nhân viên trong phòng *' }}</label>
-                    <select name="assigned_to[]" required multiple size="6" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isDirector ? 'Người cùng làm *' : 'Nhân viên cùng làm *' }}</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border border-gray-200 rounded-[8px] bg-gray-50">
                         @foreach($allUsers as $u)
-                            <option value="{{ $u->id }}">
-                                {{ $u->name }} - {{ $u->department->TENPHONG ?? $u->department->name ?? 'Chưa có phòng' }}{{ $isDirector ? ' / '.($u->role->name ?? 'Chưa có chức vụ') : '' }}
-                            </option>
+                            <label class="flex items-center gap-2 bg-white border border-gray-200 rounded-[8px] px-3 py-2 cursor-pointer">
+                                <input type="checkbox" name="assigned_to[]" value="{{ $u->id }}" class="accent-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                                <span class="text-sm font-bold text-gray-700">
+                                    {{ $u->name }}
+                                    <small class="block text-[11px] font-medium text-gray-400">{{ $u->department->TENPHONG ?? $u->department->name ?? 'Chưa có phòng' }}{{ $isDirector ? ' / '.($u->role->name ?? 'Chưa có chức vụ') : '' }}</small>
+                                </span>
+                            </label>
                         @endforeach
-                    </select>
-                    <p class="mt-1.5 text-xs text-gray-400">Giu Ctrl/Command hoac Shift de chon nhieu nhan vien.</p>
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">Tích nhiều nhân viên để cùng làm chung một công việc.</p>
                 </div>
             @else
                 <input type="hidden" name="assigned_to" value="{{ Auth::id() }}">
@@ -356,12 +421,12 @@
                         </select>
                     @else
                         <input type="hidden" name="status" id="task-status" value="Chờ xử lý">
-                        <div class="px-4 py-3 rounded-[8px] bg-[#F0FDF4] text-sm font-semibold text-[#15803D] border border-[#BBF7D0]">Chờ quản lý xem xét</div>
+                        <div class="px-4 py-3 rounded-[8px] bg-[#F4F8FF] text-sm font-semibold text-[#003DA5] border border-[#B9CDF5]">Chờ quản lý xem xét</div>
                     @endif
                 </div>
             </div>
 
-            <div class="rounded-[8px] p-4 border {{ $isDirector ? 'bg-[#F8FAFC] border-[#E2E8F0]' : ($isManager ? 'bg-[#F4F8FF] border-[#B9CDF5]' : 'bg-[#F0FDF4] border-[#BBF7D0]') }}">
+            <div class="rounded-[8px] p-4 border {{ $isDirector ? 'bg-[#F8FAFC] border-[#E2E8F0]' : (($isManager || $isEmployee) ? 'bg-[#F4F8FF] border-[#B9CDF5]' : 'bg-[#F0FDF4] border-[#BBF7D0]') }}">
                 <div class="flex items-start gap-3">
                     <i data-lucide="{{ $isEmployee ? 'info' : 'shield-check' }}" class="w-5 h-5 mt-0.5" style="color: {{ $page['accent'] }}"></i>
                     <div>
@@ -557,6 +622,66 @@
         const closeDetailBtn = document.getElementById('close-detail-modal');
         const detailDocuments = document.getElementById('detail-documents');
         const detailDocumentsCount = document.getElementById('detail-documents-count');
+        const employeeTaskProgressUrl = '{{ url('/employee/tasks') }}';
+        const csrfToken = '{{ csrf_token() }}';
+        const employeeProgressByStatus = {
+            'Chờ xử lý': 0,
+            'Đang làm': 50,
+            'Đang review': 80,
+            'Hoàn thành': 100,
+        };
+
+        window.updateEmployeeTaskStatus = (taskId, status) => {
+            const selects = document.querySelectorAll(`[data-task-status="${taskId}"]`);
+            const previous = Array.from(selects).find((select) => select.dataset.previousStatus)?.dataset.previousStatus
+                || Array.from(selects).find((select) => select.defaultValue)?.defaultValue
+                || status;
+            const progress = employeeProgressByStatus[status] ?? 0;
+
+            selects.forEach((select) => {
+                select.disabled = true;
+                select.dataset.previousStatus = previous;
+            });
+
+            fetch(`${employeeTaskProgressUrl}/${taskId}/progress`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ status, progress }),
+            })
+                .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
+                .then(({ ok, payload }) => {
+                    if (!ok || !payload.ok) {
+                        throw new Error(payload.message || 'Không thể cập nhật trạng thái.');
+                    }
+
+                    const nextProgress = payload.progress ?? progress;
+                    document.querySelectorAll(`[data-progress-bar="${taskId}"]`).forEach((bar) => {
+                        bar.style.width = `${nextProgress}%`;
+                    });
+                    document.querySelectorAll(`[data-progress-text="${taskId}"]`).forEach((text) => {
+                        text.textContent = `${nextProgress}%`;
+                    });
+                    selects.forEach((select) => {
+                        select.value = payload.status || status;
+                        select.dataset.previousStatus = payload.status || status;
+                    });
+                })
+                .catch(() => {
+                    selects.forEach((select) => {
+                        select.value = select.dataset.previousStatus || previous;
+                    });
+                    alert('Không cập nhật được trạng thái công việc. Vui lòng thử lại.');
+                })
+                .finally(() => {
+                    selects.forEach((select) => {
+                        select.disabled = false;
+                    });
+                });
+        };
 
         const renderDetailDocuments = (documents = []) => {
             detailDocuments.innerHTML = '';
@@ -571,7 +696,7 @@
                 return;
             }
 
-            documents.forEach((document) => {
+            documents.forEach((file) => {
                 const row = document.createElement('div');
                 row.className = 'flex flex-col gap-3 rounded-[8px] border border-gray-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between';
 
@@ -584,12 +709,12 @@
 
                 const fileName = document.createElement('span');
                 fileName.className = 'truncate';
-                fileName.textContent = document.file_name || 'Tài liệu';
+                fileName.textContent = file.file_name || 'Tài liệu';
                 nameLine.appendChild(fileName);
 
                 const meta = document.createElement('div');
                 meta.className = 'mt-1 text-xs text-gray-400';
-                meta.textContent = [document.file_type, document.uploader, document.uploaded_at].filter(Boolean).join(' · ');
+                meta.textContent = [file.file_type, file.uploader, file.uploaded_at].filter(Boolean).join(' · ');
 
                 info.appendChild(nameLine);
                 info.appendChild(meta);
@@ -599,7 +724,7 @@
 
                 const preview = document.createElement('a');
                 preview.className = 'inline-flex items-center gap-1.5 rounded-[8px] border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50';
-                preview.href = document.preview_url;
+                preview.href = file.preview_url;
                 preview.target = '_blank';
                 preview.rel = 'noopener';
                 preview.innerHTML = '<i data-lucide="eye" class="w-3.5 h-3.5"></i>Xem';
@@ -607,7 +732,7 @@
                 const download = document.createElement('a');
                 download.className = 'inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold text-white';
                 download.style.backgroundColor = '{{ $page['accent'] }}';
-                download.href = document.download_url;
+                download.href = file.download_url;
                 download.innerHTML = '<i data-lucide="download" class="w-3.5 h-3.5"></i>Tải';
 
                 actions.appendChild(preview);

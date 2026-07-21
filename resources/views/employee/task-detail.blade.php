@@ -44,7 +44,9 @@
         .profile-card {
             margin: 16px 14px; background: rgba(255,255,255,.08);
             border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 14px;
+            display: block; color: inherit; text-decoration: none;
         }
+        .profile-card:hover { background: rgba(255,255,255,.13); }
         .profile-row { display: flex; align-items: center; gap: 10px; }
         .avatar {
             width: 42px; height: 42px; border-radius: 10px;
@@ -273,7 +275,7 @@
             </div>
         </div>
 
-        <div class="profile-card">
+        <a href="{{ route('profile.show') }}" class="profile-card" title="Trang cá nhân">
             <div class="profile-row">
                 <div class="avatar">{{ mb_strtoupper(mb_substr(Auth::user()->name ?? 'NV', 0, 2)) }}</div>
                 <div>
@@ -281,18 +283,18 @@
                     <div class="profile-meta">{{ Auth::user()->department->TENPHONG ?? 'MobiFone' }}</div>
                 </div>
             </div>
-        </div>
+        </a>
 
         <nav class="sidebar-nav">
             <a href="{{ route('employee.dashboard') }}" class="nav-item">
                 <i data-lucide="layout-dashboard" style="width:16px;height:16px;flex-shrink:0"></i>
                 Dashboard
             </a>
-            <a href="{{ route('employee.dashboard') }}#tasks-panel" class="nav-item active">
+            <a href="{{ route('employee.tasks') }}" class="nav-item active">
                 <i data-lucide="clipboard-list" style="width:16px;height:16px;flex-shrink:0"></i>
                 Công việc của tôi
             </a>
-            <a href="{{ route('employee.dashboard') }}#notifications-panel" class="nav-item">
+            <a href="{{ route('employee.notifications') }}" class="nav-item">
                 <i data-lucide="bell" style="width:16px;height:16px;flex-shrink:0"></i>
                 Thông báo
             </a>
@@ -371,7 +373,7 @@
                     </div>
                     <div class="info-row">
                         <div class="info-label"><i data-lucide="user-check" style="width:13px;height:13px"></i>Người nhận</div>
-                        <div class="info-val">{{ $task->assignee->name ?? 'Bạn' }}</div>
+                        <div class="info-val">{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Bạn') }}</div>
                     </div>
                     <div class="info-row">
                         <div class="info-label"><i data-lucide="calendar" style="width:13px;height:13px"></i>Deadline</div>

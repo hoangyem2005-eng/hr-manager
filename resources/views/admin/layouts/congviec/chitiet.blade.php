@@ -27,7 +27,7 @@
         <table class="table">
             <tbody>
                 <tr><td>Người giao</td><td><strong>{{ $task->creator->name ?? 'Hệ thống' }}</strong></td></tr>
-                <tr><td>Người nhận</td><td><strong>{{ $task->assignee->name ?? 'Chưa gán' }}</strong></td></tr>
+                <tr><td>Người cùng làm</td><td><strong>{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Chưa gán') }}</strong></td></tr>
                 <tr><td>Deadline</td><td>{{ $task->deadline ? $task->deadline->format('d/m/Y') : 'Không có' }}</td></tr>
                 <tr><td>Trạng thái</td><td><span class="status">{{ $task->status }}</span></td></tr>
                 <tr><td>Tiến độ</td><td><strong>{{ $task->progress ?? 0 }}%</strong></td></tr>

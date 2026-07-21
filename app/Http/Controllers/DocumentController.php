@@ -302,7 +302,15 @@ class DocumentController extends Controller
             return false;
         }
 
+        $doc->loadMissing(['task.assignees', 'task.assignee', 'uploader']);
+
         if ((int) $doc->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($doc->task?->assignees?->contains('id', $user->id)
+            || (int) optional($doc->task)->assigned_to === (int) $user->id
+            || (int) optional($doc->task)->assigned_by === (int) $user->id) {
             return true;
         }
 
@@ -311,9 +319,8 @@ class DocumentController extends Controller
         }
 
         if ($user->isLeader()) {
-            $doc->loadMissing(['task.assignee', 'uploader']);
-
             return (int) optional($doc->task?->assignee)->department_id === (int) $user->department_id
+                || optional($doc->task)->assignees?->contains(fn (User $assignee) => (int) $assignee->department_id === (int) $user->department_id)
                 || (int) optional($doc->uploader)->department_id === (int) $user->department_id
                 || (int) optional($doc->task)->assigned_by === (int) $user->id
                 || (int) optional($doc->task)->assigned_to === (int) $user->id;
