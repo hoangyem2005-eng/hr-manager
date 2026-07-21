@@ -267,18 +267,6 @@ class ManagerController extends Controller
             return back()->with('error', 'Bạn chỉ có thể giao việc cho nhân viên trong phòng của mình!');
         }
 
-<<<<<<< HEAD
-        $createdTasks = [];
-        foreach ($assignedToIds as $assignedTo) {
-            $task = Task::create([
-                'task_name'   => $request->task_name,
-                'description' => $request->description,
-                'assigned_by' => $manager->id,
-                'assigned_to' => $assignedTo,
-                'deadline'    => $request->deadline,
-                'status'      => $request->status ?? 'Chờ xử lý',
-                'progress'    => 0,
-=======
         $task = Task::create([
             'task_name'   => $request->task_name,
             'description' => $request->description,
@@ -290,18 +278,9 @@ class ManagerController extends Controller
         ]);
 
         $task->assignees()->sync($assignedToIds);
+        $createdTasks = [$task];
 
         foreach ($assignedToIds as $assignedTo) {
-            Notification::create([
-                'user_id' => $assignedTo,
-                'task_id' => $task->id,
-                'title' => 'Bạn vừa được giao công việc mới',
-                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
-                'is_read' => false,
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
-            ]);
-            $createdTasks[] = $task;
-
             Notification::create([
                 'user_id' => $assignedTo,
                 'task_id' => $task->id,

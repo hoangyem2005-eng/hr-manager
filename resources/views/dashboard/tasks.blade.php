@@ -364,11 +364,7 @@
             </div>
         </div>
 
-<<<<<<< HEAD
-        <form id="task-form" action="{{ route('dashboard.tasks.save') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
-=======
-        <form action="{{ route($taskSaveRoute) }}" method="POST" class="p-6 space-y-5">
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
+        <form id="task-form" action="{{ route($taskSaveRoute) }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
             @csrf
             <div>
                 <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isEmployee ? 'Tên đề xuất *' : 'Tên công việc *' }}</label>
@@ -737,12 +733,85 @@
 
                 actions.appendChild(preview);
                 actions.appendChild(download);
+
+                if (file.can_forward && file.forward_url) {
+                    const forwardBtn = document.createElement('button');
+                    forwardBtn.type = 'button';
+                    forwardBtn.className = 'inline-flex items-center gap-1.5 rounded-[8px] border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors';
+                    forwardBtn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>Chuyển Giám đốc';
+                    forwardBtn.onclick = () => forwardDocumentToDirector(file.id, file.forward_url, forwardBtn);
+                    actions.appendChild(forwardBtn);
+                }
+
+                if (file.can_delete !== false) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'inline-flex items-center gap-1.5 rounded-[8px] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors';
+                    deleteBtn.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Xóa';
+                    deleteBtn.onclick = () => deleteDocumentItem(file.id, row);
+                    actions.appendChild(deleteBtn);
+                }
+
                 row.appendChild(info);
                 row.appendChild(actions);
                 detailDocuments.appendChild(row);
             });
 
             lucide.createIcons();
+        };
+
+        window.forwardDocumentToDirector = (documentId, forwardUrl, btnElement) => {
+            if (!confirm('Bạn có chắc chắn muốn chuyển file này lên Giám đốc?')) return;
+
+            fetch(forwardUrl, {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => {
+                if (res.ok) {
+                    btnElement.remove();
+                    alert('Đã chuyển file đính kèm lên Giám đốc.');
+                } else {
+                    alert('Không thể chuyển file.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Có lỗi xảy ra khi chuyển file.');
+            });
+        };
+
+        window.deleteDocumentItem = (documentId, rowElement) => {
+            if (!confirm('Bạn có chắc chắn muốn xóa tệp đính kèm này không?')) return;
+
+            fetch(`{{ url('/tai-lieu') }}/${documentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (rowElement) {
+                        rowElement.remove();
+                        if (detailDocuments.children.length === 0) {
+                            renderDetailDocuments([]);
+                        }
+                    }
+                    alert(data.message || 'Đã xóa tệp đính kèm.');
+                } else {
+                    alert(data.message || 'Không thể xóa tệp.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Có lỗi xảy ra khi xóa tệp đính kèm.');
+            });
         };
 
         window.openTaskDetail = (task) => {

@@ -184,6 +184,18 @@
                                     <i data-lucide="{{ $m['status'] == 'active' ? 'alert-circle' : 'rotate-ccw' }}" class="w-4 h-4"></i>
                                 </button>
                             </form>
+                            <form method="POST"
+                                  action="{{ route('dashboard.members.delete', $m['db_id']) }}"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn XÓA vĩnh viễn nhân viên {{ addslashes($m['name']) }} khỏi hệ thống không?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="member-icon-btn danger"
+                                        title="Xóa nhân viên"
+                                        aria-label="Xóa {{ $m['name'] }}">
+                                    <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
 
@@ -371,6 +383,18 @@
                                                 title="{{ $m['status'] == 'active' ? 'Vô hiệu hóa' : 'Kích hoạt lại' }}"
                                                 aria-label="{{ $m['status'] == 'active' ? 'Vô hiệu hóa '.$m['name'] : 'Kích hoạt lại '.$m['name'] }}">
                                             <i data-lucide="{{ $m['status'] == 'active' ? 'alert-circle' : 'rotate-ccw' }}" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST"
+                                          action="{{ route('dashboard.members.delete', $m['db_id']) }}"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn XÓA vĩnh viễn nhân viên {{ addslashes($m['name']) }} khỏi hệ thống không?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-600"
+                                                title="Xóa nhân viên"
+                                                aria-label="Xóa {{ $m['name'] }}">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
                                     </form>
                                 </div>

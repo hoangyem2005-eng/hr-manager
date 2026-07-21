@@ -507,7 +507,7 @@ class TaskController extends Controller
         }
 
         if ($user->isDirector()) {
-            return $document->review_status === Document::STATUS_DIRECTOR_VISIBLE;
+            return true;
         }
 
         if ($user->isLeader()) {

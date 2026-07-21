@@ -11,7 +11,6 @@ use App\Models\Task;
 use App\Models\User;
 use Carbon\Carbon;
 use App\Models\HrDocument;
-use App\Models\Document;
 use App\Events\TaskCreated;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -395,7 +394,7 @@ class DashboardController extends Controller
                     }
 
                     if ($currentUser->isDirector()) {
-                        return $document->review_status === \App\Models\Document::STATUS_DIRECTOR_VISIBLE;
+                        return true;
                     }
 
                     if ($currentUser->isLeader()) {
@@ -416,17 +415,11 @@ class DashboardController extends Controller
                 'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
                 'name' => $this->cleanVietnameseText($t->task_name),
                 'description' => $this->cleanVietnameseText($t->description),
-<<<<<<< HEAD
-                'assignee' => $user ? $this->cleanVietnameseText($user->name) : 'Chưa giao',
+                'assignee' => $assignees->isNotEmpty() ? $this->cleanVietnameseText($assignees->pluck('name')->join(', ')) : ($user ? $this->cleanVietnameseText($user->name) : 'Chưa giao'),
                 'assignee_id' => $t->assigned_to,
                 'avatar' => $this->getInitials($user ? $user->name : 'CG'),
-                'priority' => $t->priority ?? 'Trung bình',
-=======
-                'assignee' => $this->cleanVietnameseText($assignees->pluck('name')->join(', ')),
-                'avatar' => $this->getInitials($user->name),
                 'assignee_count' => $assignees->count(),
-                'priority' => $t->id % 3 == 0 ? 'Cao' : ($t->id % 3 == 1 ? 'Trung bình' : 'Thấp'),
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
+                'priority' => $t->priority ?? 'Trung bình',
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'deadline_raw' => $t->deadline ? Carbon::parse($t->deadline)->format('Y-m-d') : '',
                 'status' => $status,
@@ -441,6 +434,11 @@ class DashboardController extends Controller
                         'uploaded_at' => $document->created_at?->format('d/m/Y H:i'),
                         'preview_url' => route('congviec.file.preview', $document->id),
                         'download_url' => route('congviec.file.download', $document->id),
+                        'delete_url' => route('document.destroy', $document->id),
+                        'forward_url' => route('manager.file.forward', $document->id),
+                        'review_status' => $document->review_status,
+                        'can_forward' => $currentUser->isLeader() && $document->review_status === \App\Models\Document::STATUS_MANAGER_REVIEW,
+                        'can_delete' => (int) $document->user_id === (int) $currentUser->id || $currentUser->isLeader() || $currentUser->isDirector(),
                     ])
                     ->values()
                     ->all(),
@@ -549,41 +547,6 @@ class DashboardController extends Controller
             $successMessage = 'Đã gửi đề xuất công việc để quản lý xem xét!';
         }
 
-<<<<<<< HEAD
-        $createdTasks = collect($assignedToIds)->map(function (int $assignedTo) use ($request, $currentUser, $status, $priority) {
-            $task = Task::create([
-                'task_name' => $request->task_name,
-                'description' => $request->description,
-                'assigned_by' => $currentUser->id,
-                'assigned_to' => $assignedTo,
-                'deadline' => $request->deadline,
-                'priority' => $priority,
-                'status' => $status,
-                'progress' => $status === 'Hoàn thành' ? 100 : 0,
-            ]);
-
-            if ($request->hasFile('attachments')) {
-                $this->handleFileUploads($request->file('attachments'), $task);
-            }
-
-            if ($assignedTo !== (int) $currentUser->id) {
-                Notification::create([
-                    'user_id' => $assignedTo,
-                    'task_id' => $task->id,
-                    'title' => 'Bạn vừa được giao công việc mới',
-                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
-                    'is_read' => false,
-                ]);
-            }
-
-            event(new TaskCreated($task));
-
-            return $task;
-        });
-
-        if ($createdTasks->count() > 1) {
-            $successMessage .= ' (' . $createdTasks->count() . ' nhân viên)';
-=======
         $primaryAssignee = $assignedToIds[0] ?? $currentUser->id;
         $task = Task::create([
             'task_name' => $request->task_name,
@@ -591,14 +554,19 @@ class DashboardController extends Controller
             'assigned_by' => $currentUser->id,
             'assigned_to' => $primaryAssignee,
             'deadline' => $request->deadline,
+            'priority' => $priority,
             'status' => $status,
-            'progress' => 0,
+            'progress' => $status === 'Hoàn thành' ? 100 : 0,
         ]);
 
         $task->assignees()->sync($assignedToIds);
 
+        if ($request->hasFile('attachments')) {
+            $this->handleFileUploads($request->file('attachments'), $task);
+        }
+
         foreach ($assignedToIds as $assignedTo) {
-            if ($assignedTo === (int) $currentUser->id) {
+            if ((int) $assignedTo === (int) $currentUser->id) {
                 continue;
             }
 
@@ -609,8 +577,9 @@ class DashboardController extends Controller
                 'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
                 'is_read' => false,
             ]);
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
         }
+
+        event(new TaskCreated($task));
 
         if (count($assignedToIds) > 1) {
             $successMessage .= ' (' . count($assignedToIds) . ' người cùng làm)';
@@ -812,7 +781,7 @@ class DashboardController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('dashboard.members')->with('success', 'Thêm thành viên mới thành công!');
+        return redirect()->back()->with('success', 'Thêm thành viên mới thành công!');
     }
 
     public function updateMember(Request $request, User $user)
@@ -840,7 +809,7 @@ class DashboardController extends Controller
 
         $user->save();
 
-        return redirect()->route('dashboard.members')->with('success', "Đã cập nhật thành viên {$user->name}.");
+        return redirect()->back()->with('success', "Đã cập nhật thành viên {$user->name}.");
     }
 
     public function updateMemberRole(Request $request, User $user)
@@ -855,7 +824,7 @@ class DashboardController extends Controller
 
         $user->update(['role_id' => $request->role_id]);
 
-        return redirect()->route('dashboard.members')->with('success', "Đã cập nhật vai trò cho {$user->name}.");
+        return redirect()->back()->with('success', "Đã cập nhật vai trò cho {$user->name}.");
     }
 
     public function toggleMemberStatus(User $user)
@@ -870,7 +839,26 @@ class DashboardController extends Controller
             ? "Đã kích hoạt lại tài khoản {$user->name}."
             : "Đã vô hiệu hóa tài khoản {$user->name}.";
 
-        return redirect()->route('dashboard.members')->with('success', $message);
+        return redirect()->back()->with('success', $message);
+    }
+
+    public function deleteMember(User $user)
+    {
+        if ((int) $user->id === (int) Auth::id()) {
+            return back()->with('error', 'Bạn không thể tự xóa tài khoản của chính mình.');
+        }
+
+        $userName = $user->name;
+
+        Task::where('assigned_to', $user->id)->update(['assigned_to' => null]);
+        Task::where('assigned_by', $user->id)->update(['assigned_by' => null]);
+        DB::table('task_assignees')->where('user_id', $user->id)->delete();
+        Document::where('user_id', $user->id)->update(['user_id' => null]);
+        Notification::where('user_id', $user->id)->delete();
+
+        $user->delete();
+
+        return redirect()->back()->with('success', "Đã xóa tài khoản nhân viên {$userName} thành công!");
     }
 
     public function reports()
@@ -885,38 +873,6 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-<<<<<<< HEAD
-        // 2. Tính toán dữ liệu tiến độ 7 tuần gần đây
-        $lineData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $startOfWeek = Carbon::now()->subWeeks($i)->startOfWeek();
-            $endOfWeek = Carbon::now()->subWeeks($i)->endOfWeek();
-            
-            $assigned = Task::whereBetween('created_at', [$startOfWeek, $endOfWeek])->count();
-            $completed = Task::where('status', 'Hoàn thành')
-                ->whereBetween('updated_at', [$startOfWeek, $endOfWeek])
-                ->count();
-                
-            $lineData[] = [
-                'week' => 'T. ' . Carbon::now()->subWeeks($i)->weekOfYear,
-                'assigned' => $assigned,
-                'completed' => $completed
-            ];
-        }
-
-        // 3. Thống kê theo ưu tiên thực tế từ DB
-        $priorityDistribution = [
-            ['priority' => 'Cao', 'value' => Task::where('priority', 'Cao')->count()],
-            ['priority' => 'Trung bình', 'value' => Task::where('priority', 'Trung bình')->count()],
-            ['priority' => 'Thấp', 'value' => Task::where('priority', 'Thấp')->count()],
-        ];
-
-        // 4. Hiệu suất thực tế theo thành viên có nhận việc
-        $perfData = User::whereHas('assignedTasks')->take(5)->get()->map(function($u) {
-            $totalUserTasks = Task::where('assigned_to', $u->id)->count();
-            $done = $totalUserTasks > 0 ? round((Task::where('assigned_to', $u->id)->where('status', 'Hoàn thành')->count() / $totalUserTasks) * 100) : 0;
-            $overdue = 100 - $done;
-=======
         $normalizedStatus = function (Task $task): string {
             return mb_strtolower($this->cleanVietnameseText($task->status ?? ''));
         };
@@ -926,7 +882,6 @@ class DashboardController extends Controller
 
             return in_array($status, ['hoàn thành', 'done'], true) || (int) ($task->progress ?? 0) >= 100;
         };
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
 
         $isOverdue = function (Task $task) use ($today, $isDone): bool {
             return !$isDone($task)
@@ -952,24 +907,6 @@ class DashboardController extends Controller
                 && (str_contains($status, 'chờ') || $status === 'todo' || (int) ($task->progress ?? 0) === 0);
         });
 
-<<<<<<< HEAD
-        if ($perfData->isEmpty()) {
-            $perfData = User::take(5)->get()->map(function($u) {
-                return [
-                    'name' => $this->cleanVietnameseText($u->name),
-                    'completion' => 0,
-                    'overdue' => 0
-                ];
-            });
-        }
-
-        // 5. Trạng thái phân bổ donut từ DB
-        $pieData = [
-            ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count(), 'color' => '#16A34A'],
-            ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count(), 'color' => '#D97706'],
-            ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count(), 'color' => '#003DA5'],
-            ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Todo'])->count(), 'color' => '#6B7280'],
-=======
         $doneRate = $total > 0 ? round(($completedTasks->count() / $total) * 100) : 0;
         $overdueRate = $total > 0 ? round(($overdueTasks->count() / $total) * 100) : 0;
         $activeUsers = $allUsers->where('is_active', true)->count();
@@ -1086,7 +1023,6 @@ class DashboardController extends Controller
             'documents_forwarded' => $employeeUploadedDocuments->where('review_status', Document::STATUS_DIRECTOR_VISIBLE)->count(),
             'avg_completion_days' => $avgCompletionDays,
             'monthly_task_change' => $monthlyTaskChange,
->>>>>>> ed1625cf337db5c518ca0e6040eb706bf6818b93
         ];
 
         $reportView = 'dashboard.reports';

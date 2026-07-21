@@ -130,6 +130,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::patch('/members/{user}', [DashboardController::class, 'updateMember'])->name('dashboard.members.update');
         Route::patch('/members/{user}/role', [DashboardController::class, 'updateMemberRole'])->name('dashboard.members.role');
         Route::patch('/members/{user}/status', [DashboardController::class, 'toggleMemberStatus'])->name('dashboard.members.status');
+        Route::delete('/members/{user}', [DashboardController::class, 'deleteMember'])->name('dashboard.members.delete');
     });
 
     // 4. Phân hệ Báo cáo & Thống kê (ApexCharts)

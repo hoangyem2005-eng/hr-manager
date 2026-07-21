@@ -110,8 +110,10 @@
         .ghost-btn { border: 1px solid #D8E2F4; border-radius: 8px; padding: 11px 16px; background: #fff; color: #334155; font-weight: 900; cursor: pointer; }
         .doc-list { display: grid; gap: 8px; }
         .doc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #E5EAF5; border-radius: 8px; padding: 10px; }
-        .doc-actions { display: flex; gap: 8px; }
-        .doc-actions a { border-radius: 8px; padding: 7px 10px; background: #F4F8FF; color: var(--mf-blue); font-size: 12px; font-weight: 900; }
+        .doc-actions { display: flex; gap: 8px; align-items: center; }
+        .doc-actions a, .doc-actions button { border-radius: 8px; padding: 7px 10px; background: #F4F8FF; color: var(--mf-blue); font-size: 12px; font-weight: 900; border: 0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
+        .doc-actions button.del { background: #FEF2F2; color: #DC2626; }
+        .doc-actions button.del:hover { background: #FEE2E2; }
         .upload-panel { border: 1px solid #D8E2F4; border-radius: 8px; padding: 14px; background: #F8FAFF; }
         .upload-label { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 78px; border: 1px dashed #9DBBF2; border-radius: 8px; color: var(--mf-blue); background: #fff; font-weight: 900; cursor: pointer; }
         .upload-label:hover { background: #F4F8FF; border-color: var(--mf-blue); }
@@ -466,6 +468,8 @@
             documents.forEach(file => {
                 const row = document.createElement('div');
                 row.className = 'doc-row';
+                const canDelete = file.can_delete !== undefined ? file.can_delete : true;
+                const deleteBtnHtml = canDelete ? `<button type="button" class="del" onclick="deleteDocumentItem(${file.id}, this)">Xóa</button>` : '';
                 row.innerHTML = `
                     <div style="min-width:0">
                         <strong style="display:block;color:var(--mf-blue-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${file.file_name || 'Tài liệu'}</strong>
@@ -474,6 +478,7 @@
                     <div class="doc-actions">
                         <a href="${file.preview_url}" target="_blank" rel="noopener">Xem</a>
                         <a href="${file.download_url}">Tải</a>
+                        ${deleteBtnHtml}
                     </div>
                 `;
                 docs.appendChild(row);
@@ -481,6 +486,38 @@
         }
         detailModal.classList.add('open');
         lucide.createIcons();
+    }
+
+    function deleteDocumentItem(documentId, btnElement) {
+        if (!confirm('Bạn có chắc chắn muốn xóa tệp này không?')) return;
+
+        fetch(`{{ url('/tai-lieu') }}/${documentId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const row = btnElement.closest('.doc-row');
+                if (row) {
+                    row.remove();
+                    const docsContainer = document.getElementById('detail-documents');
+                    if (docsContainer && docsContainer.children.length === 0) {
+                        docsContainer.innerHTML = '<div class="empty" style="min-height:70px">Chưa có tài liệu đính kèm.</div>';
+                    }
+                }
+                alert(data.message || 'Đã xóa tệp đính kèm.');
+            } else {
+                alert(data.message || 'Không thể xóa tệp.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Có lỗi xảy ra khi xóa tệp đính kèm.');
+        });
     }
 </script>
 </body>

@@ -6,6 +6,7 @@
 @section('content')
 @php
     $visibleMembers = collect($usersList->items());
+    $membersById = $visibleMembers->keyBy('db_id');
     $activeVisibleMembers = $visibleMembers->where('status', 'active')->count();
     $managerVisibleMembers = $visibleMembers->filter(fn ($member) => in_array($member['role'], ['Giám đốc', 'Trưởng phòng'], true))->count();
     $visibleTaskCount = $visibleMembers->sum('tasks');
@@ -67,6 +68,17 @@
 </style>
 
 <div class="people-page">
+    @if(session('success'))
+        <div class="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-bold">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <section class="people-hero">
         <div>
             <div class="people-kicker">People Directory</div>
@@ -96,6 +108,10 @@
                 <a href="{{ route('admin.members') }}" class="clear-link">Xóa lọc</a>
             @endif
         </form>
+        <button type="button" id="open-member-panel" class="filter-btn inline-flex items-center gap-2">
+            <i data-lucide="user-plus" style="width:16px;height:16px"></i>
+            Thêm nhân viên mới
+        </button>
     </section>
 
     <section class="people-stats">
@@ -123,7 +139,7 @@
                 <article class="person-card">
                     <div class="person-main">
                         <div class="person-avatar">{{ $member['avatar'] }}</div>
-                        <div style="min-width:0">
+                        <div style="min-width:0" class="flex-1">
                             <div class="person-name">{{ $member['name'] }}</div>
                             <div class="person-email">{{ $member['email'] }}</div>
                             <div class="person-code">{{ $member['id'] }}</div>
@@ -137,7 +153,46 @@
                     </div>
                     <div class="person-foot">
                         <span class="role-pill {{ $roleClass }}">{{ $member['role'] }}</span>
-                        <span class="status-pill {{ $member['status'] }}">{{ $member['status'] === 'active' ? 'Hoạt động' : 'Tạm khóa' }}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button"
+                                    data-member-id="{{ $member['db_id'] }}"
+                                    class="edit-member-btn w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 text-[#003DA5] border border-gray-200"
+                                    title="Chỉnh sửa (Chuyển phòng ban)"
+                                    aria-label="Chỉnh sửa {{ $member['name'] }}">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button"
+                                    data-member-id="{{ $member['db_id'] }}"
+                                    class="role-member-btn w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 text-[#003DA5] border border-gray-200"
+                                    title="Phân quyền"
+                                    aria-label="Phân quyền {{ $member['name'] }}">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                            </button>
+                            <form method="POST"
+                                  action="{{ route('dashboard.members.status', $member['db_id']) }}"
+                                  onsubmit="return confirm('{{ $member['status'] == 'active' ? 'Vô hiệu hóa tài khoản '.$member['name'].'?' : 'Kích hoạt lại tài khoản '.$member['name'].'?' }}')">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit"
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center {{ $member['status'] == 'active' ? 'hover:bg-amber-50 text-amber-600' : 'hover:bg-green-50 text-green-600' }} border border-gray-200"
+                                        title="{{ $member['status'] == 'active' ? 'Vô hiệu hóa' : 'Kích hoạt lại' }}"
+                                        aria-label="{{ $member['status'] == 'active' ? 'Vô hiệu hóa '.$member['name'] : 'Kích hoạt lại '.$member['name'] }}">
+                                    <i data-lucide="{{ $member['status'] == 'active' ? 'alert-circle' : 'rotate-ccw' }}" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                            <form method="POST"
+                                  action="{{ route('dashboard.members.delete', $member['db_id']) }}"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn XÓA vĩnh viễn nhân viên {{ addslashes($member['name']) }} khỏi hệ thống không?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-600 border border-gray-200"
+                                        title="Xóa nhân viên"
+                                        aria-label="Xóa {{ $member['name'] }}">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </article>
             @empty
@@ -154,4 +209,227 @@
         </div>
     </section>
 </div>
+
+<div id="member-panel" class="fixed inset-0 z-50 flex justify-end bg-black/30 hidden">
+    <div class="w-96 bg-white h-full shadow-2xl flex flex-col justify-between" id="panel-content">
+        <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-[#001F5B]">Thêm thành viên mới</h2>
+            <button id="close-member-panel" type="button" aria-label="Đóng"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+        </div>
+
+        <form action="{{ route('dashboard.members.save') }}" method="POST" class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+            @csrf
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Họ và tên *</label>
+                <input name="name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" placeholder="Nhập họ và tên..." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Email công ty *</label>
+                <input type="email" name="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" placeholder="vi_du@mobifone.vn" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Mật khẩu khởi tạo *</label>
+                <div class="relative">
+                    <input type="password" name="password" required class="password-eye-input w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" placeholder="••••••••" />
+                    <button type="button" class="password-eye-toggle absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#003DA5] focus:outline-none focus:ring-2 focus:ring-[#003DA5]/25 rounded-lg" aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Phòng ban *</label>
+                <select name="department_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none bg-white focus:border-[#003DA5]">
+                    <option value="">— Chọn phòng ban —</option>
+                    @foreach($departments as $d)
+                        <option value="{{ $d->id }}">{{ $d->TENPHONG }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Vai trò hệ thống *</label>
+                @foreach($roles as $r)
+                    @php
+                        $desc = $r->name == 'Giám đốc' ? 'Toàn quyền điều hành hệ thống' : ($r->name == 'Trưởng phòng' ? 'Tạo và giao task, quản lý phòng ban' : 'Nhận và cập nhật task được giao');
+                    @endphp
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 mb-2 cursor-pointer hover:bg-gray-50/50">
+                        <input type="radio" name="role_id" value="{{ $r->id }}" class="mt-1 text-[#003DA5] focus:ring-[#003DA5]" required {{ $r->name == 'Nhân viên' ? 'checked' : '' }} />
+                        <div>
+                            <div class="text-sm font-semibold text-gray-700">{{ $r->name }}</div>
+                            <div class="text-xs text-gray-400 mt-0.5">{{ $desc }}</div>
+                        </div>
+                    </label>
+                @endforeach
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-all">Tạo tài khoản mới</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="edit-member-panel" class="fixed inset-0 z-50 flex justify-end bg-black/30 hidden">
+    <div class="w-96 bg-white h-full shadow-2xl flex flex-col justify-between">
+        <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-[#001F5B]">Chỉnh sửa thành viên</h2>
+                <p class="text-xs text-gray-400 mt-0.5" id="edit-member-subtitle"></p>
+            </div>
+            <button type="button" id="close-edit-member-panel" aria-label="Đóng"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+        </div>
+
+        <form id="edit-member-form" method="POST" class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+            @csrf
+            @method('PATCH')
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Họ và tên *</label>
+                <input id="edit_member_name" name="name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Email công ty *</label>
+                <input id="edit_member_email" type="email" name="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Mật khẩu mới</label>
+                <div class="relative">
+                    <input type="password" name="password" class="password-eye-input w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5]" placeholder="Bỏ trống nếu không đổi" />
+                    <button type="button" class="password-eye-toggle absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#003DA5] focus:outline-none focus:ring-2 focus:ring-[#003DA5]/25 rounded-lg" aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Phòng ban *</label>
+                <select id="edit_member_department" name="department_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none bg-white focus:border-[#003DA5]">
+                    @foreach($departments as $d)
+                        <option value="{{ $d->id }}">{{ $d->TENPHONG }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="pt-4">
+                <button type="submit" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-all">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="role-member-panel" class="fixed inset-0 z-50 flex justify-end bg-black/30 hidden">
+    <div class="w-96 bg-white h-full shadow-2xl flex flex-col justify-between">
+        <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-[#001F5B]">Phân quyền thành viên</h2>
+                <p class="text-xs text-gray-400 mt-0.5" id="role-member-subtitle"></p>
+            </div>
+            <button type="button" id="close-role-member-panel" aria-label="Đóng"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+        </div>
+
+        <form id="role-member-form" method="POST" class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+            @csrf
+            @method('PATCH')
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Vai trò hệ thống</label>
+                @foreach($roles as $r)
+                    @php
+                        $desc = $r->name == 'Giám đốc' ? 'Toàn quyền điều hành hệ thống' : ($r->name == 'Trưởng phòng' ? 'Tạo và giao task, quản lý phòng ban' : 'Nhận và cập nhật task được giao');
+                    @endphp
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 mb-2 cursor-pointer hover:bg-gray-50/50">
+                        <input type="radio" name="role_id" value="{{ $r->id }}" class="role-radio mt-1 text-[#003DA5] focus:ring-[#003DA5]" required />
+                        <div>
+                            <div class="text-sm font-semibold text-gray-700">{{ $r->name }}</div>
+                            <div class="text-xs text-gray-400 mt-0.5">{{ $desc }}</div>
+                        </div>
+                    </label>
+                @endforeach
+            </div>
+            <div class="rounded-xl bg-[#E8F0FE] p-4 text-xs text-[#001F5B] leading-relaxed">
+                Thay đổi vai trò sẽ ảnh hưởng đến menu và phạm vi thao tác của thành viên ở lần truy cập tiếp theo.
+            </div>
+            <div class="pt-4">
+                <button type="submit" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-all">Cập nhật vai trò</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
+
+@section('scripts')
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const membersById = @json($membersById);
+        const membersBaseUrl = @json(url('/dashboard/members'));
+        const memberPanel = document.getElementById('member-panel');
+        const openMemberBtn = document.getElementById('open-member-panel');
+        const closeMemberBtn = document.getElementById('close-member-panel');
+        const editPanel = document.getElementById('edit-member-panel');
+        const rolePanel = document.getElementById('role-member-panel');
+        const editForm = document.getElementById('edit-member-form');
+        const roleForm = document.getElementById('role-member-form');
+
+        const toggleMemberPanel = () => memberPanel.classList.toggle('hidden');
+        const closeEditPanel = () => editPanel.classList.add('hidden');
+        const closeRolePanel = () => rolePanel.classList.add('hidden');
+
+        openMemberBtn?.addEventListener('click', toggleMemberPanel);
+        closeMemberBtn?.addEventListener('click', toggleMemberPanel);
+        document.getElementById('close-edit-member-panel')?.addEventListener('click', closeEditPanel);
+        document.getElementById('close-role-member-panel')?.addEventListener('click', closeRolePanel);
+
+        document.querySelectorAll('.password-eye-toggle').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = button.parentElement.querySelector('.password-eye-input');
+                const icon = button.querySelector('i');
+                const shouldShow = input.type === 'password';
+
+                input.type = shouldShow ? 'text' : 'password';
+                icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+                button.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+                button.setAttribute('title', shouldShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+                lucide.createIcons();
+            });
+        });
+
+        memberPanel?.addEventListener('click', (e) => {
+            if (e.target === memberPanel) toggleMemberPanel();
+        });
+        editPanel?.addEventListener('click', (e) => {
+            if (e.target === editPanel) closeEditPanel();
+        });
+        rolePanel?.addEventListener('click', (e) => {
+            if (e.target === rolePanel) closeRolePanel();
+        });
+
+        document.querySelectorAll('.edit-member-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const member = membersById[button.dataset.memberId];
+                if (!member) return;
+
+                editForm.action = `${membersBaseUrl}/${member.db_id}`;
+                document.getElementById('edit-member-subtitle').innerText = member.id + ' - ' + member.email;
+                document.getElementById('edit_member_name').value = member.name;
+                document.getElementById('edit_member_email').value = member.email;
+                document.getElementById('edit_member_department').value = member.department_id;
+                editPanel.classList.remove('hidden');
+            });
+        });
+
+        document.querySelectorAll('.role-member-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const member = membersById[button.dataset.memberId];
+                if (!member) return;
+
+                roleForm.action = `${membersBaseUrl}/${member.db_id}/role`;
+                document.getElementById('role-member-subtitle').innerText = member.name + ' - ' + member.email;
+                document.querySelectorAll('.role-radio').forEach((input) => {
+                    input.checked = Number(input.value) === Number(member.role_id);
+                });
+                rolePanel.classList.remove('hidden');
+            });
+        });
+    });
+</script>
+@endsection
+

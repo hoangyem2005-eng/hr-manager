@@ -451,13 +451,13 @@
                     </div>
                 @endif
 
-                <form action="{{ url('/login') }}" method="POST">
+                <form action="{{ url('/login') }}" method="POST" autocomplete="off">
                     @csrf
                     <div class="field">
                         <label for="email">Email công ty</label>
                         <div class="input-wrap">
                             <i data-lucide="mail"></i>
-                            <input id="email" class="input" type="email" name="email" value="{{ old('email') }}" placeholder="ten.nguyen@mobifone.vn" required>
+                            <input id="email" class="input" type="email" name="email" value="{{ old('email') }}" placeholder="ten.nguyen@mobifone.vn" required autocomplete="off">
                         </div>
                     </div>
 
@@ -465,7 +465,7 @@
                         <label for="password">Mật khẩu</label>
                         <div class="input-wrap">
                             <i data-lucide="lock"></i>
-                            <input id="password" class="input" type="password" name="password" placeholder="••••••••" required style="padding-right:52px">
+                            <input id="password" class="input" type="password" name="password" placeholder="••••••••" required style="padding-right:52px" autocomplete="new-password">
                             <button type="button" class="password-toggle" data-target="password" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"><i data-lucide="eye"></i></button>
                         </div>
                     </div>
@@ -499,6 +499,23 @@
                 button.setAttribute('title', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
                 lucide.createIcons();
             });
+        });
+
+        // Tự động xóa thông tin đăng nhập tự động điền (autofill) của trình duyệt khi mở trang
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            @if(!old('email'))
+                if (emailInput) emailInput.value = '';
+            @endif
+            if (passwordInput) passwordInput.value = '';
+
+            setTimeout(() => {
+                @if(!old('email'))
+                    if (emailInput) emailInput.value = '';
+                @endif
+                if (passwordInput) passwordInput.value = '';
+            }, 100);
         });
     </script>
 </body>
