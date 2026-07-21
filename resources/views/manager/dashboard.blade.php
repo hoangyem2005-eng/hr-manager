@@ -182,21 +182,10 @@
     </div>
 </div>
 
-<<<<<<< HEAD
-<!-- ===== MODAL: Giao công việc ===== -->
-<div class="modal-overlay" id="assignTaskModal">
-    <div class="modal">
-        <div class="modal-title">
-            <i data-lucide="clipboard-list" style="width:18px;height:18px;color:#2563EB;vertical-align:middle;margin-right:8px"></i>
-            Giao công việc mới
-        </div>
-        <form action="{{ route('manager.task.assign') }}" method="POST" enctype="multipart/form-data">
-=======
 <div class="modal-overlay" id="assignTaskModal">
     <div class="modal">
         <div class="modal-head"><strong>Giao việc trong phòng</strong><button class="team-btn light" onclick="closeModal('assignTaskModal')" style="height:30px">Đóng</button></div>
-        <form action="{{ route('manager.task.assign') }}" method="POST">
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
+        <form action="{{ route('manager.task.assign') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-body">
                 <div class="field"><label>Tên công việc</label><input name="task_name" required></div>
@@ -207,24 +196,12 @@
                 </div>
                 <div class="field"><label>Mô tả</label><textarea name="description"></textarea></div>
             </div>
-<<<<<<< HEAD
-            <div class="form-group">
-                <label class="form-label">Mô tả thêm</label>
-                <textarea name="description" class="form-input" style="height:80px;padding-top:10px;resize:vertical" placeholder="Chi tiết yêu cầu..."></textarea>
+                <div class="field">
+                    <label>Tài liệu đính kèm (Tối đa 5 file, &lt; 20MB/file)</label>
+                    <input type="file" name="attachments[]" multiple style="padding-top:8px">
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Tài liệu đính kèm (Tối đa 5 file, < 20MB/file)</label>
-                <input type="file" name="attachments[]" class="form-input" style="padding-top:8px" multiple />
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-ghost" onclick="closeModal('assignTaskModal')">Hủy</button>
-                <button type="submit" class="btn-primary">
-                    <i data-lucide="send" style="width:14px;height:14px"></i> Giao việc
-                </button>
-            </div>
-=======
             <div class="modal-actions"><button type="button" class="team-btn light" onclick="closeModal('assignTaskModal')">Hủy</button><button type="submit" class="team-btn">Giao việc</button></div>
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
         </form>
     </div>
 </div>

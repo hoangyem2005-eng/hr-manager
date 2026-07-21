@@ -197,13 +197,9 @@ class ManagerController extends Controller
             return back()->with('error', 'Bạn chỉ có thể giao việc cho nhân viên trong phòng của mình!');
         }
 
-<<<<<<< HEAD
-        $task = Task::create([
-            'task_name'   => $request->task_name,
-            'description' => $request->description,
-=======
+        $createdTasks = [];
         foreach ($assignedToIds as $assignedTo) {
-            Task::create([
+            $task = Task::create([
                 'task_name'   => $request->task_name,
                 'description' => $request->description,
                 'assigned_by' => $manager->id,
@@ -212,6 +208,45 @@ class ManagerController extends Controller
                 'status'      => $request->status ?? 'Chờ xử lý',
                 'progress'    => 0,
             ]);
+            $createdTasks[] = $task;
+
+            Notification::create([
+                'user_id' => $assignedTo,
+                'task_id' => $task->id,
+                'title' => 'Bạn vừa được giao công việc mới',
+                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
+                'is_read' => false,
+            ]);
+        }
+
+        // Xử lý tệp đính kèm
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                if ($file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $extension    = strtolower($file->getClientOriginalExtension());
+                    
+                    foreach ($createdTasks as $task) {
+                        $storedName   = time() . '_' . uniqid() . '.' . $extension;
+                        $directory    = 'tasks/' . $task->id;
+                        $storedPath   = $file->storeAs($directory, $storedName, 'public');
+
+                        \App\Models\Document::create([
+                            'task_id'   => $task->id,
+                            'user_id'   => Auth::id(),
+                            'file_name' => $originalName,
+                            'file_path' => $storedPath,
+                            'file_type' => $extension,
+                            'disk'      => 'public',
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Bắn event thông báo
+        foreach ($createdTasks as $task) {
+            event(new \App\Events\TaskCreated($task));
         }
 
         return redirect()->route('manager.dashboard')
@@ -237,7 +272,6 @@ class ManagerController extends Controller
         }
 
         $task->update([
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
             'assigned_by' => $manager->id,
             'assigned_to' => $assignee->id,
             'status' => 'Chờ xử lý',
@@ -280,9 +314,6 @@ class ManagerController extends Controller
         event(new \App\Events\TaskCreated($task));
 
         return redirect()->route('manager.dashboard')
-<<<<<<< HEAD
-            ->with('success', "Đã giao công việc và gửi tài liệu cho {$assignee->name}!");
-=======
             ->with('success', "Đã phân công {$task->task_name} cho {$assignee->name}.");
     }
 
@@ -315,7 +346,6 @@ class ManagerController extends Controller
         }
 
         return back()->with('success', 'Đã chuyển file lên Giám đốc.');
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
     }
 
     // ===================== Helper =====================

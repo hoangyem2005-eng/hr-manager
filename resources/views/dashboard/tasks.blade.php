@@ -371,23 +371,32 @@
                 </div>
             </div>
 
-<<<<<<< HEAD
+            <!-- Độ ưu tiên -->
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Độ ưu tiên *</label>
+                <select name="priority" required class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
+                    <option value="Thấp">Thấp</option>
+                    <option value="Trung bình" selected>Trung bình</option>
+                    <option value="Cao">Cao</option>
+                </select>
+            </div>
+
             <!-- File Upload -->
             <div>
-                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Tài liệu đính kèm (Tối đa 5 file, < 20MB/file)</label>
-                <input type="file" name="attachments[]" multiple class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#003DA5] bg-gray-50/50" />
+                <label class="block text-sm font-semibold mb-1.5 text-gray-700">Tài liệu đính kèm (Tối đa 5 file, &lt; 20MB/file)</label>
+                <input type="file" name="attachments[]" multiple class="w-full px-4 py-2 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[#003DA5] bg-gray-50/50" />
             </div>
 
             <!-- Current attachments list to delete (for edit mode) -->
             <div id="edit-attachments-container" class="hidden">
                 <label class="block text-xs font-bold mb-1.5 text-red-600">Tài liệu hiện tại (Chọn để xóa):</label>
-                <div id="edit-attachments-list" class="space-y-1.5 max-h-32 overflow-y-auto p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50">
+                <div id="edit-attachments-list" class="space-y-1.5 max-h-32 overflow-y-auto p-3 rounded-[8px] border border-dashed border-gray-200 bg-gray-50">
                     <!-- Dynamic rendering -->
                 </div>
             </div>
 
             <!-- Email Notification toggle -->
-            <div class="flex items-center justify-between p-4 rounded-xl bg-[#E8F0FE]">
+            <div class="flex items-center justify-between p-4 rounded-[8px] bg-[#E8F0FE]">
                 <div>
                     <p class="text-sm font-semibold text-[#001F5B]">Gửi thông báo email khi tạo task</p>
                     <p class="text-xs text-gray-400 mt-0.5">Thông báo tới người thực hiện và quản lý</p>
@@ -400,13 +409,8 @@
 
             <!-- Buttons -->
             <div class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3">
-                <button type="button" id="cancel-task-modal" class="px-5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">Hủy</button>
-                <button type="submit" id="task-submit-btn" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#003DA5] hover:bg-[#0057C8]">Tạo công việc</button>
-=======
-            <div class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3">
                 <button type="button" id="cancel-task-modal" class="px-5 py-2.5 rounded-[8px] text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">Hủy</button>
-                <button type="submit" class="px-5 py-2.5 rounded-[8px] text-sm font-bold text-white" style="background-color: {{ $page['accent'] }}">{{ $page['submit'] }}</button>
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
+                <button type="submit" id="task-submit-btn" class="px-5 py-2.5 rounded-[8px] text-sm font-bold text-white" style="background-color: {{ $page['accent'] }}">{{ $page['submit'] }}</button>
             </div>
         </form>
     </div>
@@ -422,15 +426,8 @@
                 <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
             </button>
         </div>
-<<<<<<< HEAD
-
-        <div class="space-y-5">
-            <h2 class="text-2xl font-bold text-[#001F5B]" id="detail-name"></h2>
-            
-=======
         <div class="space-y-4">
-            <h2 class="text-2xl font-black text-[#0F172A]" id="detail-name"></h2>
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
+            <h2 class="text-2xl font-black text-[#001F5B]" id="detail-name"></h2>
             <div class="flex items-center gap-4">
                 <span id="detail-priority-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold"></span>
                 <span class="text-xs text-gray-400" id="detail-deadline"></span>
@@ -490,7 +487,6 @@
 
 @section('scripts')
 <script>
-<<<<<<< HEAD
     // Serialize mapped tasks list from server to client
     const mappedTasks = @json($mappedTasksList);
 
@@ -505,9 +501,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-=======
-    document.addEventListener('DOMContentLoaded', function () {
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
         const modal = document.getElementById('task-modal');
         const openBtn = document.getElementById('open-task-modal');
         const closeBtn = document.getElementById('close-task-modal');
@@ -518,55 +511,46 @@
         const submitBtn = document.getElementById('task-submit-btn');
         const statusSelect = document.getElementById('task-status');
 
-<<<<<<< HEAD
         let currentTask = null;
 
-        // Toggle modal
-        const toggleModal = () => modal.classList.toggle('hidden');
+        const openModal = () => modal.classList.remove('hidden');
+        const closeModal = () => modal.classList.add('hidden');
 
         // Reset form to Create mode
         const setCreateMode = () => {
-            modalTitle.innerText = "Tạo công việc mới";
-            submitBtn.innerText = "Tạo công việc";
+            if (modalTitle) modalTitle.innerText = "{{ $page['formTitle'] ?? 'Tạo công việc mới' }}";
+            if (submitBtn) {
+                submitBtn.innerText = "{{ $page['submit'] ?? 'Tạo công việc' }}";
+            }
             form.action = "{{ route('dashboard.tasks.save') }}";
             form.reset();
-            statusSelect.value = 'Chờ xử lý';
-            document.getElementById('edit-attachments-container').classList.add('hidden');
+            if (statusSelect) statusSelect.value = 'Chờ xử lý';
+            const editAttachContainer = document.getElementById('edit-attachments-container');
+            if (editAttachContainer) editAttachContainer.classList.add('hidden');
         };
 
         if (openBtn) {
             openBtn.addEventListener('click', () => {
                 setCreateMode();
-                toggleModal();
+                openModal();
             });
         }
-        closeBtn.addEventListener('click', toggleModal);
-        cancelBtn.addEventListener('click', toggleModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
         window.openModalForStatus = (label) => {
             setCreateMode();
-            if (label.includes('Chờ xử lý')) statusSelect.value = 'Chờ xử lý';
-            else if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
-            else if (label.includes('Đang review')) statusSelect.value = 'Đang review';
-            else if (label.includes('Hoàn thành')) statusSelect.value = 'Hoàn thành';
-            toggleModal();
-=======
-        const openModal = () => modal.classList.remove('hidden');
-        const closeModal = () => modal.classList.add('hidden');
-
-        openBtn?.addEventListener('click', openModal);
-        closeBtn?.addEventListener('click', closeModal);
-        cancelBtn?.addEventListener('click', closeModal);
-
-        window.openModalForStatus = (label) => {
-            if (statusSelect && statusSelect.tagName === 'SELECT') {
-                if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
-                else if (label.includes('Đang review') && Array.from(statusSelect.options).some(option => option.value === 'Đang review')) statusSelect.value = 'Đang review';
-                else if (label.includes('Hoàn thành') && Array.from(statusSelect.options).some(option => option.value === 'Hoàn thành')) statusSelect.value = 'Hoàn thành';
-                else statusSelect.value = 'Chờ xử lý';
+            if (statusSelect) {
+                if (statusSelect.tagName === 'SELECT') {
+                    if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
+                    else if (label.includes('Đang review') && Array.from(statusSelect.options).some(option => option.value === 'Đang review')) statusSelect.value = 'Đang review';
+                    else if (label.includes('Hoàn thành') && Array.from(statusSelect.options).some(option => option.value === 'Hoàn thành')) statusSelect.value = 'Hoàn thành';
+                    else statusSelect.value = 'Chờ xử lý';
+                } else {
+                    statusSelect.value = 'Chờ xử lý';
+                }
             }
             openModal();
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
         };
 
         const detailModal = document.getElementById('detail-modal');
@@ -654,37 +638,7 @@
             else if (task.priority === 'Trung bình') badge.classList.add('bg-amber-100', 'text-amber-700');
             else badge.classList.add('bg-blue-100', 'text-blue-700');
 
-<<<<<<< HEAD
-            // Render attachments in detail modal
-            const attachBox = document.getElementById('detail-attachments-box');
-            const attachList = document.getElementById('detail-attachments-list');
-            attachList.innerHTML = '';
-            
-            if (task.attachments && task.attachments.length > 0) {
-                attachBox.classList.remove('hidden');
-                task.attachments.forEach(att => {
-                    const inlinePreview = ['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(att.file_type) 
-                        ? `<a href="${att.preview_url}" class="text-[10px] text-emerald-600 hover:underline font-bold" target="_blank">Xem</a>` 
-                        : '';
-                    
-                    const div = document.createElement('div');
-                    div.className = "flex items-center justify-between p-2 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors";
-                    div.innerHTML = `
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-gray-400"><i class="${getFileIconClass(att.file_type)}"></i></span>
-                            <span class="text-xs text-gray-700 font-semibold truncate max-w-[240px]" title="${att.file_name}">${att.file_name}</span>
-                            <span class="text-[9px] text-gray-400 font-mono">(${att.uploader})</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <a href="${att.download_url}" class="text-[10px] text-[#003DA5] hover:underline font-bold" target="_blank">Tải về</a>
-                            ${inlinePreview}
-                        </div>
-                    `;
-                    attachList.appendChild(div);
-                });
-            } else {
-                attachBox.classList.add('hidden');
-            }
+            renderDetailDocuments(task.documents || []);
 
             // Bind Delete Form Action
             const deleteForm = document.getElementById('delete-task-form');
@@ -695,7 +649,7 @@
             detailModal.classList.remove('hidden');
         };
 
-        closeDetailBtn.addEventListener('click', () => {
+        closeDetailBtn?.addEventListener('click', () => {
             detailModal.classList.add('hidden');
         });
 
@@ -708,16 +662,24 @@
                 // Hide details, open edit modal
                 detailModal.classList.add('hidden');
                 
-                modalTitle.innerText = "Chỉnh sửa công việc";
-                submitBtn.innerText = "Cập nhật";
+                if (modalTitle) modalTitle.innerText = "Chỉnh sửa công việc";
+                if (submitBtn) submitBtn.innerText = "Cập nhật";
                 form.action = `/dashboard/tasks/${currentTask.id}/update`;
                 
                 // Populate inputs
                 form.querySelector('[name="task_name"]').value = currentTask.name;
                 form.querySelector('[name="description"]').value = currentTask.description || '';
-                form.querySelector('[name="priority"]').value = currentTask.priority;
-                form.querySelector('[name="status"]').value = currentTask.status;
-                form.querySelector('[name="assigned_to"]').value = currentTask.assignee_id || '';
+                if (form.querySelector('[name="priority"]')) {
+                    form.querySelector('[name="priority"]').value = currentTask.priority;
+                }
+                if (form.querySelector('[name="status"]')) {
+                    form.querySelector('[name="status"]').value = currentTask.status;
+                }
+                if (form.querySelector('[name="assigned_to[]"]')) {
+                    form.querySelector('[name="assigned_to[]"]').value = currentTask.assignee_id || '';
+                } else if (form.querySelector('[name="assigned_to"]')) {
+                    form.querySelector('[name="assigned_to"]').value = currentTask.assignee_id || '';
+                }
                 form.querySelector('[name="deadline"]').value = currentTask.deadline_raw || '';
                 
                 // Populate attachments list for deletion
@@ -725,9 +687,9 @@
                 const editAttachList = document.getElementById('edit-attachments-list');
                 editAttachList.innerHTML = '';
                 
-                if (currentTask.attachments && currentTask.attachments.length > 0) {
+                if (currentTask.documents && currentTask.documents.length > 0) {
                     editAttachContainer.classList.remove('hidden');
-                    currentTask.attachments.forEach(att => {
+                    currentTask.documents.forEach(att => {
                         const lbl = document.createElement('label');
                         lbl.className = "flex items-center gap-2 p-1.5 hover:bg-white rounded-lg cursor-pointer text-xs font-semibold text-gray-700";
                         lbl.innerHTML = `
@@ -754,13 +716,6 @@
                 openTaskDetail(foundTask);
             }
         }
-=======
-            renderDetailDocuments(task.documents || []);
-            detailModal.classList.remove('hidden');
-        };
-
-        closeDetailBtn?.addEventListener('click', () => detailModal.classList.add('hidden'));
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
     });
 </script>
 @endsection

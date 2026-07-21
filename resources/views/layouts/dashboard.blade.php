@@ -118,12 +118,11 @@
 
             <!-- Header actions -->
             <div class="flex items-center gap-3">
-<<<<<<< HEAD
                 <div class="relative">
-                    <button id="bell-dropdown-btn" class="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none">
-                        <i data-lucide="bell" class="w-[18px] h-[18px] text-gray-700"></i>
+                    <button id="bell-dropdown-btn" class="mf-icon-btn" aria-label="Thông báo" focus:outline-none>
+                        <i data-lucide="bell" class="w-[18px] h-[18px]"></i>
                         @if(isset($unreadNotificationsCount) && $unreadNotificationsCount > 0)
-                            <span id="bell-badge" class="absolute top-1 right-1 w-4 h-4 bg-[#E4002B] text-white flex items-center justify-center font-bold rounded-full text-[9px]">{{ $unreadNotificationsCount }}</span>
+                            <span id="bell-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4002B] text-white flex items-center justify-center font-bold rounded-full text-[9px]">{{ $unreadNotificationsCount }}</span>
                         @endif
                     </button>
                     <!-- Bell Dropdown Panel -->
@@ -150,18 +149,8 @@
                         </div>
                     </div>
                 </div>
-                <button class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors">
-                    <i data-lucide="calendar" class="w-[18px] h-[18px] text-gray-700"></i>
-=======
-                <a href="{{ route('dashboard.notifications') }}" class="mf-icon-btn" aria-label="Thông báo">
-                    <i data-lucide="bell" class="w-[18px] h-[18px]"></i>
-                    @if(isset($unreadNotificationsCount) && $unreadNotificationsCount > 0)
-                        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4002B] text-white flex items-center justify-center font-bold rounded-full text-[9px]">{{ $unreadNotificationsCount }}</span>
-                    @endif
-                </a>
                 <button class="mf-icon-btn" aria-label="Lịch làm việc">
                     <i data-lucide="calendar" class="w-[18px] h-[18px]"></i>
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
                 </button>
                 <div class="mf-avatar">
                     {{ substr($authUser->name ?? 'AD', 0, 2) }}

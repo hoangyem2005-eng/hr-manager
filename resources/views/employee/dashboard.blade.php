@@ -793,7 +793,6 @@
         .catch(() => showToast('Không thể kết nối máy chủ', 'error'));
     }
 
-<<<<<<< HEAD
     function recalculateStats() {
         const rows = document.querySelectorAll('.task-row');
         let total = rows.length;
@@ -860,15 +859,17 @@
                 }, 2000);
             }
         }
-=======
+    }
+
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast-live');
         const msg = document.getElementById('toast-msg');
-        msg.textContent = message;
-        toast.className = 'toast ' + type;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2800);
->>>>>>> 7cc2df640476108373fb6ec7676acf2bec9b0ebc
+        if (msg) msg.textContent = message;
+        if (toast) {
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2800);
+        }
     }
 </script>
 </body>
