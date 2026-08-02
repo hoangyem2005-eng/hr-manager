@@ -12,7 +12,11 @@
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a href="{{ route('congviec.danhsach') }}" class="btn secondary"><i data-lucide="arrow-left"></i>Danh sách</a>
-        <a href="{{ route('congviec.sua', $task->id) }}" class="btn primary"><i data-lucide="pencil"></i>Cập nhật</a>
+        @if($task->is_proposal && (int) $task->proposal_step === 2)
+            <a href="{{ route('congviec.sua', $task->id) }}" class="btn primary" style="background:#16A34A;border-color:#16A34A"><i data-lucide="check"></i>Giao việc (Phê duyệt)</a>
+        @else
+            <a href="{{ route('congviec.sua', $task->id) }}" class="btn primary"><i data-lucide="pencil"></i>Cập nhật</a>
+        @endif
     </div>
 </section>
 
@@ -29,7 +33,22 @@
                 <tr><td>Người giao</td><td><strong>{{ $task->creator->name ?? 'Hệ thống' }}</strong></td></tr>
                 <tr><td>Người cùng làm</td><td><strong>{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Chưa gán') }}</strong></td></tr>
                 <tr><td>Deadline</td><td>{{ $task->deadline ? $task->deadline->format('d/m/Y') : 'Không có' }}</td></tr>
-                <tr><td>Trạng thái</td><td><span class="status">{{ $task->status }}</span></td></tr>
+                <tr>
+                    <td>Trạng thái</td>
+                    <td>
+                        @php
+                            $displayStatus = match($task->status) {
+                                'Done', 'Hoàn thành' => 'Hoàn thành',
+                                'In Progress', 'Đang làm' => 'Đang làm',
+                                'Todo', 'Chờ xử lý' => 'Chờ xử lý',
+                                'Overdue', 'Quá hạn' => 'Quá hạn',
+                                'Đang review' => 'Đang review',
+                                default => $task->status,
+                            };
+                        @endphp
+                        <span class="status">{{ $displayStatus }}</span>
+                    </td>
+                </tr>
                 <tr><td>Tiến độ</td><td><strong>{{ $task->progress ?? 0 }}%</strong></td></tr>
             </tbody>
         </table>

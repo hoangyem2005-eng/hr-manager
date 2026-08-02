@@ -147,10 +147,27 @@
             <i data-lucide="users" style="width:17px;height:17px"></i>
             <span class="s-label">Nhân viên phòng</span>
         </a>
-        <a href="{{ route('manager.tasks') }}" class="nav-item {{ (request()->routeIs('manager.tasks') && request('mode') !== 'progress') || (request()->routeIs('manager.tasks.show') && request('from') !== 'progress') ? 'active' : '' }}">
+        <a href="{{ route('manager.tasks') }}" class="nav-item {{ (request()->routeIs('manager.tasks') && request('mode') !== 'progress' && request('mode') !== 'proposal') || (request()->routeIs('manager.tasks.show') && request('from') !== 'progress' && request('from') !== 'proposal') ? 'active' : '' }}">
             <i data-lucide="clipboard-list" style="width:17px;height:17px"></i>
             <span class="s-label">Giao công việc</span>
         </a>
+        
+        @php
+            $deptMemberIds = \App\Models\User::where('department_id', Auth::user()->department_id)->pluck('id');
+            $managerProposalCount = \App\Models\Task::where('is_proposal', true)
+                ->where('proposal_step', 1)
+                ->whereIn('assigned_to', $deptMemberIds)
+                ->count();
+        @endphp
+        <a href="{{ route('manager.tasks', ['mode' => 'proposal', 'view' => 'list']) }}" class="nav-item {{ request('mode') === 'proposal' ? 'active' : '' }}">
+            <i data-lucide="send" style="width:17px;height:17px"></i>
+            <span class="s-label" style="position:relative">Đề xuất của NV
+                @if($managerProposalCount > 0)
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#E4002B;position:absolute;right:-12px;top:0;"></span>
+                @endif
+            </span>
+        </a>
+
         <a href="{{ route('manager.tasks', ['mode' => 'progress', 'view' => 'list']) }}" class="nav-item {{ (request()->routeIs('manager.tasks') && request('mode') === 'progress') || (request()->routeIs('manager.tasks.show') && request('from') === 'progress') ? 'active' : '' }}">
             <i data-lucide="kanban" style="width:17px;height:17px"></i>
             <span class="s-label">Tiến độ công việc</span>

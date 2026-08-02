@@ -468,7 +468,16 @@
                 <label class="block text-sm font-semibold mb-2 text-gray-700 font-medium">Vai trò hệ thống *</label>
                 @foreach($roles as $r)
                     @php
-                        $desc = $r->name == 'Giám đốc' ? 'Toàn quyền điều hành hệ thống' : ($r->name == 'Trưởng phòng' ? 'Tạo và giao task, quản lý phòng ban' : 'Nhận và cập nhật task được giao');
+                        $desc = match($r->name) {
+                            'Phụ trách chi nhánh' => 'Toàn quyền điều hành hệ thống chi nhánh',
+                            'Phó giám đốc chi nhánh' => 'Hỗ trợ điều hành và quản lý chi nhánh',
+                            'Nhân viên' => 'Nhận và cập nhật task được giao',
+                            'Giám đốc trung tâm kinh doanh' => 'Quản lý và giao việc cho trung tâm kinh doanh',
+                            'Phó giám đốc trung tâm kinh doanh' => 'Hỗ trợ quản lý trung tâm kinh doanh',
+                            'Phụ trách phòng viễn thông' => 'Quản lý và giao việc cho phòng viễn thông',
+                            'Phụ trách phòng tổng hợp' => 'Quản lý và giao việc cho phòng tổng hợp',
+                            default => 'Nhận và cập nhật task được giao',
+                        };
                     @endphp
                     <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 mb-2 cursor-pointer hover:bg-gray-50/50">
                         <input type="radio" name="role_id" value="{{ $r->id }}" class="mt-1 text-[#003DA5] focus:ring-[#003DA5]" required {{ $r->name == 'Nhân viên' ? 'checked' : '' }} />
@@ -562,7 +571,16 @@
                 <label class="block text-sm font-semibold mb-2 text-gray-700">Vai trò hệ thống</label>
                 @foreach($roles as $r)
                     @php
-                        $desc = $r->name == 'Giám đốc' ? 'Toàn quyền điều hành hệ thống' : ($r->name == 'Trưởng phòng' ? 'Tạo và giao việc, quản lý phòng ban' : 'Nhận và cập nhật việc được giao');
+                        $desc = match($r->name) {
+                            'Phụ trách chi nhánh' => 'Toàn quyền điều hành hệ thống chi nhánh',
+                            'Phó giám đốc chi nhánh' => 'Hỗ trợ điều hành và quản lý chi nhánh',
+                            'Nhân viên' => 'Nhận và cập nhật task được giao',
+                            'Giám đốc trung tâm kinh doanh' => 'Quản lý và giao việc cho trung tâm kinh doanh',
+                            'Phó giám đốc trung tâm kinh doanh' => 'Hỗ trợ quản lý trung tâm kinh doanh',
+                            'Phụ trách phòng viễn thông' => 'Quản lý và giao việc cho phòng viễn thông',
+                            'Phụ trách phòng tổng hợp' => 'Quản lý và giao việc cho phòng tổng hợp',
+                            default => 'Nhận và cập nhật task được giao',
+                        };
                     @endphp
                     <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 mb-2 cursor-pointer hover:bg-gray-50/50">
                         <input type="radio" name="role_id" value="{{ $r->id }}" class="role-radio mt-1 text-[#003DA5] focus:ring-[#003DA5]" required />

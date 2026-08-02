@@ -22,24 +22,24 @@ class DepartmentsTableSeeder extends Seeder
             0 => 
             array (
                 'id' => 1,
-                'TENPHONG' => 'Nhân sự',
-                'name' => 'Human Resources',
+                'TENPHONG' => 'Trung tâm kinh doanh',
+                'name' => 'trung-tam-kinh-doanh',
                 'created_at' => '2026-06-22 05:59:49',
                 'updated_at' => '2026-07-02 13:04:44',
             ),
             1 => 
             array (
                 'id' => 2,
-                'TENPHONG' => 'Đào tạo',
-                'name' => 'Training',
+                'TENPHONG' => 'Phòng viễn thông',
+                'name' => 'phong-vien-thong',
                 'created_at' => '2026-06-22 05:59:49',
                 'updated_at' => '2026-07-02 13:04:44',
             ),
             2 => 
             array (
                 'id' => 3,
-                'TENPHONG' => 'Pháp chế',
-                'name' => 'Legal',
+                'TENPHONG' => 'Phòng tổng hợp',
+                'name' => 'phong-tong-hop',
                 'created_at' => '2026-06-22 05:59:49',
                 'updated_at' => '2026-07-02 13:04:44',
             ),

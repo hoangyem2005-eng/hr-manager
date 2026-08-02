@@ -22,6 +22,33 @@ class CheckRole
         }
 
         foreach ($roles as $role) {
+            $roleIdToCheck = (int) $role;
+
+            if ($roleIdToCheck === 1) {
+                if (in_array((int) $user->role_id, [User::ROLE_ADMIN, User::ROLE_MANAGER], true)) {
+                    return $next($request);
+                }
+            }
+
+            if ($roleIdToCheck === 2) {
+                if (in_array((int) $user->role_id, [
+                    User::ROLE_ADMIN,
+                    User::ROLE_MANAGER,
+                    User::ROLE_DEPT_HEAD_BIZ,
+                    User::ROLE_DEPT_DEP_BIZ,
+                    User::ROLE_DEPT_HEAD_TEL,
+                    User::ROLE_DEPT_HEAD_GEN
+                ], true)) {
+                    return $next($request);
+                }
+            }
+
+            if ($roleIdToCheck === 3) {
+                if ((int) $user->role_id === User::ROLE_EMPLOYEE) {
+                    return $next($request);
+                }
+            }
+
             if (is_numeric($role) && (int) $user->role_id === (int) $role) {
                 return $next($request);
             }
@@ -31,12 +58,17 @@ class CheckRole
             }
 
             $aliases = [
-                'Giám đốc' => User::ROLE_ADMIN,
-                'Trưởng phòng' => User::ROLE_MANAGER,
-                'Nhân viên' => User::ROLE_EMPLOYEE,
+                'Giám đốc' => [User::ROLE_ADMIN, User::ROLE_MANAGER],
+                'Trưởng phòng' => [
+                    User::ROLE_DEPT_HEAD_BIZ,
+                    User::ROLE_DEPT_DEP_BIZ,
+                    User::ROLE_DEPT_HEAD_TEL,
+                    User::ROLE_DEPT_HEAD_GEN
+                ],
+                'Nhân viên' => [User::ROLE_EMPLOYEE],
             ];
 
-            if (isset($aliases[$role]) && (int) $user->role_id === $aliases[$role]) {
+            if (isset($aliases[$role]) && in_array((int) $user->role_id, $aliases[$role], true)) {
                 return $next($request);
             }
         }

@@ -193,7 +193,13 @@
             <div class="modal-body">
                 <div class="field"><label>Tên công việc</label><input name="task_name" required></div>
                 <div class="field">
-                    <label>Người cùng làm</label>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <label style="margin:0">Người cùng làm</label>
+                        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#003DA5;cursor:pointer;user-select:none;margin:0">
+                            <input type="checkbox" id="select-all-assignees" style="cursor:pointer;width:14px;height:14px;margin:0;accent-color:#003DA5">
+                            Chọn tất cả
+                        </label>
+                    </div>
                     <div class="assignee-check-grid">
                         @foreach($allTeamMembers as $m)
                             <label class="assignee-check">
@@ -240,6 +246,36 @@
     });
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); }));
     lucide.createIcons();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('select-all-assignees');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#assignTaskModal input[name="assigned_to[]"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+            });
+
+            const individualCheckboxes = document.querySelectorAll('#assignTaskModal input[name="assigned_to[]"]');
+            
+            const updateSelectAllState = () => {
+                const checkedCount = document.querySelectorAll('#assignTaskModal input[name="assigned_to[]"]:checked').length;
+                selectAllCheckbox.checked = checkedCount === individualCheckboxes.length && individualCheckboxes.length > 0;
+            };
+
+            individualCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateSelectAllState);
+            });
+
+            const form = document.querySelector('#assignTaskModal form');
+            if (form) {
+                form.addEventListener('reset', function() {
+                    setTimeout(updateSelectAllState, 0);
+                });
+            }
+        }
+    });
 </script>
 @endsection
 

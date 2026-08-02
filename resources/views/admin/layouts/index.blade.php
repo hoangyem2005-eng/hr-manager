@@ -82,7 +82,18 @@
         </div>
         <nav class="nav">
             <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i>Dashboard</a>
-            <a class="{{ request()->routeIs('congviec.*') ? 'active' : '' }}" href="{{ route('congviec.danhsach') }}"><i data-lucide="clipboard-list"></i>Công việc</a>
+            <a class="{{ request()->routeIs('congviec.*') && request('mode') !== 'proposal' ? 'active' : '' }}" href="{{ route('congviec.danhsach') }}"><i data-lucide="clipboard-list"></i>Công việc</a>
+            
+            @php
+                $directorProposalCount = \App\Models\Task::where('is_proposal', true)->where('proposal_step', 2)->count();
+            @endphp
+            <a class="{{ request('mode') === 'proposal' ? 'active' : '' }}" href="{{ route('dashboard.tasks', ['mode' => 'proposal', 'view' => 'list']) }}">
+                <i data-lucide="send"></i>Đề xuất của NV
+                @if($directorProposalCount > 0)
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#E4002B;position:absolute;right:12px;top:16px;"></span>
+                @endif
+            </a>
+
             <a class="{{ request()->routeIs('phongban.*') ? 'active' : '' }}" href="{{ route('phongban.danhsach') }}"><i data-lucide="building-2"></i>Phòng ban</a>
             <a class="{{ request()->routeIs('tiendo.*') ? 'active' : '' }}" href="{{ route('tiendo.index') }}"><i data-lucide="activity"></i>Tiến độ</a>
             <a href="{{ route('admin.notifications') }}"><i data-lucide="bell"></i>Thông báo</a>

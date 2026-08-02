@@ -56,6 +56,17 @@
         </div>
         <div class="hero-actions">
             <a class="detail-btn" href="{{ $backRoute }}"><i data-lucide="arrow-left" style="width:18px;height:18px"></i>Quay lại</a>
+            @if($task->is_proposal && (int) $task->proposal_step === 1)
+                <form action="{{ route('dashboard.tasks.escalate', $task->id) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn duyệt và chuyển đề xuất này lên Ban Giám đốc?');">
+                    @csrf
+                    <button type="submit" class="detail-btn primary" style="background:#2563EB;border-color:#2563EB">
+                        <i data-lucide="share-2" style="width:18px;height:18px"></i>Duyệt & Gửi lên Ban Giám đốc
+                    </button>
+                </form>
+            @endif
+            @if(!$task->is_proposal)
+                <a class="detail-btn primary" href="{{ route('manager.tasks', ['edit_task_id' => $task->id]) }}" style="background:#003DA5;border-color:#003DA5"><i data-lucide="edit-3" style="width:18px;height:18px"></i>Cập nhật</a>
+            @endif
             <a class="detail-btn primary" href="{{ route('manager.tasks') }}"><i data-lucide="send" style="width:18px;height:18px"></i>Giao việc</a>
         </div>
     </section>

@@ -12,9 +12,13 @@ class RolesTableSeeder extends Seeder
         $now = now();
 
         foreach ([
-            1 => 'Giám đốc',
-            2 => 'Trưởng phòng',
+            1 => 'Phụ trách chi nhánh',
+            2 => 'Phó giám đốc chi nhánh',
             3 => 'Nhân viên',
+            4 => 'Giám đốc trung tâm kinh doanh',
+            5 => 'Phó giám đốc trung tâm kinh doanh',
+            6 => 'Phụ trách phòng viễn thông',
+            7 => 'Phụ trách phòng tổng hợp',
         ] as $id => $name) {
             DB::table('roles')->updateOrInsert(
                 ['id' => $id],
@@ -26,6 +30,6 @@ class RolesTableSeeder extends Seeder
             );
         }
 
-        DB::table('roles')->whereNotIn('id', [1, 2, 3])->delete();
+        DB::table('roles')->whereNotIn('id', [1, 2, 3, 4, 5, 6, 7])->delete();
     }
 }

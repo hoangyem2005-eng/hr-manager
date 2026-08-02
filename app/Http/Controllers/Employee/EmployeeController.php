@@ -130,6 +130,17 @@ class EmployeeController extends Controller
             'progress' => 'nullable|integer|min:0|max:100',
         ]);
 
+        $isChangingToOrFromDone = ($request->status === 'Hoàn thành' || $task->status === 'Hoàn thành');
+        if ($isChangingToOrFromDone && !$user->isDirector() && !$user->isLeader()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Chỉ có cấp Quản lý hoặc Ban Giám đốc mới được hoàn thành công việc.'
+                ], 403);
+            }
+            return redirect()->back()->with('error', 'Chỉ có cấp Quản lý hoặc Ban Giám đốc mới được hoàn thành công việc.');
+        }
+
         $task->update([
             'status' => $request->status,
             'progress' => $request->progress ?? $task->progress,

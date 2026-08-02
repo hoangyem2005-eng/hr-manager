@@ -19,12 +19,16 @@ class Task extends Model
         'status',
         'progress',
         'overdue_email_sent_at',
+        'is_proposal',
+        'proposal_step',
     ];
 
     protected $casts = [
         'deadline' => 'date',
         'progress' => 'integer',
         'overdue_email_sent_at' => 'datetime',
+        'is_proposal' => 'boolean',
+        'proposal_step' => 'integer',
     ];
 
     // ==================== QUAN HỆ ====================

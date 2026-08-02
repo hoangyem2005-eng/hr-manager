@@ -14,6 +14,10 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 1;
     public const ROLE_MANAGER = 2;
     public const ROLE_EMPLOYEE = 3;
+    public const ROLE_DEPT_HEAD_BIZ = 4;
+    public const ROLE_DEPT_DEP_BIZ = 5;
+    public const ROLE_DEPT_HEAD_TEL = 6;
+    public const ROLE_DEPT_HEAD_GEN = 7;
 
     protected $fillable = [
         'name',
@@ -67,29 +71,17 @@ class User extends Authenticatable
 
     public function isDirector(): bool
     {
-        if ((int) $this->role_id === self::ROLE_ADMIN) {
-            return true;
-        }
-
-        $roleName = mb_strtolower($this->role->name ?? '');
-
-        return str_contains($roleName, 'admin')
-            || str_contains($roleName, 'giam doc')
-            || str_contains($roleName, 'giám đốc');
+        return in_array((int) $this->role_id, [self::ROLE_ADMIN, self::ROLE_MANAGER], true);
     }
 
     public function isLeader(): bool
     {
-        if ((int) $this->role_id === self::ROLE_MANAGER) {
-            return true;
-        }
-
-        $roleName = mb_strtolower($this->role->name ?? '');
-
-        return str_contains($roleName, 'quan ly')
-            || str_contains($roleName, 'quản lý')
-            || str_contains($roleName, 'truong phong')
-            || str_contains($roleName, 'trưởng phòng');
+        return in_array((int) $this->role_id, [
+            self::ROLE_DEPT_HEAD_BIZ,
+            self::ROLE_DEPT_DEP_BIZ,
+            self::ROLE_DEPT_HEAD_TEL,
+            self::ROLE_DEPT_HEAD_GEN
+        ], true);
     }
 
     public function isEmployee(): bool
@@ -100,9 +92,13 @@ class User extends Authenticatable
     public function getRoleDisplayNameAttribute(): string
     {
         return match ((int) $this->role_id) {
-            self::ROLE_ADMIN => 'Giám đốc',
-            self::ROLE_MANAGER => 'Trưởng phòng',
+            self::ROLE_ADMIN => 'Phụ trách chi nhánh',
+            self::ROLE_MANAGER => 'Phó giám đốc chi nhánh',
             self::ROLE_EMPLOYEE => 'Nhân viên',
+            self::ROLE_DEPT_HEAD_BIZ => 'Giám đốc trung tâm kinh doanh',
+            self::ROLE_DEPT_DEP_BIZ => 'Phó giám đốc trung tâm kinh doanh',
+            self::ROLE_DEPT_HEAD_TEL => 'Phụ trách phòng viễn thông',
+            self::ROLE_DEPT_HEAD_GEN => 'Phụ trách phòng tổng hợp',
             default => $this->role->name ?? 'Chưa có chức vụ',
         };
     }

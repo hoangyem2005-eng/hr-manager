@@ -121,6 +121,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
         Route::post('/tasks/{id}/update', [DashboardController::class, 'updateTask'])->name('dashboard.tasks.update');
         Route::delete('/tasks/{id}/delete', [DashboardController::class, 'deleteTask'])->name('dashboard.tasks.delete');
+        Route::post('/tasks/{id}/escalate', [DashboardController::class, 'escalateProposal'])->name('dashboard.tasks.escalate');
+        Route::post('/tasks/{id}/approve-proposal', [DashboardController::class, 'approveProposal'])->name('dashboard.tasks.approve-proposal');
     });
 
     // 3. Phân hệ Quản lý thành viên (Chỉ dành cho Trưởng phòng - role:1)

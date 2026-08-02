@@ -52,6 +52,14 @@
                             'Đang review' => 'review',
                             default => '',
                         };
+                        $displayStatus = match($task->status) {
+                            'Done', 'Hoàn thành' => 'Hoàn thành',
+                            'In Progress', 'Đang làm' => 'Đang làm',
+                            'Todo', 'Chờ xử lý' => 'Chờ xử lý',
+                            'Overdue', 'Quá hạn' => 'Quá hạn',
+                            'Đang review' => 'Đang review',
+                            default => $task->status,
+                        };
                     @endphp
                     <tr>
                         <td class="code">WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }}</td>
@@ -63,7 +71,7 @@
                         <td>{{ $task->creator->name ?? 'Hệ thống' }}</td>
                         <td>{{ $task->deadline ? \Carbon\Carbon::parse($task->deadline)->format('d/m/Y') : 'Không có' }}</td>
                         <td><strong>{{ $task->progress ?? 0 }}%</strong></td>
-                        <td><span class="status {{ $statusClass }}">{{ $task->status }}</span></td>
+                        <td><span class="status {{ $statusClass }}">{{ $displayStatus }}</span></td>
                         <td>
                             <div style="display:flex;gap:8px;flex-wrap:wrap">
                                 <a class="btn secondary" href="{{ route('congviec.chitiet', $task->id) }}">Chi tiết</a>

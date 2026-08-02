@@ -133,20 +133,24 @@ class AuthController extends Controller
     {
         Department::updateOrCreate(
             ['id' => 1],
-            ['TENPHONG' => 'Nhân sự', 'name' => 'Human Resources']
+            ['TENPHONG' => 'Trung tâm kinh doanh', 'name' => 'trung-tam-kinh-doanh']
         );
         Department::updateOrCreate(
             ['id' => 2],
-            ['TENPHONG' => 'Đào tạo', 'name' => 'Training']
+            ['TENPHONG' => 'Phòng viễn thông', 'name' => 'phong-vien-thong']
         );
         Department::updateOrCreate(
             ['id' => 3],
-            ['TENPHONG' => 'Pháp chế', 'name' => 'Legal']
+            ['TENPHONG' => 'Phòng tổng hợp', 'name' => 'phong-tong-hop']
         );
 
-        Role::updateOrCreate(['id' => User::ROLE_ADMIN], ['name' => 'Giám đốc']);
-        Role::updateOrCreate(['id' => User::ROLE_MANAGER], ['name' => 'Trưởng phòng']);
+        Role::updateOrCreate(['id' => User::ROLE_ADMIN], ['name' => 'Phụ trách chi nhánh']);
+        Role::updateOrCreate(['id' => User::ROLE_MANAGER], ['name' => 'Phó giám đốc chi nhánh']);
         Role::updateOrCreate(['id' => User::ROLE_EMPLOYEE], ['name' => 'Nhân viên']);
+        Role::updateOrCreate(['id' => User::ROLE_DEPT_HEAD_BIZ], ['name' => 'Giám đốc trung tâm kinh doanh']);
+        Role::updateOrCreate(['id' => User::ROLE_DEPT_DEP_BIZ], ['name' => 'Phó giám đốc trung tâm kinh doanh']);
+        Role::updateOrCreate(['id' => User::ROLE_DEPT_HEAD_TEL], ['name' => 'Phụ trách phòng viễn thông']);
+        Role::updateOrCreate(['id' => User::ROLE_DEPT_HEAD_GEN], ['name' => 'Phụ trách phòng tổng hợp']);
 
         if (User::count() === 0) {
             User::create([

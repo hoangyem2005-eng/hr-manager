@@ -22,7 +22,7 @@ class LargeEnterpriseSeeder extends Seeder
     {
         // 1. Tạo 10 phòng ban
         $depts = [
-            'Nhân sự', 'Đào tạo', 'Pháp chế', 'Kỹ thuật', 
+            'Trung tâm kinh doanh', 'Phòng viễn thông', 'Phòng tổng hợp', 'Kỹ thuật', 
             'Kinh doanh', 'Marketing', 'Tài chính', 
             'Kế hoạch', 'Dịch vụ khách hàng', 'Công nghệ thông tin'
         ];

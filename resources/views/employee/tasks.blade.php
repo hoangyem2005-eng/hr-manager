@@ -246,10 +246,13 @@
                                     <td>{{ $task['deadline'] }}</td>
                                     <td>{{ $task['progress'] }}%</td>
                                     <td>
-                                        <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)">
-                                            @foreach(['Chờ xử lý', 'Đang làm', 'Đang review', 'Hoàn thành'] as $status)
-                                                <option value="{{ $status }}" {{ $task['status'] === $status ? 'selected' : '' }}>{{ $status }}</option>
-                                            @endforeach
+                                        <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)" {{ ($task['status'] === 'Hoàn thành') ? 'disabled' : '' }}>
+                                            <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
+                                            <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
+                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            @if($task['status'] === 'Hoàn thành')
+                                                <option value="Hoàn thành" selected disabled>Hoàn thành</option>
+                                            @endif
                                         </select>
                                     </td>
                                     <td><button type="button" class="detail-btn" onclick='openTaskDetail(@json($task))'><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</button></td>
@@ -291,11 +294,14 @@
                                             </span>
                                         </div>
                                         <div class="task-actions">
-                                            <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)">
-                                                @foreach(['Chờ xử lý', 'Đang làm', 'Đang review', 'Hoàn thành'] as $status)
-                                                    <option value="{{ $status }}" {{ $task['status'] === $status ? 'selected' : '' }}>{{ $status }}</option>
-                                                @endforeach
-                                            </select>
+                                             <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)" {{ ($task['status'] === 'Hoàn thành') ? 'disabled' : '' }}>
+                                                 <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
+                                                 <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
+                                                 <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                                 @if($task['status'] === 'Hoàn thành')
+                                                     <option value="Hoàn thành" selected disabled>Hoàn thành</option>
+                                                 @endif
+                                             </select>
                                             <button type="button" class="detail-btn" onclick='openTaskDetail(@json($task))'><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</button>
                                         </div>
                                     </article>

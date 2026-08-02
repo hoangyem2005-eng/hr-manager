@@ -51,10 +51,23 @@
         </a>
 
         <span class="mf-nav-section s-label">Vận hành</span>
-        <a href="{{ route('admin.tasks') }}" class="mf-nav-item {{ request()->routeIs('admin.tasks') ? 'active' : '' }}">
+        <a href="{{ route('admin.tasks') }}" class="mf-nav-item {{ request()->routeIs('admin.tasks') && request('mode') !== 'proposal' ? 'active' : '' }}">
             <i data-lucide="kanban" style="width:17px;height:17px"></i>
             <span class="s-label">Công việc</span>
         </a>
+        
+        @php
+            $directorProposalCount = \App\Models\Task::where('is_proposal', true)->where('proposal_step', 2)->count();
+        @endphp
+        <a href="{{ route('admin.tasks', ['mode' => 'proposal', 'view' => 'list']) }}" class="mf-nav-item {{ request('mode') === 'proposal' ? 'active' : '' }}">
+            <i data-lucide="send" style="width:17px;height:17px"></i>
+            <span class="s-label" style="position:relative">Đề xuất của NV
+                @if($directorProposalCount > 0)
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#E4002B;position:absolute;right:-12px;top:0;"></span>
+                @endif
+            </span>
+        </a>
+
         <a href="{{ route('admin.reports') }}" class="mf-nav-item {{ request()->routeIs('admin.reports') ? 'active' : '' }}">
             <i data-lucide="bar-chart-2" style="width:17px;height:17px"></i>
             <span class="s-label">Báo cáo</span>

@@ -109,6 +109,9 @@
                     <button id="open-task-modal" class="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#003DA5] hover:bg-[#0057C8] transition-colors shadow-[0_12px_24px_rgba(0,61,165,.18)]">
                         <i data-lucide="user-check" class="w-4 h-4"></i>{{ $page['button'] }}
                     </button>
+                    <button id="open-proposal-modal" class="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-sm font-bold text-[#003DA5] bg-[#E8F0FE] hover:bg-[#D4E3FC] transition-colors shadow-sm border border-[#B9CDF5] ml-2">
+                        <i data-lucide="send" class="w-4 h-4"></i>Gửi đề xuất việc
+                    </button>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="mf-manager-stat-card p-4"><span class="text-xs text-[#64748B]">Trong phạm vi</span><strong class="block text-2xl mt-1 text-[#001F5B]">{{ $totalTasks }}</strong></div>
@@ -243,11 +246,14 @@
                                             data-task-status="{{ $task['id'] }}"
                                             data-previous-status="{{ $task['status'] }}"
                                             onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)"
+                                            {{ ($isEmployee && $task['status'] === 'Hoàn thành') ? 'disabled' : '' }}
                                         >
                                             <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                             <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
                                             <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
-                                            <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }}>Hoàn thành</option>
+                                            @if(!$isEmployee || $task['status'] === 'Hoàn thành')
+                                                <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }} {{ $isEmployee ? 'disabled' : '' }}>Hoàn thành</option>
+                                            @endif
                                         </select>
                                         <button type="button" onclick="openTaskDetail({{ json_encode($task) }})" class="inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-[#B9CDF5] bg-white px-3 py-2 text-xs font-bold text-[#003DA5] hover:bg-[#F4F8FF]">
                                             <i data-lucide="eye" class="w-3.5 h-3.5"></i>Chi tiết
@@ -315,11 +321,14 @@
                                             data-task-status="{{ $task['id'] }}"
                                             data-previous-status="{{ $task['status'] }}"
                                             onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)"
+                                            {{ ($isEmployee && $task['status'] === 'Hoàn thành') ? 'disabled' : '' }}
                                         >
                                             <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                             <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
                                             <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
-                                            <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }}>Hoàn thành</option>
+                                            @if(!$isEmployee || $task['status'] === 'Hoàn thành')
+                                                <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }} {{ $isEmployee ? 'disabled' : '' }}>Hoàn thành</option>
+                                            @endif
                                         </select>
                                     @else
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $task['status'] }}</span>
@@ -366,6 +375,7 @@
 
         <form id="task-form" action="{{ route($taskSaveRoute) }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
             @csrf
+            <input type="hidden" name="is_proposal" id="form-is-proposal" value="0">
             <div>
                 <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isEmployee ? 'Tên đề xuất *' : 'Tên công việc *' }}</label>
                 <input name="task_name" required class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" placeholder="{{ $isEmployee ? 'VD: Cần hỗ trợ rà soát hồ sơ...' : 'Nhập tên công việc...' }}" />
@@ -378,7 +388,13 @@
 
             @if(!$isEmployee)
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-700">{{ $isDirector ? 'Người cùng làm *' : 'Nhân viên cùng làm *' }}</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-sm font-semibold text-gray-700 m-0">{{ $isDirector ? 'Người cùng làm *' : 'Nhân viên cùng làm *' }}</label>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-bold cursor-pointer user-select-none m-0" style="color: {{ $page['accent'] }}">
+                            <input type="checkbox" id="select-all-assignees" class="cursor-pointer rounded border-gray-300 focus:ring-0" style="width: 14px; height: 14px; margin: 0; accent-color: {{ $page['accent'] }}">
+                            Chọn tất cả
+                        </label>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border border-gray-200 rounded-[8px] bg-gray-50">
                         @foreach($allUsers as $u)
                             <label class="flex items-center gap-2 bg-white border border-gray-200 rounded-[8px] px-3 py-2 cursor-pointer">
@@ -529,6 +545,7 @@
             <!-- Admin/Manager Action Buttons -->
             @if(Auth::user() && (Auth::user()->isDirector() || Auth::user()->isLeader()))
                 <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 mt-2" id="detail-actions">
+                    <div id="proposal-action-container" class="flex items-center gap-3"></div>
                     <button type="button" id="edit-task-btn" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all">
                         <i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa
                     </button>
@@ -574,6 +591,33 @@
 
         let currentTask = null;
 
+        const selectAllCheckbox = document.getElementById('select-all-assignees');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#task-modal input[name="assigned_to[]"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+            });
+
+            const individualCheckboxes = document.querySelectorAll('#task-modal input[name="assigned_to[]"]');
+            
+            const updateSelectAllState = () => {
+                const checkedCount = document.querySelectorAll('#task-modal input[name="assigned_to[]"]:checked').length;
+                selectAllCheckbox.checked = checkedCount === individualCheckboxes.length && individualCheckboxes.length > 0;
+            };
+
+            individualCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateSelectAllState);
+            });
+
+            if (form) {
+                form.addEventListener('reset', function() {
+                    setTimeout(updateSelectAllState, 0);
+                });
+            }
+        }
+
         const openModal = () => modal.classList.remove('hidden');
         const closeModal = () => modal.classList.add('hidden');
 
@@ -585,6 +629,11 @@
             }
             form.action = "{{ route('dashboard.tasks.save') }}";
             form.reset();
+            document.getElementById('form-is-proposal').value = '0';
+            const assigneeSection = form.querySelector('[name="assigned_to[]"]')?.closest('div');
+            if (assigneeSection) {
+                assigneeSection.style.display = 'block';
+            }
             if (statusSelect) statusSelect.value = 'Chờ xử lý';
             const editAttachContainer = document.getElementById('edit-attachments-container');
             if (editAttachContainer) editAttachContainer.classList.add('hidden');
@@ -596,6 +645,22 @@
                 openModal();
             });
         }
+
+        const openProposalBtn = document.getElementById('open-proposal-modal');
+        if (openProposalBtn) {
+            openProposalBtn.addEventListener('click', () => {
+                setCreateMode();
+                document.getElementById('form-is-proposal').value = '1';
+                if (modalTitle) modalTitle.innerText = "Gửi đề xuất công việc lên cấp trên";
+                if (submitBtn) submitBtn.innerText = "Gửi đề xuất";
+                const assigneeSection = form.querySelector('[name="assigned_to[]"]')?.closest('div');
+                if (assigneeSection) {
+                    assigneeSection.style.display = 'none';
+                }
+                openModal();
+            });
+        }
+
         if (closeBtn) closeBtn.addEventListener('click', closeModal);
         if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -814,6 +879,61 @@
             });
         };
 
+        window.escalateProposal = (taskId) => {
+            if (!confirm('Bạn có chắc chắn muốn duyệt và chuyển đề xuất này lên Ban Giám đốc?')) return;
+            
+            const f = document.createElement('form');
+            f.method = 'POST';
+            f.action = `/dashboard/tasks/${taskId}/escalate`;
+            f.innerHTML = `<input type="hidden" name="_token" value="${csrfToken}">`;
+            document.body.appendChild(f);
+            f.submit();
+        };
+
+        window.approveProposal = (taskId) => {
+            if (!confirm('Bạn có chắc chắn muốn phê duyệt đề xuất này thành công việc chính thức?')) return;
+            
+            const f = document.createElement('form');
+            f.method = 'POST';
+            f.action = `/dashboard/tasks/${taskId}/approve-proposal`;
+            f.innerHTML = `<input type="hidden" name="_token" value="${csrfToken}">`;
+            document.body.appendChild(f);
+            f.submit();
+        };
+
+        window.openApproveProposalModal = (task) => {
+            detailModal.classList.add('hidden');
+            
+            if (modalTitle) modalTitle.innerText = "Giao việc (Phê duyệt đề xuất)";
+            if (submitBtn) submitBtn.innerText = "Giao việc";
+            form.action = `/dashboard/tasks/${task.id}/update`;
+            
+            // Populate inputs
+            form.querySelector('[name="task_name"]').value = task.name;
+            form.querySelector('[name="description"]').value = task.description || '';
+            form.querySelector('[name="deadline"]').value = task.deadline_raw;
+            if (statusSelect) statusSelect.value = 'Todo';
+            form.querySelector('[name="priority"]').value = task.priority;
+            
+            // Set is_proposal input to 0 (so it converts to normal task upon save)
+            document.getElementById('form-is-proposal').value = '0';
+            
+            // Show assignee selection
+            const assigneeSection = form.querySelector('[name="assigned_to[]"]')?.closest('div');
+            if (assigneeSection) {
+                assigneeSection.style.display = 'block';
+            }
+            
+            // Check proposer checkbox
+            const proposerId = task.assignee_id || task.assigned_by;
+            const checkboxes = form.querySelectorAll('input[name="assigned_to[]"]');
+            checkboxes.forEach(cb => {
+                cb.checked = (parseInt(cb.value) === parseInt(proposerId));
+            });
+            
+            openModal();
+        };
+
         window.openTaskDetail = (task) => {
             currentTask = task;
             
@@ -833,6 +953,33 @@
             else badge.classList.add('bg-blue-100', 'text-blue-700');
 
             renderDetailDocuments(task.documents || []);
+
+            // Handle proposal action buttons
+            const proposalActionContainer = document.getElementById('proposal-action-container');
+            if (proposalActionContainer) {
+                proposalActionContainer.innerHTML = '';
+                
+                if (task.is_proposal) {
+                    const isDirector = {{ $isDirector ? 'true' : 'false' }};
+                    const isLeader = {{ $isManager ? 'true' : 'false' }};
+                    
+                    if (isLeader && task.proposal_step === 1) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all';
+                        btn.innerHTML = '<i class="fa-solid fa-share-from-square"></i> Duyệt & Gửi lên Ban Giám đốc';
+                        btn.onclick = () => escalateProposal(task.id);
+                        proposalActionContainer.appendChild(btn);
+                    } else if (isDirector && task.proposal_step === 2) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition-all';
+                        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Giao việc (Phê duyệt)';
+                        btn.onclick = () => openApproveProposalModal(task);
+                        proposalActionContainer.appendChild(btn);
+                    }
+                }
+            }
 
             // Bind Delete Form Action
             const deleteForm = document.getElementById('delete-task-form');

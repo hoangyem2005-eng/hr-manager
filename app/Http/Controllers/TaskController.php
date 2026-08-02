@@ -165,6 +165,7 @@ class TaskController extends Controller
             'deadline'    => $validated['deadline'] ?? null,
             'status'      => $validated['status'],
             'progress'    => $validated['progress'] ?? $task->progress,
+            'is_proposal' => false,
         ]);
         $task->assignees()->sync(array_filter([$validated['assigned_to'] ?? null]));
 
