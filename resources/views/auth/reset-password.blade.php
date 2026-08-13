@@ -28,8 +28,8 @@
             border-radius: 16px; 
             width: 100%; 
             max-width: 420px; 
-            box-shadow: 0 10px 25px -5px rgba(0, 84, 166, 0.05), 0 8px 10px -6px rgba(0, 84, 166, 0.05); 
-            border-top: 6px solid #0054A6; 
+            box-shadow: 0 10px 25px -5px rgba(0, 61, 165, 0.05), 0 8px 10px -6px rgba(0, 61, 165, 0.05); 
+            border-top: 6px solid #003DA5; 
             position: relative;
         }
 
@@ -40,24 +40,69 @@
             right: 15%;
             width: 30px;
             height: 6px;
-            background-color: #ED1C24;
+            background-color: #E4002B;
         }
         
-        .brand-title { 
-            color: #0054A6; 
-            font-size: 28px; 
-            font-weight: 800; 
-            text-align: center; 
-            margin-bottom: 8px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: #E4002B !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        .brand-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+            font-family: Arial, Helvetica, sans-serif !important;
+            letter-spacing: -0.05em !important;
+        }
+
+        .brand-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .brand-word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
         }
         
-        .brand-title span { 
-            color: #ED1C24; 
-            text-transform: lowercase; 
-            font-weight: 700;
-        }
+        .brand-word .blue { color: #003DA5; }
+        .brand-word .red { color: #E4002B; }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
  
         .title { 
             color: #475569; 
@@ -98,14 +143,14 @@
         
         .control:focus { 
             outline: none; 
-            border-color: #0054A6; 
+            border-color: #003DA5; 
             background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(0, 84, 166, 0.1); 
+            box-shadow: 0 0 0 4px rgba(0, 61, 165, 0.1); 
         }
         
         .btn { 
             width: 100%; 
-            background: #0054A6; 
+            background: #003DA5; 
             color: #ffffff; 
             border: none; 
             padding: 14px; 
@@ -114,15 +159,15 @@
             border-radius: 8px; 
             cursor: pointer; 
             letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0, 84, 166, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 61, 165, 0.15);
             transition: all 0.25s ease; 
             margin-top: 10px; 
         }
         
         .btn:hover { 
-            background: #004485; 
+            background: #002d82; 
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 84, 166, 0.25);
+            box-shadow: 0 6px 16px rgba(0, 61, 165, 0.25);
         }
 
         .btn:active {
@@ -158,18 +203,22 @@
 
         .toggle-password:hover {
             background: #e2e8f0;
-            color: #0054A6;
+            color: #003DA5;
         }
 
         .toggle-password:focus-visible {
-            outline: 2px solid rgba(0, 84, 166, 0.3);
+            outline: 2px solid rgba(0, 61, 165, 0.3);
             outline-offset: 2px;
         }
     </style>
 </head>
 <body>
 <div class="box">
-    <div class="brand-title">mobi<span>fone</span></div>
+    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+        <div class="brand-word">
+            <strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong>
+        </div>
+    </div>
     <div class="title">Đặt lại mật khẩu mới cho tài khoản</div>
     
     @if (session('status'))

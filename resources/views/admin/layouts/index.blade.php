@@ -69,6 +69,38 @@
         .flash.error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
         .empty { padding: 28px; color: #9CA3AF; text-align: center; }
         @media (max-width: 900px) { .admin-shell { grid-template-columns: 1fr; } .admin-side { position: static; } .module-hero { align-items: flex-start; flex-direction: column; } .grid-form { grid-template-columns: 1fr; } }
+
+        /* MobiFone Brand Logo Styles */
+        .mf-logo-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+        .mf-logo-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: #e4002b !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+        .mf-logo-lockup {
+            font-family: Arial, Helvetica, sans-serif !important;
+            letter-spacing: -0.05em !important;
+        }
+        .mf-logo-lockup span {
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+        }
     </style>
     @yield('head_extra')
 </head>

@@ -415,7 +415,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold mb-1.5 text-gray-700">Deadline *</label>
-                    <input type="date" name="deadline" required class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" />
+                    <input type="date" name="deadline" required value="{{ date('Y-m-d') }}" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}" />
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5 text-gray-700">Trạng thái</label>
@@ -911,7 +911,13 @@
             // Populate inputs
             form.querySelector('[name="task_name"]').value = task.name;
             form.querySelector('[name="description"]').value = task.description || '';
-            form.querySelector('[name="deadline"]').value = task.deadline_raw;
+            const deadlineInput = form.querySelector('[name="deadline"]');
+            if (deadlineInput) {
+                deadlineInput.value = task.deadline_raw;
+                if (deadlineInput._flatpickr) {
+                    deadlineInput._flatpickr.setDate(task.deadline_raw);
+                }
+            }
             if (statusSelect) statusSelect.value = 'Todo';
             form.querySelector('[name="priority"]').value = task.priority;
             
@@ -1021,7 +1027,13 @@
                 } else if (form.querySelector('[name="assigned_to"]')) {
                     form.querySelector('[name="assigned_to"]').value = currentTask.assignee_id || '';
                 }
-                form.querySelector('[name="deadline"]').value = currentTask.deadline_raw || '';
+                const deadlineInput = form.querySelector('[name="deadline"]');
+                if (deadlineInput) {
+                    deadlineInput.value = currentTask.deadline_raw || '';
+                    if (deadlineInput._flatpickr) {
+                        deadlineInput._flatpickr.setDate(currentTask.deadline_raw || '');
+                    }
+                }
                 
                 // Populate attachments list for deletion
                 const editAttachContainer = document.getElementById('edit-attachments-container');

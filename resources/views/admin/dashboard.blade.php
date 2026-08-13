@@ -68,7 +68,7 @@
 <div class="exec-shell">
     <section class="exec-hero">
         <div>
-            <div class="exec-kicker">MobiFone HR operations</div>
+            <div class="exec-kicker">Hoạt động nhân sự MobiFone</div>
             <h1 class="exec-title">Điều hành nhân sự, phòng ban và tiến độ công việc trên một màn hình.</h1>
             <p class="exec-copy">Theo dõi năng lực vận hành theo phòng ban, nắm nhanh việc quá hạn và xử lý các điểm nghẽn ảnh hưởng đến mục tiêu chung.</p>
             <div class="exec-actions">

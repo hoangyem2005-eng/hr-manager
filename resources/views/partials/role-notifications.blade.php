@@ -51,7 +51,7 @@
 <div class="notif-page">
     <section class="notif-hero">
         <div>
-            <div class="kicker">{{ $isAdminPage ? 'Executive Inbox' : 'Department Inbox' }}</div>
+            <div class="kicker">{{ $isAdminPage ? 'Hộp thư điều hành' : 'Hộp thư phòng ban' }}</div>
             <h2>Thông báo nội bộ</h2>
             <p>Nhận thông báo giao việc, nhắc deadline và gửi thông báo hệ thống trong đúng không gian {{ $isAdminPage ? 'Giám đốc' : 'Trưởng phòng' }}.</p>
         </div>

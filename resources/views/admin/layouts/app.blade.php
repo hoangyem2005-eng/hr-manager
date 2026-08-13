@@ -24,12 +24,12 @@
 <!-- ============ SIDEBAR ============ -->
 <aside class="mf-sidebar" id="sidebar">
     <div class="mf-brand">
-        <div class="mf-logo-mark" aria-hidden="true">M</div>
-        <div class="s-logo-text logo-text">
+        
+        <div class="logo-text">
             <div class="mf-logo-lockup" aria-label="MobiFone">
-                <span class="mf-logo-blue">Mobi</span><span class="mf-logo-red">Fone</span>
+                <span class="mf-logo-blue">mob<span class="mf-logo-i">ı</span></span><span class="mf-logo-red">fone</span>
             </div>
-            <div class="mf-brand-subtitle">ADMIN CONSOLE</div>
+            <div class="mf-brand-subtitle">Giao diện Giám đốc</div>
         </div>
     </div>
 
@@ -37,7 +37,7 @@
         <span class="mf-nav-section s-label">Tổng quan</span>
         <a href="{{ route('admin.dashboard') }}" class="mf-nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
             <i data-lucide="layout-dashboard" style="width:17px;height:17px"></i>
-            <span class="s-label">Dashboard</span>
+            <span class="s-label">Tổng quan</span>
         </a>
 
         <span class="mf-nav-section s-label">Nhân sự</span>

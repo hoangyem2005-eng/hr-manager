@@ -81,7 +81,7 @@
 
     <section class="people-hero">
         <div>
-            <div class="people-kicker">People Directory</div>
+            <div class="people-kicker">Danh bạ nhân viên</div>
             <h2>Toàn bộ nhân viên MobiFone</h2>
             <p>Xem nhanh nhân sự theo phòng ban, chức vụ, trạng thái tài khoản và số công việc đang được giao trên toàn WorkHub.</p>
         </div>

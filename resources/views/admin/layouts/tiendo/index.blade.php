@@ -6,7 +6,7 @@
 @section('content')
 <section class="module-hero">
     <div>
-        <div class="module-kicker">Progress operations</div>
+        <div class="module-kicker">Theo dõi tiến độ</div>
         <h1 class="module-title">Theo dõi tiến độ công việc</h1>
         <p class="module-desc">Kiểm soát phần trăm hoàn thành, trạng thái vận hành và các việc quá hạn theo phạm vi quyền hạn.</p>
     </div>
@@ -42,17 +42,31 @@
     </div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Mã</th><th>Công việc</th><th>Người nhận</th><th>Deadline</th><th>Tiến độ</th><th>Trạng thái</th><th>Cập nhật nhanh</th></tr></thead>
+            <thead><tr><th>Mã</th><th>Công việc</th><th>Người nhận</th><th>Hạn chót</th><th>Tiến độ</th><th>Trạng thái</th><th>Cập nhật nhanh</th></tr></thead>
             <tbody>
                 @forelse($tasks as $task)
                     @php
-                        $statusClass = match($task->status) {
-                            'Done', 'Hoàn thành' => 'done',
-                            'In Progress', 'Đang làm' => 'doing',
-                            'Overdue', 'Quá hạn' => 'overdue',
-                            'Đang review' => 'review',
-                            default => '',
-                        };
+                        $statusClean = trim($task->status ?? '');
+                        $statusCleanLower = mb_strtolower($statusClean);
+                        if (in_array($statusCleanLower, ['done', 'hoàn thành'], true)) {
+                            $displayStatus = 'Hoàn thành';
+                            $statusClass = 'done';
+                        } elseif (in_array($statusCleanLower, ['in progress', 'inprogress', 'in_progress', 'đang làm'], true)) {
+                            $displayStatus = 'Đang làm';
+                            $statusClass = 'doing';
+                        } elseif (in_array($statusCleanLower, ['todo', 'chờ xử lý'], true)) {
+                            $displayStatus = 'Chờ xử lý';
+                            $statusClass = '';
+                        } elseif (in_array($statusCleanLower, ['overdue', 'quá hạn'], true)) {
+                            $displayStatus = 'Quá hạn';
+                            $statusClass = 'overdue';
+                        } elseif ($statusCleanLower === 'đang review') {
+                            $displayStatus = 'Đang review';
+                            $statusClass = 'review';
+                        } else {
+                            $displayStatus = $statusClean;
+                            $statusClass = '';
+                        }
                     @endphp
                     <tr>
                         <td class="code">WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }}</td>
@@ -67,14 +81,21 @@
                                 <strong>{{ $task->progress ?? 0 }}%</strong>
                             </div>
                         </td>
-                        <td><span class="status {{ $statusClass }}">{{ $task->status }}</span></td>
+                        <td><span class="status {{ $statusClass }}">{{ $displayStatus }}</span></td>
                         <td>
                             <form method="POST" action="{{ route('tiendo.capnhat', $task->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                                 @csrf @method('PATCH')
                                 <input class="input" style="width:82px" type="number" min="0" max="100" name="progress" value="{{ $task->progress ?? 0 }}">
                                 <select class="select" name="status">
                                     @foreach(['Todo' => 'Chờ xử lý', 'In Progress' => 'Đang làm', 'Done' => 'Hoàn thành', 'Overdue' => 'Quá hạn'] as $value => $label)
-                                        <option value="{{ $value }}" {{ $task->status === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                        @php
+                                            $isSel = false;
+                                            if ($value === 'Todo' && in_array($statusCleanLower, ['todo', 'chờ xử lý'])) $isSel = true;
+                                            elseif ($value === 'In Progress' && in_array($statusCleanLower, ['in progress', 'inprogress', 'in_progress', 'đang làm'])) $isSel = true;
+                                            elseif ($value === 'Done' && in_array($statusCleanLower, ['done', 'hoàn thành'])) $isSel = true;
+                                            elseif ($value === 'Overdue' && in_array($statusCleanLower, ['overdue', 'quá hạn'])) $isSel = true;
+                                        @endphp
+                                        <option value="{{ $value }}" {{ $isSel ? 'selected' : '' }}>{{ $label }}</option>
                                     @endforeach
                                 </select>
                                 <button class="btn secondary" type="submit">Lưu</button>

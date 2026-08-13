@@ -49,9 +49,9 @@ class ManagerController extends Controller
                         ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $u->id));
                 });
                 $total  = $memberTasks()->count();
-                $done   = $memberTasks()->where('status', 'Hoàn thành')->count();
-                $doing  = $memberTasks()->where('status', 'Đang làm')->count();
-                $overdue = $memberTasks()->where('status', 'Quá hạn')->count();
+                $done   = $memberTasks()->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
+                $doing  = $memberTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
+                $overdue = $memberTasks()->whereIn('status', ['Quá hạn', 'Overdue', 'quÃ¡ háº¡n'])->count();
                 return [
                     'id'         => $u->id,
                     'name'       => $u->name,
@@ -106,10 +106,10 @@ class ManagerController extends Controller
             $query->whereIn('assigned_to', $teamMemberIds)
                 ->orWhereHas('assignees', fn ($assignees) => $assignees->whereIn('users.id', $teamMemberIds));
         });
-        $pendingCount  = $teamTasks()->where('status', 'Chờ xử lý')->count();
-        $doingCount    = $teamTasks()->where('status', 'Đang làm')->count();
-        $doneCount     = $teamTasks()->where('status', 'Hoàn thành')->count();
-        $overdueCount  = $teamTasks()->where('status', 'Quá hạn')->count();
+        $pendingCount  = $teamTasks()->whereIn('status', ['Chờ xử lý', 'Todo', 'chá»  xá»­ lÃ½', 'chá» xá»­lÃ½', 'chờ xá»­ lÃ½'])->count();
+        $doingCount    = $teamTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
+        $doneCount     = $teamTasks()->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
+        $overdueCount  = $teamTasks()->whereIn('status', ['Quá hạn', 'Overdue', 'quÃ¡ háº¡n'])->count();
 
         $department = $user->department;
         $allTeamMembers = User::where('department_id', $deptId)->get(); // cho form giao việc
@@ -147,10 +147,10 @@ class ManagerController extends Controller
 
         $teamMembers->setCollection($teamMembers->getCollection()->map(function (User $member) {
             $total = Task::where('assigned_to', $member->id)->count();
-            $done = Task::where('assigned_to', $member->id)->where('status', 'Hoàn thành')->count();
-            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'Đang review'])->count();
+            $done = Task::where('assigned_to', $member->id)->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
+            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
             $overdue = Task::where('assigned_to', $member->id)
-                ->whereNotIn('status', ['Hoàn thành'])
+                ->whereNotIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])
                 ->whereNotNull('deadline')
                 ->whereDate('deadline', '<', now()->toDateString())
                 ->count();

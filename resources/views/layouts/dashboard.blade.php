@@ -18,6 +18,10 @@
     <!-- ApexCharts CDN -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+    <!-- Flatpickr CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
 </head>
 <body class="mf-app">
 
@@ -25,10 +29,9 @@
     <div id="sidebar" class="mf-sidebar">
         <!-- Logo -->
         <div class="mf-brand">
-            <div class="mf-logo-mark" aria-hidden="true">M</div>
             <div class="logo-text">
                 <div class="mf-logo-lockup" aria-label="MobiFone">
-                    <span class="mf-logo-blue">Mobi</span><span class="mf-logo-red">Fone</span>
+                    <span class="mf-logo-blue">mob<span class="mf-logo-i">ı</span></span><span class="mf-logo-red">fone</span>
                 </div>
                 <div class="mf-brand-subtitle">WORKHUB</div>
             </div>
@@ -316,6 +319,46 @@
         @auth
             setInterval(pollNotifications, 4000);
         @endauth
+
+        // Khởi tạo Flatpickr cho các input[type="date"]
+        document.addEventListener('DOMContentLoaded', function() {
+            // Override prototype reset to support programmatical form.reset()
+            const originalReset = HTMLFormElement.prototype.reset;
+            HTMLFormElement.prototype.reset = function() {
+                originalReset.call(this);
+                setTimeout(() => {
+                    this.querySelectorAll('.flatpickr-input').forEach(el => {
+                        if (el._flatpickr) {
+                            el._flatpickr.setDate(el.value || new Date());
+                        }
+                    });
+                }, 0);
+            };
+
+            document.querySelectorAll('input[type="date"]').forEach(function(el) {
+                flatpickr(el, {
+                    locale: 'vn',
+                    altInput: true,
+                    altFormat: 'd/m/Y',
+                    dateFormat: 'Y-m-d',
+                    defaultDate: el.value || new Date(),
+                    allowInput: true
+                });
+            });
+
+            // Lắng nghe sự kiện reset form để đồng bộ lại Flatpickr về ngày mặc định
+            document.addEventListener('reset', function(e) {
+                const form = e.target;
+                setTimeout(function() {
+                    form.querySelectorAll('.flatpickr-input').forEach(function(el) {
+                        if (el._flatpickr) {
+                            el._flatpickr.setDate(el.value || new Date());
+                        }
+                    });
+                }, 0);
+            });
+        });
+    </script>
     @yield('scripts')
 </body>
 </html>

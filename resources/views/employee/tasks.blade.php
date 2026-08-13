@@ -7,6 +7,11 @@
     <title>Công việc của tôi - MobiFone Employee</title>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Flatpickr CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -26,10 +31,65 @@
         .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; color: #fff; background: linear-gradient(180deg, #001F5B 0%, #003DA5 100%); }
         .brand { display: flex; align-items: center; gap: 12px; padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
         .brand-mark { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; background: #fff; color: var(--mf-blue); font-weight: 900; box-shadow: inset 5px 0 0 var(--mf-red); }
-        .brand-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-        .brand-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .brand-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .brand-sub { margin-top: 6px; color: #BFD8FF; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+        .brand-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+        }
+
+        .brand-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .brand-word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
+        }
+        
+        .brand-word .blue { color: var(--mf-blue); }
+        .brand-word .red { color: var(--mf-red); }
+
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i, .mf-logo-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after, .mf-logo-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: var(--mf-red) !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
+        .brand-sub { margin-top: 8px; color: #BFD8FF; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
         .profile-card { display:block; color:inherit; text-decoration:none; margin: 18px 14px; padding: 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.08); }
         .profile-card:hover { background: rgba(255,255,255,.13); }
         .profile-row { display: flex; align-items: center; gap: 12px; }
@@ -139,9 +199,8 @@
 <div class="layout">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-mark">M</div>
             <div>
-                <div class="brand-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="brand-word"><strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong></div>
                 <div class="brand-sub">Employee WorkHub</div>
             </div>
         </div>
@@ -336,7 +395,7 @@
                 </div>
                 <div class="field">
                     <label>Deadline *</label>
-                    <input type="date" name="deadline" required>
+                    <input type="date" name="deadline" required value="{{ date('Y-m-d') }}">
                 </div>
                 <input type="hidden" name="status" value="Chờ xử lý">
             </div>
@@ -525,6 +584,45 @@
             alert('Có lỗi xảy ra khi xóa tệp đính kèm.');
         });
     }
+
+    // Khởi tạo Flatpickr cho các input[type="date"]
+    document.addEventListener('DOMContentLoaded', function() {
+        // Override prototype reset to support programmatical form.reset()
+        const originalReset = HTMLFormElement.prototype.reset;
+        HTMLFormElement.prototype.reset = function() {
+            originalReset.call(this);
+            setTimeout(() => {
+                this.querySelectorAll('.flatpickr-input').forEach(el => {
+                    if (el._flatpickr) {
+                        el._flatpickr.setDate(el.value || new Date());
+                    }
+                });
+            }, 0);
+        };
+
+        document.querySelectorAll('input[type="date"]').forEach(function(el) {
+            flatpickr(el, {
+                locale: 'vn',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                dateFormat: 'Y-m-d',
+                defaultDate: el.value || new Date(),
+                allowInput: true
+            });
+        });
+
+        // Lắng nghe sự kiện reset form để đồng bộ lại Flatpickr về ngày mặc định
+        document.addEventListener('reset', function(e) {
+            const form = e.target;
+            setTimeout(function() {
+                form.querySelectorAll('.flatpickr-input').forEach(function(el) {
+                    if (el._flatpickr) {
+                        el._flatpickr.setDate(el.value || new Date());
+                    }
+                });
+            }, 0);
+        });
+    });
 </script>
 </body>
 </html>

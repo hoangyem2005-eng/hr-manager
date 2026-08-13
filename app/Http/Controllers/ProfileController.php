@@ -15,6 +15,47 @@ class ProfileController extends Controller
     {
         $user = Auth::user()->load(['department', 'role']);
         $assignedTasks = $this->assignedTasks($user)->get();
+
+        // Chuẩn hóa trạng thái công việc từ database
+        $replacements = [
+            'hoÃ n thÃ nh' => 'hoàn thành',
+            'hoÃ nthÃ nh' => 'hoàn thành',
+            'Ä‘ang lÃ m' => 'đang làm',
+            'Ä‘anglÃ m' => 'đang làm',
+            'chá»  xá»­ lÃ½' => 'chờ xử lý',
+            'chá» xá»­lÃ½' => 'chờ xử lý',
+            'đang lÃ m' => 'đang làm',
+            'chờ xá»­ lÃ½' => 'chờ xử lý',
+            'Ä‘ang review' => 'đang review',
+            'quÃ¡ háº¡n' => 'quá hạn',
+        ];
+
+        $normalizeStatus = function($statusStr) use ($replacements) {
+            $status = trim($statusStr ?? '');
+            $status = str_replace(array_keys($replacements), array_values($replacements), $status);
+            $statusLower = mb_strtolower($status);
+            if (in_array($statusLower, ['done', 'hoàn thành'], true)) {
+                return 'Hoàn thành';
+            }
+            if (in_array($statusLower, ['in progress', 'inprogress', 'in_progress', 'đang làm'], true)) {
+                return 'Đang làm';
+            }
+            if (in_array($statusLower, ['todo', 'chờ xử lý'], true)) {
+                return 'Chờ xử lý';
+            }
+            if (in_array($statusLower, ['đang review', 'review'], true)) {
+                return 'Đang review';
+            }
+            if ($statusLower === 'quá hạn') {
+                return 'Quá hạn';
+            }
+            return $status;
+        };
+
+        foreach ($assignedTasks as $task) {
+            $task->status = $normalizeStatus($task->status);
+        }
+
         $createdTasks = Task::where('assigned_by', $user->id)->count();
         $totalAssigned = $assignedTasks->count();
         $completed = $assignedTasks->where('status', 'Hoàn thành')->count();

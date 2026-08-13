@@ -366,10 +366,11 @@ class DashboardController extends Controller
                 }
             });
         } elseif ($currentUser->isEmployee()) {
-            $query->where(function ($q) use ($currentUser) {
-                $q->where('assigned_to', $currentUser->id)
-                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
-            });
+            $query->where('is_proposal', false)
+                ->where(function ($q) use ($currentUser) {
+                    $q->where('assigned_to', $currentUser->id)
+                        ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
+                });
         }
 
         // Helper to normalize English and legacy statuses to standard Vietnamese
@@ -811,6 +812,35 @@ class DashboardController extends Controller
         $task->assignees()->sync([$proposerId]);
 
         return redirect()->route('dashboard.tasks', ['mode' => 'proposal', 'view' => 'list'])->with('success', 'Đã duyệt đề xuất và giao việc lại cho người đề xuất.');
+    }
+
+    public function rejectProposal(Request $request, $id)
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser->isLeader() && !$currentUser->isDirector()) {
+            abort(403, 'Bạn không có quyền từ chối đề xuất này.');
+        }
+
+        $task = Task::findOrFail($id);
+        if (!$task->is_proposal) {
+            return back()->with('error', 'Công việc này không phải là đề xuất.');
+        }
+
+        $proposerId = $task->assigned_by ?? $currentUser->id;
+
+        // Create notification first (with task_id = null, so it doesn't get cascaded when task is deleted)
+        \App\Models\Notification::create([
+            'user_id' => $proposerId,
+            'task_id' => null,
+            'title' => 'Đề xuất công việc bị từ chối',
+            'message' => 'Đề xuất "' . $task->task_name . '" của bạn đã bị từ chối.',
+            'is_read' => false,
+        ]);
+
+        // Delete the task proposal
+        $task->delete();
+
+        return redirect()->route('dashboard.tasks', ['mode' => 'proposal', 'view' => 'list'])->with('success', 'Đã từ chối đề xuất và gửi thông báo về cho người đề xuất.');
     }
 
     private function handleFileUploads(array $files, Task $task): void

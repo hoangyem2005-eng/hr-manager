@@ -14,10 +14,65 @@
         .side:after { content: ""; position: absolute; right: -90px; bottom: -120px; width: 310px; height: 310px; border: 46px solid rgba(255,255,255,.08); border-radius: 999px; }
         .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
         .mark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: #003DA5; font-weight: 900; box-shadow: inset 6px 0 0 #E4002B; }
-        .word { display: inline-flex; align-items: baseline; border-radius: 8px; padding: 5px 10px; background: #fff; line-height: 1; }
-        .word .blue { color: #003DA5; font-size: 20px; font-weight: 900; }
-        .word .red { color: #E4002B; font-size: 20px; font-weight: 900; }
-        .sub { margin-top: 6px; color: #BFD8FF; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+        .word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+        }
+
+        .word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
+        }
+        
+        .word .blue { color: #003DA5; }
+        .word .red { color: #E4002B; }
+
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: #E4002B !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
+        .sub { margin-top: 8px; color: #BFD8FF; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
         .identity { position: relative; z-index: 1; margin-top: 56px; }
         .avatar { width: 108px; height: 108px; display: grid; place-items: center; overflow: hidden; border-radius: 18px; background: #fff; color: #003DA5; font-size: 34px; font-weight: 900; box-shadow: inset 10px 0 0 #E4002B, 0 24px 50px rgba(0,0,0,.18); }
         a.avatar { text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
@@ -65,9 +120,8 @@
 <div class="shell">
     <aside class="side">
         <div class="brand">
-            <div class="mark">M</div>
             <div>
-                <div class="word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="word"><strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong></div>
                 <div class="sub">WORKHUB PROFILE</div>
             </div>
         </div>
@@ -89,7 +143,7 @@
     <main class="main">
         <section class="hero">
             <div>
-                <div class="kicker">Personal Workspace</div>
+                <div class="kicker">Không gian cá nhân</div>
                 <h2>Trang cá nhân của tôi</h2>
                 <p>Xem nhanh thông tin tài khoản, phòng ban, chức vụ và trạng thái công việc đang gắn với bạn trong MobiFone WorkHub.</p>
             </div>

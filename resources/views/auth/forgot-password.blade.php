@@ -26,10 +26,10 @@
             background-color: #ffffff; 
             padding: 40px; 
             border-radius: 16px; 
-            box-shadow: 0 10px 25px -5px rgba(0, 84, 166, 0.05), 0 8px 10px -6px rgba(0, 84, 166, 0.05); 
+            box-shadow: 0 10px 25px -5px rgba(0, 61, 165, 0.05), 0 8px 10px -6px rgba(0, 61, 165, 0.05); 
             width: 100%; 
             max-width: 420px; 
-            border-top: 6px solid #0054A6; 
+            border-top: 6px solid #003DA5; 
             position: relative;
         }
 
@@ -40,24 +40,69 @@
             right: 15%;
             width: 30px;
             height: 6px;
-            background-color: #ED1C24;
+            background-color: #E4002B;
         }
         
-        .brand-title { 
-            color: #0054A6; 
-            font-size: 28px; 
-            font-weight: 800; 
-            text-align: center; 
-            margin-bottom: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: #E4002B !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        .brand-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+            font-family: Arial, Helvetica, sans-serif !important;
+            letter-spacing: -0.05em !important;
+        }
+
+        .brand-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .brand-word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
         }
         
-        .brand-title span { 
-            color: #ED1C24; 
-            text-transform: lowercase; 
-            font-weight: 700;
-        }
+        .brand-word .blue { color: #003DA5; }
+        .brand-word .red { color: #E4002B; }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
         
         .form-desc { 
             color: #64748b; 
@@ -96,14 +141,14 @@
         
         .form-control:focus { 
             outline: none; 
-            border-color: #0054A6; 
+            border-color: #003DA5; 
             background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(0, 84, 166, 0.1); 
+            box-shadow: 0 0 0 4px rgba(0, 61, 165, 0.1); 
         }
         
         .btn-submit { 
             width: 100%; 
-            background-color: #0054A6; 
+            background-color: #003DA5; 
             color: #ffffff; 
             border: none; 
             padding: 14px; 
@@ -112,14 +157,14 @@
             border-radius: 8px; 
             cursor: pointer; 
             letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0, 84, 166, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 61, 165, 0.15);
             transition: all 0.25s ease; 
         }
         
         .btn-submit:hover { 
-            background-color: #004485; 
+            background-color: #002d82; 
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 84, 166, 0.25);
+            box-shadow: 0 6px 16px rgba(0, 61, 165, 0.25);
         }
         
         .btn-submit:active {
@@ -140,7 +185,7 @@
 
         .debug-link-box {
             background-color: #f8fafc;
-            border: 1.5px dashed #0054A6;
+            border: 1.5px dashed #003DA5;
             padding: 16px;
             border-radius: 10px;
             margin-bottom: 24px;
@@ -149,7 +194,7 @@
 
         .debug-title {
             font-size: 12px;
-            color: #0054A6;
+            color: #003DA5;
             font-weight: 700;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -170,27 +215,27 @@
         }
 
         .debug-input:hover {
-            border-color: #0054A6;
+            border-color: #003DA5;
             background-color: #fff;
         }
 
         .debug-btn-test {
             display: block;
             text-align: center;
-            background-color: #ED1C24;
+            background-color: #E4002B;
             color: #ffffff;
             padding: 11px;
             border-radius: 6px;
             text-decoration: none;
             font-size: 13.5px;
             font-weight: 700;
-            box-shadow: 0 4px 10px rgba(237, 28, 36, 0.15);
+            box-shadow: 0 4px 10px rgba(228, 0, 43, 0.15);
             transition: all 0.2s ease;
         }
 
         .debug-btn-test:hover {
-            background-color: #d11219;
-            box-shadow: 0 6px 14px rgba(237, 28, 36, 0.25);
+            background-color: #c30022;
+            box-shadow: 0 6px 14px rgba(228, 0, 43, 0.25);
         }
         
         .error-message { 
@@ -214,7 +259,7 @@
         }
         
         .back-to-login:hover { 
-            color: #0054A6; 
+            color: #003DA5; 
         }
 
         .back-to-login svg {
@@ -230,7 +275,11 @@
 <body>
 
 <div class="forgot-container">
-    <div class="brand-title">mobi<span>fone</span></div>
+    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+        <div class="brand-word">
+            <strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong>
+        </div>
+    </div>
     <div class="form-desc">Nhập email của bạn để nhận mã xác thực (OTP) đặt lại mật khẩu hệ thống.</div>
     
     @if (session('status'))

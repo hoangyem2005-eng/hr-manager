@@ -58,7 +58,7 @@
 <div class="team-page">
     <section class="team-hero">
         <div>
-            <div class="team-kicker">Department People</div>
+            <div class="team-kicker">Thành viên phòng ban</div>
             <h2>Nhân viên phòng {{ $department->TENPHONG ?? $department->name ?? 'của bạn' }}</h2>
             <p>Quản lý danh sách nhân viên trong phạm vi phòng ban, theo dõi số việc, tiến độ và các việc quá hạn của từng người.</p>
         </div>

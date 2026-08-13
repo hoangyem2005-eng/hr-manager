@@ -6,7 +6,7 @@
 @section('content')
 <section class="module-hero">
     <div>
-        <div class="module-kicker">Task control</div>
+        <div class="module-kicker">Quản lý công việc</div>
         <h1 class="module-title">Quản trị công việc</h1>
         <p class="module-desc">Theo dõi toàn bộ đầu việc theo phạm vi quyền hạn, lọc nhanh theo trạng thái và mở chi tiết để kiểm tra tiến độ, deadline, file đính kèm.</p>
     </div>

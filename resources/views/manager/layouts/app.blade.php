@@ -9,6 +9,11 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+    <!-- Flatpickr CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -118,6 +123,62 @@
         .flash.success { background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A; }
         .flash.error   { background:#FFF1F2;border:1px solid #FECDD3;color:#E11D48; }
         @keyframes fadeSlide { from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)} }
+
+        /* Custom Pagination Styling */
+        .hidden { display: none !important; }
+        .flex { display: flex !important; }
+        .items-center { align-items: center !important; }
+        .justify-between { justify-content: space-between !important; }
+        .flex-1 { flex: 1 1 0% !important; }
+        .w-5 { width: 16px !important; }
+        .h-5 { height: 16px !important; }
+        
+        nav[role="navigation"] svg {
+            width: 16px !important;
+            height: 16px !important;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        nav[role="navigation"] span.relative,
+        nav[role="navigation"] a.relative {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 10px;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            background: #fff;
+            color: #374151;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        nav[role="navigation"] a.relative:hover {
+            background: #F3F4F6;
+            border-color: #9CA3AF;
+        }
+        nav[role="navigation"] span.relative[aria-current="page"] {
+            background: #003DA5;
+            color: #fff;
+            border-color: #003DA5;
+        }
+        nav[role="navigation"] span.relative[aria-disabled="true"] {
+            color: #9CA3AF;
+            background: #F9FAFB;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        @media (min-width: 640px) {
+            .sm\:hidden { display: none !important; }
+            .sm\:flex { display: flex !important; }
+            .sm\:flex-1 { flex: 1 1 0% !important; }
+            .sm\:items-center { align-items: center !important; }
+            .sm\:justify-between { justify-content: space-between !important; }
+        }
     </style>
     @yield('head_extra')
 </head>
@@ -128,10 +189,9 @@
 @endphp
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-icon">M</div>
         <div class="s-logo-text">
-            <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
-            <div class="sub">MANAGER CONSOLE</div>
+            <div class="mf-logo-word"><span class="blue">mob<span class="mf-logo-i">ı</span></span><span class="red">fone</span></div>
+            <div class="sub">GIAO DIỆN TRƯỞNG PHÒNG</div>
         </div>
     </div>
 
@@ -139,7 +199,7 @@
         <span class="nav-section s-label">Tổng quan</span>
         <a href="{{ route('manager.dashboard') }}" class="nav-item {{ request()->routeIs('manager.dashboard') ? 'active' : '' }}">
             <i data-lucide="layout-dashboard" style="width:17px;height:17px"></i>
-            <span class="s-label">Dashboard</span>
+            <span class="s-label">Tổng quan</span>
         </a>
 
         <span class="nav-section s-label">Phòng ban</span>
@@ -229,7 +289,47 @@
     </main>
 </div>
 
-<script>lucide.createIcons();</script>
+<script>
+    lucide.createIcons();
+    // Khởi tạo Flatpickr cho các input[type="date"]
+    document.addEventListener('DOMContentLoaded', function() {
+        // Override prototype reset to support programmatical form.reset()
+        const originalReset = HTMLFormElement.prototype.reset;
+        HTMLFormElement.prototype.reset = function() {
+            originalReset.call(this);
+            setTimeout(() => {
+                this.querySelectorAll('.flatpickr-input').forEach(el => {
+                    if (el._flatpickr) {
+                        el._flatpickr.setDate(el.value || new Date());
+                    }
+                });
+            }, 0);
+        };
+
+        document.querySelectorAll('input[type="date"]').forEach(function(el) {
+            flatpickr(el, {
+                locale: 'vn',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                dateFormat: 'Y-m-d',
+                defaultDate: el.value || new Date(),
+                allowInput: true
+            });
+        });
+
+        // Lắng nghe sự kiện reset form để đồng bộ lại Flatpickr về ngày mặc định
+        document.addEventListener('reset', function(e) {
+            const form = e.target;
+            setTimeout(function() {
+                form.querySelectorAll('.flatpickr-input').forEach(function(el) {
+                    if (el._flatpickr) {
+                        el._flatpickr.setDate(el.value || new Date());
+                    }
+                });
+            }, 0);
+        });
+    });
+</script>
 @yield('scripts')
 </body>
 </html>

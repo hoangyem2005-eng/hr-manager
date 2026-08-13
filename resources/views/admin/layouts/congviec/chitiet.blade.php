@@ -6,14 +6,20 @@
 @section('content')
 <section class="module-hero">
     <div>
-        <div class="module-kicker">Task detail</div>
+        <div class="module-kicker">Chi tiết công việc</div>
         <h1 class="module-title">{{ $task->task_name }}</h1>
-        <p class="module-desc">Mã WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }} - theo dõi người giao, người nhận, deadline, tiến độ và file liên quan.</p>
+        <p class="module-desc">Mã WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }} - theo dõi người giao, người nhận, hạn chót, tiến độ và file liên quan.</p>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a href="{{ route('congviec.danhsach') }}" class="btn secondary"><i data-lucide="arrow-left"></i>Danh sách</a>
         @if($task->is_proposal && (int) $task->proposal_step === 2)
             <a href="{{ route('congviec.sua', $task->id) }}" class="btn primary" style="background:#16A34A;border-color:#16A34A"><i data-lucide="check"></i>Giao việc (Phê duyệt)</a>
+            <form action="{{ route('dashboard.tasks.reject-proposal', $task->id) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn từ chối đề xuất này?');">
+                @csrf
+                <button type="submit" class="btn primary" style="background:#DC2626;border-color:#DC2626;cursor:pointer">
+                    <i data-lucide="x-circle"></i>Không đồng ý
+                </button>
+            </form>
         @else
             <a href="{{ route('congviec.sua', $task->id) }}" class="btn primary"><i data-lucide="pencil"></i>Cập nhật</a>
         @endif
@@ -32,7 +38,7 @@
             <tbody>
                 <tr><td>Người giao</td><td><strong>{{ $task->creator->name ?? 'Hệ thống' }}</strong></td></tr>
                 <tr><td>Người cùng làm</td><td><strong>{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Chưa gán') }}</strong></td></tr>
-                <tr><td>Deadline</td><td>{{ $task->deadline ? $task->deadline->format('d/m/Y') : 'Không có' }}</td></tr>
+                <tr><td>Hạn chót</td><td>{{ $task->deadline ? $task->deadline->format('d/m/Y') : 'Không có' }}</td></tr>
                 <tr>
                     <td>Trạng thái</td>
                     <td>

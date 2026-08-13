@@ -6,7 +6,7 @@
 @section('content')
 <section class="module-hero">
     <div>
-        <div class="module-kicker">Task form</div>
+        <div class="module-kicker">Biểu mẫu công việc</div>
         <h1 class="module-title">{{ $title ?? 'Công việc' }}</h1>
         <p class="module-desc">Nhập rõ người phụ trách, deadline, trạng thái và tiến độ để dashboard, tiến độ và chuông thông báo đồng bộ chính xác.</p>
     </div>
@@ -52,7 +52,7 @@
 
         <div class="field">
             <label>Deadline</label>
-            <input class="input" type="date" name="deadline" value="{{ old('deadline', optional($task->deadline)->format('Y-m-d') ?? $task->deadline) }}">
+            <input class="input" type="date" name="deadline" value="{{ old('deadline', optional($task->deadline)->format('Y-m-d') ?? $task->deadline ?? date('Y-m-d')) }}">
         </div>
 
         <div class="field">

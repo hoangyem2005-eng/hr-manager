@@ -410,9 +410,8 @@
 
             <div class="brand-content">
                 <div class="brand-lockup">
-                    <div class="brand-mark">M</div>
                     <div>
-                        <div class="brand-word"><strong class="blue">Mobi</strong><strong class="red">Fone</strong></div>
+                        <div class="brand-word"><strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong></div>
                         <div class="brand-sub">WORKHUB</div>
                     </div>
                 </div>

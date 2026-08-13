@@ -56,7 +56,7 @@
 <div class="report-page">
     <section class="report-hero">
         <div>
-            <div class="kicker">MobiFone WorkHub Report</div>
+            <div class="kicker">Báo cáo MobiFone WorkHub</div>
             <h2>Báo cáo vận hành toàn WorkHub</h2>
             <p>Dữ liệu được tổng hợp trực tiếp từ công việc, phòng ban, nhân viên và tài liệu trong hệ thống.</p>
         </div>

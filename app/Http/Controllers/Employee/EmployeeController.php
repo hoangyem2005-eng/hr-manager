@@ -39,12 +39,53 @@ class EmployeeController extends Controller
     {
         $user = Auth::user();
 
-        $allTasks = Task::where(function ($query) use ($user) {
+        $allTasks = Task::where('is_proposal', false)
+            ->where(function ($query) use ($user) {
                 $query->where('assigned_to', $user->id)
                     ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $user->id));
             })
             ->orderBy('updated_at', 'desc')
             ->get();
+
+        // Chuẩn hóa trạng thái công việc từ database
+        $replacements = [
+            'hoÃ n thÃ nh' => 'hoàn thành',
+            'hoÃ nthÃ nh' => 'hoàn thành',
+            'Ä‘ang lÃ m' => 'đang làm',
+            'Ä‘anglÃ m' => 'đang làm',
+            'chá» xá»­ lÃ½' => 'chờ xử lý',
+            'chá»xá»­lÃ½' => 'chờ xử lý',
+            'đang lÃ m' => 'đang làm',
+            'chờ xá»­ lÃ½' => 'chờ xử lý',
+            'Ä‘ang review' => 'đang review',
+            'quÃ¡ háº¡n' => 'quá hạn',
+        ];
+
+        $normalizeStatus = function($statusStr) use ($replacements) {
+            $status = trim($statusStr ?? '');
+            $status = str_replace(array_keys($replacements), array_values($replacements), $status);
+            $statusLower = mb_strtolower($status);
+            if (in_array($statusLower, ['done', 'hoàn thành'], true)) {
+                return 'Hoàn thành';
+            }
+            if (in_array($statusLower, ['in progress', 'inprogress', 'in_progress', 'đang làm'], true)) {
+                return 'Đang làm';
+            }
+            if (in_array($statusLower, ['todo', 'chờ xử lý'], true)) {
+                return 'Chờ xử lý';
+            }
+            if (in_array($statusLower, ['đang review', 'review'], true)) {
+                return 'Đang review';
+            }
+            if ($statusLower === 'quá hạn') {
+                return 'Quá hạn';
+            }
+            return $status;
+        };
+
+        foreach ($allTasks as $task) {
+            $task->status = $normalizeStatus($task->status);
+        }
 
         $total = $allTasks->count();
         $done = $allTasks->where('status', 'Hoàn thành')->count();
@@ -53,7 +94,7 @@ class EmployeeController extends Controller
         $pending = $allTasks->where('status', 'Chờ xử lý')->count();
         $completionRate = $total > 0 ? round(($done / $total) * 100) : 0;
 
-        $tasksTodo = $allTasks->whereIn('status', ['Chờ xử lý', 'Todo'])->values();
+        $tasksTodo = $allTasks->where('status', 'Chờ xử lý')->values();
         $tasksDoing = $allTasks->where('status', 'Đang làm')->values();
         $tasksDone = $allTasks->where('status', 'Hoàn thành')->values();
         $tasksOverdue = $allTasks->where('status', 'Quá hạn')->values();

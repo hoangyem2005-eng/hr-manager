@@ -75,7 +75,7 @@
     <div class="member-board">
         <div class="member-board-head">
             <div>
-                <div class="member-kicker">People operations</div>
+                <div class="member-kicker">Hoạt động nhân sự</div>
                 <h1 class="member-heading">Quản lý thành viên</h1>
                 <p class="member-subtitle">Theo dõi nhân sự, phòng ban, vai trò và trạng thái tài khoản trong một giao diện gọn, dễ quét.</p>
             </div>

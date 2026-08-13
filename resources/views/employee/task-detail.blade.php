@@ -36,10 +36,65 @@
             letter-spacing: -.02em;
             box-shadow: inset 5px 0 0 var(--mf-red);
         }
-        .mf-logo-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-        .mf-logo-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .mf-logo-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .brand-sub { font-size: 10px; color: #BFD8FF; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; font-weight: 700; }
+        .mf-logo-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+        }
+
+        .mf-logo-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .mf-logo-word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
+        }
+        
+        .mf-logo-word .blue { color: var(--mf-blue); }
+        .mf-logo-word .red { color: var(--mf-red); }
+
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i, .mf-logo-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after, .mf-logo-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: var(--mf-red) !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
+        .brand-sub { font-size: 10px; color: #BFD8FF; letter-spacing: .12em; text-transform: uppercase; margin-top: 8px; font-weight: 700; }
 
         .profile-card {
             margin: 16px 14px; background: rgba(255,255,255,.08);
@@ -268,9 +323,8 @@
     {{-- ===== SIDEBAR ===== --}}
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-logo">M</div>
             <div>
-                <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="mf-logo-word"><strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong></div>
                 <div class="brand-sub">EMPLOYEE WORKHUB</div>
             </div>
         </div>
@@ -315,7 +369,7 @@
     <div class="main">
         <div class="topbar">
             <div class="crumb">
-                <a href="{{ route('employee.dashboard') }}">Dashboard</a>
+                <a href="{{ route('employee.dashboard') }}">Tổng quan</a>
                 &rsaquo; Chi tiết công việc
             </div>
         </div>
@@ -339,7 +393,7 @@
             {{-- Task Hero --}}
             <div class="task-hero">
                 <div>
-                    <div class="task-kicker">Task detail · MobiFone WorkHub</div>
+                    <div class="task-kicker">Chi tiết công việc · MobiFone WorkHub</div>
                     <div class="task-title">{{ $task->task_name }}</div>
                     <div class="task-code-badge">
                         <i data-lucide="hash" style="width:12px;height:12px"></i>
@@ -376,7 +430,7 @@
                         <div class="info-val">{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Bạn') }}</div>
                     </div>
                     <div class="info-row">
-                        <div class="info-label"><i data-lucide="calendar" style="width:13px;height:13px"></i>Deadline</div>
+                        <div class="info-label"><i data-lucide="calendar" style="width:13px;height:13px"></i>Hạn chót</div>
                         <div class="info-val">{{ $task->deadline ? $task->deadline->format('d/m/Y') : 'Không có' }}</div>
                     </div>
                     <div class="info-row">

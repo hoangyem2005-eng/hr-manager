@@ -140,7 +140,7 @@
     @if($isProgressPage)
         <section class="progress-hero">
             <div>
-                <div class="hero-kicker red"><i data-lucide="activity" style="width:16px;height:16px"></i> Progress Control</div>
+                <div class="hero-kicker red"><i data-lucide="activity" style="width:16px;height:16px"></i> Theo dõi tiến độ</div>
                 <h2>Tiến độ công việc trong phòng</h2>
                 <p>Theo dõi tốc độ xử lý, trạng thái review, file đính kèm và các việc cần nhắc ngay trong không gian trưởng phòng.</p>
             </div>
@@ -153,7 +153,7 @@
     @else
         <section class="dispatch-hero">
             <div>
-                <div class="hero-kicker"><i data-lucide="send" style="width:16px;height:16px"></i>{{ $isAdminPage ? 'Executive Dispatch' : 'Department Dispatch' }}</div>
+                <div class="hero-kicker"><i data-lucide="send" style="width:16px;height:16px"></i>{{ $isAdminPage ? 'Điều hành công việc cấp công ty' : 'Bàn giao việc trong phòng' }}</div>
                 <h2>{{ $isAdminPage ? 'Giao việc toàn công ty' : 'Bàn giao việc cho đội nhóm' }}</h2>
                 <p>{{ $isAdminPage ? 'Phân công việc theo phòng ban, theo dõi người nhận và giữ mọi đầu việc nằm trong một luồng rõ ràng.' : 'Chọn đúng nhân sự trong phòng, giao việc nhanh và nhìn ngay đội nào đang nhận thêm đầu việc mới.' }}</p>
                 <button type="button" class="primary-action red" style="margin-top:18px" onclick="openCreateNormalTaskModal()">
@@ -318,14 +318,18 @@
                                         <td>{{ $task['progress'] }}%</td>
                                         <td>{{ $task['documents_count'] }}</td>
                                         <td>
-                                            @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
-                                                <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
-                                                    <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
-                                                </button>
-                                            @else
-                                                <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
-                                            @endif
-                                        </td>
+                                             <div style="display:flex; gap:8px; align-items:center; justify-content:flex-start">
+                                                 <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
+                                                 @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
+                                                     <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                         <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                     </button>
+                                                     <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                         <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                     </button>
+                                                 @endif
+                                             </div>
+                                         </td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:34px">Chưa có công việc.</td></tr>
@@ -362,16 +366,20 @@
                                                 </span>
                                                 <span><i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:-2px"></i> {{ $task['documents_count'] }}</span>
                                             </div>
-                                            <div style="margin-top:13px;display:flex;justify-content:space-between;gap:10px;align-items:center">
-                                                <strong style="color:#001F5B;font-size:12px">{{ $task['assignee'] }}</strong>
-                                                @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
-                                                    <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
-                                                        <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
-                                                    </button>
-                                                @else
-                                                    <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
-                                                @endif
-                                            </div>
+                                            <div style="margin-top:13px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+                                                 <strong style="color:#001F5B;font-size:12px">{{ $task['assignee'] }}</strong>
+                                                 <div style="display:flex; gap:6px; align-items:center">
+                                                     <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
+                                                     @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
+                                                         <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                             <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                         </button>
+                                                         <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                             <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                         </button>
+                                                     @endif
+                                                 </div>
+                                             </div>
                                         </article>
                                     @empty
                                         <div class="empty-card">Chưa có công việc.</div>
@@ -465,6 +473,16 @@
 </div>
 
 <script>
+    window.rejectProposal = (taskId) => {
+        if (!confirm('Bạn có chắc chắn muốn từ chối đề xuất công việc này?')) return;
+        
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = "/dashboard/tasks/" + taskId + "/reject-proposal";
+        f.innerHTML = '@csrf';
+        document.body.appendChild(f);
+        f.submit();
+    };
     window.openCreateNormalTaskModal = () => {
         const m = document.getElementById('createTaskModal');
         if (m) {

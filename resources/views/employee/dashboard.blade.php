@@ -53,10 +53,65 @@
             flex-shrink: 0;
             box-shadow: inset 5px 0 0 var(--mf-red);
         }
-        .mf-logo-word { display: inline-flex; align-items: baseline; background: #fff; border-radius: 7px; padding: 4px 9px; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-        .mf-logo-word .blue { color: var(--mf-blue); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .mf-logo-word .red { color: var(--mf-red); font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
-        .brand-sub { color: #BFD8FF; font-size: 10px; margin-top: 6px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+        .mf-logo-word {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: baseline;
+            padding: 6px 13px;
+            border-radius: 7px;
+            background: #fff;
+            line-height: 1;
+            box-shadow: 0 14px 28px rgba(0,0,0,.12);
+        }
+
+        .mf-logo-word::after {
+            content: "";
+            position: absolute;
+            inset: -45% auto -45% -55%;
+            width: 42%;
+            transform: rotate(18deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+            animation: shine 4.4s ease-in-out infinite;
+        }
+
+        .mf-logo-word strong { 
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.05em !important;
+            font-size: 25px; 
+            line-height: 1;
+        }
+        
+        .mf-logo-word .blue { color: var(--mf-blue); }
+        .mf-logo-word .red { color: var(--mf-red); }
+
+        /* Custom styling for the official MobiFone logo (lowercase, red dot on 'i') */
+        .brand-i, .mf-logo-i {
+            position: relative;
+            display: inline-block;
+            color: inherit;
+            font-style: normal;
+            line-height: inherit;
+            margin-right: -0.06em !important;
+        }
+
+        .brand-i::after, .mf-logo-i::after {
+            content: "";
+            position: absolute;
+            bottom: 0.66em;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.15em;
+            height: 0.15em;
+            background-color: var(--mf-red) !important;
+            border-radius: 0;
+            display: block;
+            z-index: 10;
+        }
+
+        @keyframes shine { 0%, 62% { left: -55%; } 78%, 100% { left: 118%; } }
+        .brand-sub { color: #BFD8FF; font-size: 10px; margin-top: 8px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
 
         /* Profile Card */
         .profile-card {
@@ -657,9 +712,8 @@
     {{-- ======= SIDEBAR ======= --}}
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-logo">M</div>
             <div>
-                <div class="mf-logo-word"><span class="blue">Mobi</span><span class="red">Fone</span></div>
+                <div class="mf-logo-word"><strong class="blue">mob<span class="brand-i">ı</span></strong><strong class="red">fone</strong></div>
                 <div class="brand-sub">EMPLOYEE WORKHUB</div>
             </div>
         </div>
@@ -759,7 +813,7 @@
             {{-- Hero --}}
             <div class="hero">
                 <div>
-                    <div class="hero-kicker">Personal Execution · MobiFone WorkHub</div>
+                    <div class="hero-kicker">Thực thi cá nhân · MobiFone WorkHub</div>
                     <div class="hero-title">Việc của tôi, tiến độ của tôi.</div>
                     <div class="hero-sub">Cập nhật trạng thái công việc và theo dõi tiến độ cá nhân của bạn tại đây.</div>
                     <div class="hero-actions">

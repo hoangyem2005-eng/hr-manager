@@ -1,7 +1,7 @@
 @extends('manager.layouts.app')
 
-@section('title', 'Team Dispatch - MobiFone HR')
-@section('page_title', 'Team Dispatch')
+@section('title', 'Điều phối phòng ban - MobiFone HR')
+@section('page_title', 'Điều phối phòng ban')
 
 @section('head_extra')
 <style>
@@ -72,7 +72,7 @@
 <div class="team-shell">
     <section class="team-hero">
         <div>
-            <div class="team-kicker">Department dispatch</div>
+            <div class="team-kicker">Giao việc phòng ban</div>
             <h1 class="team-title">Điều phối phòng {{ $department->TENPHONG ?? $department->name ?? 'của bạn' }}</h1>
             <p class="team-copy">Không còn giao diện chung chung: quản lý chỉ nhìn đội của mình, thêm nhân viên vào đúng phòng, và giao việc trong phạm vi phòng ban.</p>
             <div class="team-actions">
@@ -211,7 +211,7 @@
                     <div style="font-size:11px;color:#64748B;margin-top:6px">Tích nhiều nhân viên để cùng làm chung một công việc.</div>
                 </div>
                 <div class="form-grid">
-                    <div class="field"><label>Deadline</label><input type="date" name="deadline" required></div>
+                    <div class="field"><label>Deadline</label><input type="date" name="deadline" required value="{{ date('Y-m-d') }}"></div>
                     <div class="field"><label>Trạng thái</label><select name="status"><option value="Chờ xử lý">Chờ xử lý</option><option value="Đang làm">Đang làm</option></select></div>
                 </div>
                 <div class="field"><label>Mô tả</label><textarea name="description"></textarea></div>

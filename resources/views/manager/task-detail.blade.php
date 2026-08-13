@@ -48,10 +48,10 @@
 <div class="detail-page">
     <section class="detail-hero">
         <div>
-            <div class="detail-kicker">{{ $fromProgress ? 'Progress detail' : 'Task detail' }}</div>
+            <div class="detail-kicker">{{ $fromProgress ? 'Chi tiết tiến độ' : 'Chi tiết công việc' }}</div>
             <h1 class="detail-title">{{ $task->task_name }}</h1>
             <p class="detail-desc">
-                Mã WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }} - xem người giao, người nhận, deadline, tiến độ và tài liệu trong không gian Trưởng phòng.
+                Mã WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }} - xem người giao, người nhận, hạn chót, tiến độ và tài liệu trong không gian Trưởng phòng.
             </p>
         </div>
         <div class="hero-actions">
@@ -86,7 +86,7 @@
             <div class="info-list">
                 <div class="info-row"><div class="info-label">Người giao</div><div class="info-value">{{ $task->creator->name ?? 'Hệ thống' }}</div></div>
                 <div class="info-row"><div class="info-label">Người cùng làm</div><div class="info-value">{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : ($task->assignee->name ?? 'Chưa gán') }}</div></div>
-                <div class="info-row"><div class="info-label">Deadline</div><div class="info-value">{{ $deadline }}</div></div>
+                <div class="info-row"><div class="info-label">Hạn chót</div><div class="info-value">{{ $deadline }}</div></div>
                 <div class="info-row"><div class="info-label">Trạng thái</div><div class="info-value"><span class="status-pill">{{ $task->status }}</span></div></div>
                 <div class="info-row">
                     <div class="info-label">Tiến độ</div>

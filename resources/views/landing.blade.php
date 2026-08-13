@@ -881,10 +881,9 @@
         <header class="topbar">
             <div class="container topbar-inner">
                 <a href="{{ route('landing') }}" class="brand" aria-label="MobiFone WorkHub">
-                    <div class="brand-mark">M</div>
                     <div>
                         <div class="brand-word" aria-label="MobiFone">
-                            <strong class="blue" aria-hidden="true"><span class="brand-letter">M</span><span class="brand-letter">o</span><span class="brand-letter">b</span><span class="brand-letter">i</span></strong><strong class="red" aria-hidden="true"><span class="brand-letter">F</span><span class="brand-letter">o</span><span class="brand-letter">n</span><span class="brand-letter">e</span></strong>
+                            <strong class="blue" aria-hidden="true"><span class="brand-letter">m</span><span class="brand-letter">o</span><span class="brand-letter">b</span><span class="brand-letter brand-i">ı</span></strong><strong class="red" aria-hidden="true"><span class="brand-letter">f</span><span class="brand-letter">o</span><span class="brand-letter">n</span><span class="brand-letter">e</span></strong>
                         </div>
                         <div class="brand-sub">WORKHUB</div>
                     </div>
