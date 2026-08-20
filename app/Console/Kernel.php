@@ -18,6 +18,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('tasks:send-overdue-emails')
             ->dailyAt('08:00')
             ->withoutOverlapping();
+
+        $schedule->command('tasks:check-acceptance-timeout')
+            ->everyTenMinutes()
+            ->withoutOverlapping();
     }
 
     /**

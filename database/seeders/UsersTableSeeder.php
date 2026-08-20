@@ -3,89 +3,186 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UsersTableSeeder extends Seeder
 {
-
-    /**
-     * Auto generated seed file
-     *
-     * @return void
-     */
-    public function run()
+    public function run(): void
     {
-        
+        DB::table('users')->delete();
 
-        \DB::table('users')->delete();
-        
-        \DB::table('users')->insert(array (
-            0 => 
-            array (
+        $password = Hash::make('12345678');
+
+        DB::table('users')->insert([
+            [
                 'id' => 1,
-                'name' => 'Hoàng Thị Em',
-                'email' => 'em.hoang@mobifone.vn',
-                'email_verified_at' => NULL,
-                'password' => '$2y$10$rwKVwkVhp0HL2j1p7.Dm0uCYQSrWSyyB9S2h9lV/wyCuLUGNEw6SS',
+                'name' => 'Tuan Anh',
+                'email' => 'giamdoc@gmail.com',
+                'email_verified_at' => '2026-07-01 08:05:12',
+                'password' => $password,
                 'role_id' => 1,
-                'department_id' => 1,
-                'remember_token' => NULL,
-                'created_at' => '2026-06-22 05:59:49',
-                'updated_at' => '2026-06-22 05:59:49',
-            ),
-            1 => 
-            array (
+                'department_id' => null,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-01 08:05:12',
+                'updated_at' => '2026-07-18 17:21:44',
+            ],
+            [
                 'id' => 2,
-                'name' => 'Nguyễn Chí Vinh',
-                'email' => 'vinh@gmail.com',
-                'email_verified_at' => NULL,
-                'password' => '$2y$10$2BgiqHMryVco29YQwN/j/Oo6/IPYdsTKvEEnecijsNXX7X/PLV8H2',
+                'name' => 'Hoang Thi Em',
+                'email' => 'em.hoang@mobifone.vn',
+                'email_verified_at' => '2026-07-01 08:19:37',
+                'password' => $password,
                 'role_id' => 2,
                 'department_id' => 1,
-                'remember_token' => NULL,
-                'created_at' => '2026-06-22 06:08:09',
-                'updated_at' => '2026-06-22 06:08:09',
-            ),
-            2 => 
-            array (
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-01 08:19:37',
+                'updated_at' => '2026-07-17 16:40:22',
+            ],
+            [
                 'id' => 3,
-                'name' => 'Nguyễn Chí Vinh',
-                'email' => 'vinhn27045@gmail.com',
-                'email_verified_at' => NULL,
-                'password' => '$2y$10$tpptchZO1aMY14lmMDIRfuw7OEbZx8vd1awddL/MTyrdkxebZk56q',
+                'name' => 'Nguyen Chi Vinh',
+                'email' => 'vinh@mobifone.vn',
+                'email_verified_at' => '2026-07-01 08:34:58',
+                'password' => $password,
                 'role_id' => 2,
-                'department_id' => 1,
-                'remember_token' => NULL,
-                'created_at' => '2026-06-22 06:08:41',
-                'updated_at' => '2026-06-22 06:08:41',
-            ),
-            3 => 
-            array (
+                'department_id' => 2,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-01 08:34:58',
+                'updated_at' => '2026-07-16 15:08:31',
+            ],
+            [
                 'id' => 4,
-                'name' => 'HOÀNG YÊM',
-                'email' => 'hoangyem2005@gmail.com',
-                'email_verified_at' => NULL,
-                'password' => '$2y$10$R2m4gapcFUa5rcmd6YpYfuVwa4gOcs38Gfz3gI/9OQDmupgSgKChS',
-                'role_id' => 3,
-                'department_id' => 1,
-                'remember_token' => NULL,
-                'created_at' => '2026-06-24 13:45:49',
-                'updated_at' => '2026-07-02 13:13:18',
-            ),
-            4 => 
-            array (
+                'name' => 'Tran Phuoc Khang',
+                'email' => 'khang2005@gmail.com',
+                'email_verified_at' => '2026-07-01 09:02:21',
+                'password' => $password,
+                'role_id' => 2,
+                'department_id' => 3,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-01 09:02:21',
+                'updated_at' => '2026-07-19 10:13:45',
+            ],
+            [
                 'id' => 5,
-                'name' => 'Trần Hoàng Yêm',
-                'email' => 'tranthuyaihp2020@gmail.com',
-                'email_verified_at' => NULL,
-                'password' => '$2y$10$4BGaMUxxhh754qU34dgaxuQ8OyfzVIZ58N69CeYmgD3lXhqMo8yfa',
+                'name' => 'Tuyet Kha',
+                'email' => 'kha2005@gmail.com',
+                'email_verified_at' => '2026-07-02 07:52:10',
+                'password' => $password,
                 'role_id' => 3,
                 'department_id' => 1,
-                'remember_token' => NULL,
-                'created_at' => '2026-06-24 15:13:54',
-                'updated_at' => '2026-06-24 15:13:54',
-            ),
-        ));
-        
-        
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-02 07:52:10',
+                'updated_at' => '2026-07-18 13:27:09',
+            ],
+            [
+                'id' => 6,
+                'name' => 'Be Ngoan',
+                'email' => 'ngoan2005@gmail.com',
+                'email_verified_at' => '2026-07-02 08:16:43',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 1,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-02 08:16:43',
+                'updated_at' => '2026-07-18 14:03:58',
+            ],
+            [
+                'id' => 7,
+                'name' => 'Hoang Yem',
+                'email' => 'hoangyem2005@gmail.com',
+                'email_verified_at' => '2026-07-02 08:41:25',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 1,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-02 08:41:25',
+                'updated_at' => '2026-07-17 11:35:16',
+            ],
+            [
+                'id' => 8,
+                'name' => 'Phuc Nguyen',
+                'email' => 'phuc2005@gmail.com',
+                'email_verified_at' => '2026-07-03 09:11:06',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 2,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-03 09:11:06',
+                'updated_at' => '2026-07-18 08:49:12',
+            ],
+            [
+                'id' => 9,
+                'name' => 'Nhan Tran',
+                'email' => 'nhan2005@gmail.com',
+                'email_verified_at' => '2026-07-03 09:38:44',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 2,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-03 09:38:44',
+                'updated_at' => '2026-07-19 09:52:07',
+            ],
+            [
+                'id' => 10,
+                'name' => 'Sen Le',
+                'email' => 'sen2005@gmail.com',
+                'email_verified_at' => '2026-07-03 10:04:33',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 2,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-03 10:04:33',
+                'updated_at' => '2026-07-17 15:44:29',
+            ],
+            [
+                'id' => 11,
+                'name' => 'Kha Tran',
+                'email' => 'kha.tran@mobifone.vn',
+                'email_verified_at' => '2026-07-04 08:23:51',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 3,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-04 08:23:51',
+                'updated_at' => '2026-07-20 10:18:36',
+            ],
+            [
+                'id' => 12,
+                'name' => 'Khoi Pham',
+                'email' => 'khoi@mobifone.vn',
+                'email_verified_at' => '2026-07-04 08:57:19',
+                'password' => $password,
+                'role_id' => 3,
+                'department_id' => 3,
+                'avatar_path' => null,
+                'is_active' => true,
+                'remember_token' => null,
+                'created_at' => '2026-07-04 08:57:19',
+                'updated_at' => '2026-07-19 16:31:08',
+            ],
+        ]);
     }
 }

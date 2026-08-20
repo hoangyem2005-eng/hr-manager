@@ -283,13 +283,34 @@ class DashboardController extends Controller
         $tasks = Task::with('assignee')->orderBy('updated_at', 'desc')->take(5)->get();
 
         // Map thông tin thực tế từ database
-        $mappedTasks = $tasks->map(function ($t) {
+        $projectNames = [
+            'DA-01' => 'Triển khai kế hoạch nhân sự Q3',
+            'DA-02' => 'Nâng cấp hạ tầng viễn thông khu vực trung tâm',
+            'DA-03' => 'Chuẩn hóa vận hành WorkHub nội bộ',
+        ];
+
+        $mappedTasks = $tasks->map(function ($t) use ($projectNames) {
             $user = $t->assignee ?? Auth::user();
             $status = $this->cleanVietnameseText($t->status);
             $userName = $user ? $this->cleanVietnameseText($user->name) : 'Chưa giao';
+            $cleanTaskName = $this->cleanVietnameseText($t->task_name);
+            $projectCode = 'KHAC';
+            $projectStep = null;
+            $displayTaskName = $cleanTaskName;
+
+            if (preg_match('/^\[(DA-\d+)\.(\d+)\]\s*(.+)$/u', $cleanTaskName, $matches)) {
+                $projectCode = $matches[1];
+                $projectStep = (int) $matches[2];
+                $displayTaskName = trim($matches[3]);
+            }
+
             return [
                 'id' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
-                'name' => $this->cleanVietnameseText($t->task_name),
+                'name' => $displayTaskName,
+                'raw_name' => $cleanTaskName,
+                'project_code' => $projectCode,
+                'project_step' => $projectStep,
+                'project_name' => $projectNames[$projectCode] ?? 'Cong viec khac',
                 'assignee' => $userName,
                 'avatar' => $this->getInitials($userName),
                 'priority' => $t->priority ?? 'Trung bình',
@@ -455,13 +476,35 @@ class DashboardController extends Controller
         ];
 
         $mappedTasksList = [];
+        $projectNames = [
+            'DA-01' => 'Triển khai kế hoạch nhân sự Q3',
+            'DA-02' => 'Nâng cấp hạ tầng viễn thông khu vực trung tâm',
+            'DA-03' => 'Chuẩn hóa vận hành WorkHub nội bộ',
+        ];
 
         foreach ($allTasks as $t) {
+            if (in_array($t->status, ['Chờ xử lý', 'Todo', 'chờ xử lý'], true)) {
+                if ($t->checkAndUpdateAcceptanceTimeout()) {
+                    $t->refresh();
+                }
+            }
+
             $assignees = $t->assignees->isNotEmpty()
                 ? $t->assignees
                 : collect([$t->assignee ?? $currentUser])->filter();
             $user = $assignees->first() ?? $currentUser;
+            $lead = $t->assignee ?? $user;
             $status = $normalizeStatus($t->status);
+            $cleanTaskName = $this->cleanVietnameseText($t->task_name);
+            $projectCode = 'KHAC';
+            $projectStep = null;
+            $displayTaskName = $cleanTaskName;
+
+            if (preg_match('/^\[(DA-\d+)\.(\d+)\]\s*(.+)$/u', $cleanTaskName, $matches)) {
+                $projectCode = $matches[1];
+                $projectStep = (int) $matches[2];
+                $displayTaskName = trim($matches[3]);
+            }
             $visibleDocuments = $t->documents
                 ->filter(function ($document) use ($currentUser, $t, $assignees) {
                     if ((int) $document->user_id === (int) $currentUser->id) {
@@ -488,22 +531,40 @@ class DashboardController extends Controller
             $mapped = [
                 'id' => $t->id,
                 'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
-                'name' => $this->cleanVietnameseText($t->task_name),
+                'name' => $displayTaskName,
+                'raw_name' => $cleanTaskName,
+                'project_code' => $projectCode,
+                'project_step' => $projectStep,
+                'project_name' => $projectNames[$projectCode] ?? 'Cong viec khac',
                 'description' => $this->cleanVietnameseText($t->description),
                 'assignee' => $assignees->isNotEmpty() ? $this->cleanVietnameseText($assignees->pluck('name')->join(', ')) : ($user ? $this->cleanVietnameseText($user->name) : 'Chưa giao'),
                 'assignee_id' => $t->assigned_to,
                 'assigned_by' => $t->assigned_by,
+                'lead' => $lead ? $this->cleanVietnameseText($lead->name) : 'Chua co',
+                'lead_id' => $lead?->id,
+                'collaborators' => $assignees
+                    ->reject(fn ($assignee) => $lead && (int) $assignee->id === (int) $lead->id)
+                    ->pluck('name')
+                    ->map(fn ($name) => $this->cleanVietnameseText($name))
+                    ->values()
+                    ->all(),
                 'avatar' => $this->getInitials($user ? $user->name : 'CG'),
                 'assignee_count' => $assignees->count(),
                 'priority' => $t->priority ?? 'Trung bình',
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'deadline_raw' => $t->deadline ? Carbon::parse($t->deadline)->format('Y-m-d') : '',
+                'acceptance_deadline' => $t->acceptance_deadline ? $t->acceptance_deadline->format('H:i d/m/Y') : null,
+                'is_acceptance_expired' => $t->is_acceptance_expired,
+                'acceptance_remaining_minutes' => ($t->acceptance_deadline && in_array($status, ['Chờ xử lý', 'Todo'], true))
+                    ? max(0, (int) Carbon::now()->diffInMinutes($t->acceptance_deadline, false))
+                    : null,
                 'status' => $status,
                 'is_overdue' => ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast()),
                 'progress' => $t->progress ?? ($status === 'Hoàn thành' ? 100 : ($status === 'Đang làm' ? 65 : ($status === 'Đang review' ? 80 : 0))),
                 'is_proposal' => (bool) $t->is_proposal,
                 'proposal_step' => (int) $t->proposal_step,
                 'assignee_ids' => $assignees->pluck('id')->toArray(),
+                'can_edit' => $currentUser->isDirector() || $currentUser->isLeader(),
                 'documents_count' => $visibleDocuments->count(),
                 'documents' => $visibleDocuments
                     ->map(fn ($document) => [
@@ -540,6 +601,28 @@ class DashboardController extends Controller
             }
         }
 
+        $projectGroups = collect($mappedTasksList)
+            ->groupBy('project_code')
+            ->map(function ($tasks, $projectCode) {
+                $orderedTasks = $tasks->sortBy(fn ($task) => $task['project_step'] ?? 99)->values();
+                $total = $orderedTasks->count();
+                $done = $orderedTasks
+                    ->filter(fn ($task) => (int) ($task['progress'] ?? 0) >= 100 || in_array($task['status'] ?? '', ['Hoàn thành', 'Done'], true))
+                    ->count();
+
+                return [
+                    'code' => $projectCode,
+                    'name' => $orderedTasks->first()['project_name'] ?? 'Cong viec khac',
+                    'total' => $total,
+                    'done' => $done,
+                    'progress' => $total > 0 ? round($orderedTasks->avg('progress')) : 0,
+                    'leads' => $orderedTasks->pluck('lead')->filter()->unique()->values()->all(),
+                    'tasks' => $orderedTasks->all(),
+                ];
+            })
+            ->sortBy('code')
+            ->values();
+
         if ($currentUser->isDirector()) {
             $allUsers = User::with(['department', 'role'])->orderBy('role_id')->orderBy('name')->get();
             $roleVariant = 'director';
@@ -556,14 +639,14 @@ class DashboardController extends Controller
         }
 
         if ($currentUser->isDirector()) {
-            return view('admin.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant', 'globalMetrics'));
+            return view('admin.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
         }
 
         if ($currentUser->isLeader()) {
-            return view('manager.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant', 'globalMetrics'));
+            return view('manager.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
         }
 
-        return view('employee.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'allUsers', 'roleVariant', 'globalMetrics'));
+        return view('employee.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
     }
 
     public function saveTask(Request $request)

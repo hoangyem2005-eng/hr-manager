@@ -84,6 +84,11 @@ class EmployeeController extends Controller
         };
 
         foreach ($allTasks as $task) {
+            if (in_array($task->status, ['Chờ xử lý', 'Todo', 'chờ xử lý'], true)) {
+                if ($task->checkAndUpdateAcceptanceTimeout()) {
+                    $task->refresh();
+                }
+            }
             $task->status = $normalizeStatus($task->status);
         }
 
@@ -108,6 +113,8 @@ class EmployeeController extends Controller
             'progress' => $task->progress ?? 0,
             'deadline' => $task->deadline ? Carbon::parse($task->deadline)->format('d/m/Y') : '—',
             'deadline_raw' => $task->deadline,
+            'acceptance_deadline' => $task->acceptance_deadline ? $task->acceptance_deadline->format('H:i d/m/Y') : null,
+            'is_acceptance_expired' => $task->is_acceptance_expired,
             'is_overdue' => $task->status === 'Quá hạn',
             'days_left' => $task->deadline
                 ? (int) Carbon::now()->diffInDays(Carbon::parse($task->deadline), false)

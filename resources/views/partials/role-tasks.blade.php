@@ -59,6 +59,28 @@
     .metric-card strong { display:block; margin-top:8px; color:#003DA5; font-size:30px; line-height:1; font-weight:900; }
     .metric-card.alert { border-color:#FFB7C3; background:#FFF6F8; }
     .metric-card.alert strong { color:#E4002B; }
+    .project-map { display:grid; gap:14px; }
+    .project-map-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #E5EDF8; }
+    .project-map-title { display:flex; align-items:center; gap:10px; color:#001F5B; font-size:18px; font-weight:900; }
+    .project-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; padding:16px; }
+    .project-card { overflow:hidden; border:1px solid #D4E0F7; border-radius:8px; background:linear-gradient(180deg,#fff 0%,#F8FBFF 100%); box-shadow:0 14px 28px rgba(0,31,91,.06); }
+    .project-card-top { padding:15px; border-bottom:1px solid #E7EEF9; background:linear-gradient(135deg,#001F5B,#003DA5); color:#fff; }
+    .project-code { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:5px 9px; background:rgba(255,255,255,.14); font-size:11px; font-weight:900; letter-spacing:.08em; }
+    .project-name { margin-top:10px; font-size:16px; line-height:1.35; font-weight:900; }
+    .project-summary { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; color:#D8E7FF; font-size:11px; font-weight:800; }
+    .project-progress { margin-top:12px; height:7px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.22); }
+    .project-progress span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#E4002B,#fff); }
+    .subtask-list { display:grid; align-content:start; gap:10px; padding:12px; max-height:290px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#B9CDF5 transparent; }
+    .subtask-list::-webkit-scrollbar { width:8px; }
+    .subtask-list::-webkit-scrollbar-thumb { background:#B9CDF5; border-radius:999px; }
+    .subtask-item { display:grid; gap:9px; padding:12px; border:1px solid #E2EAF8; border-radius:8px; background:#fff; }
+    .subtask-main { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .subtask-title { color:#001F5B; font-size:13px; font-weight:900; line-height:1.35; }
+    .subtask-step { flex:0 0 auto; border-radius:999px; padding:4px 8px; background:#FFF1F4; color:#E4002B; font-size:10px; font-weight:900; }
+    .people-line { display:grid; gap:5px; color:#52637A; font-size:11px; line-height:1.45; }
+    .people-line b { color:#003DA5; }
+    .task-people { margin-top:10px; display:grid; gap:5px; padding:9px; border-radius:8px; background:#F8FBFF; color:#52637A; font-size:11px; line-height:1.45; }
+    .task-people b { color:#003DA5; }
     .action-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     .left-tools, .filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .segmented { display:inline-flex; overflow:hidden; border:1px solid #D4E0F7; border-radius:8px; background:#fff; }
@@ -78,29 +100,32 @@
     .step-number { width:32px; height:32px; display:grid; place-items:center; border-radius:8px; background:#003DA5; color:#fff; font-weight:900; }
     .step-title { font-weight:900; }
     .step-copy { margin-top:3px; color:#64748B; font-size:12px; line-height:1.45; }
-    .board-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
-    .work-column { min-height:430px; overflow:hidden; border:1px solid #BFD1F5; border-top:4px solid #003DA5; border-radius:8px; background:#F8FAFF; }
+    .board-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; align-items:start; }
+    .work-column { height:min(560px,calc(100vh - 300px)); min-height:430px; overflow:hidden; display:flex; flex-direction:column; border:1px solid #BFD1F5; border-top:4px solid #003DA5; border-radius:8px; background:#F8FAFF; }
     .work-column:nth-child(1) { border-top-color:#64748B; }
     .work-column:nth-child(2) { border-top-color:#E4002B; }
     .work-column:nth-child(3) { border-top-color:#2563EB; }
     .work-column:nth-child(4) { border-top-color:#001F5B; }
     .column-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #E4ECFA; background:#fff; color:#001F5B; font-weight:900; }
     .count-badge { min-width:27px; height:24px; display:grid; place-items:center; border-radius:999px; background:#003DA5; color:#fff; font-size:12px; }
-    .column-body { display:grid; gap:13px; padding:14px; }
+    .column-body { display:grid; align-content:start; gap:10px; padding:12px; overflow-y:auto; min-height:0; scrollbar-width:thin; scrollbar-color:#B9CDF5 transparent; }
+    .column-body::-webkit-scrollbar { width:8px; }
+    .column-body::-webkit-scrollbar-thumb { background:#B9CDF5; border-radius:999px; }
     .empty-card { min-height:110px; display:grid; place-items:center; border:1px dashed #BFD1F5; border-radius:8px; color:#94A3B8; background:rgba(255,255,255,.62); font-weight:700; }
-    .task-card { border:1px solid #D4E0F7; border-radius:8px; padding:15px; background:#fff; box-shadow:0 14px 30px rgba(0,31,91,.08); }
+    .task-card { border:1px solid #D4E0F7; border-radius:8px; padding:12px; background:#fff; box-shadow:0 10px 22px rgba(0,31,91,.06); }
     .task-top { display:flex; justify-content:space-between; gap:10px; align-items:center; }
     .priority-chip { border-radius:999px; padding:5px 10px; background:#FFF3CD; color:#B45309; font-size:11px; font-weight:900; }
     .task-code { color:#94A3B8; font-size:10px; font-weight:900; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
-    .task-name { margin-top:12px; color:#001F5B; font-size:15px; font-weight:900; line-height:1.35; }
-    .task-desc { margin-top:6px; color:#64748B; font-size:12px; line-height:1.45; }
-    .progress-meta { margin-top:13px; display:flex; justify-content:space-between; color:#64748B; font-size:11px; font-weight:900; }
+    .task-name { margin-top:9px; color:#001F5B; font-size:14px; font-weight:900; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .task-desc { margin-top:5px; color:#64748B; font-size:11px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .progress-meta { margin-top:10px; display:flex; justify-content:space-between; color:#64748B; font-size:11px; font-weight:900; }
     .progress-track { margin-top:7px; height:7px; overflow:hidden; border-radius:999px; background:#E9EEF8; }
     .progress-fill { height:100%; border-radius:inherit; background:linear-gradient(90deg,#E4002B,#003DA5); }
-    .task-foot { margin-top:13px; display:flex; justify-content:space-between; gap:10px; align-items:center; color:#64748B; font-size:12px; font-weight:800; }
+    .task-foot { margin-top:10px; display:flex; justify-content:space-between; gap:10px; align-items:center; color:#64748B; font-size:11px; font-weight:800; }
     .detail-link { display:inline-flex; align-items:center; gap:7px; border:1px solid #B9CDF5; border-radius:8px; padding:9px 12px; color:#003DA5; background:#fff; font-size:12px; font-weight:900; text-decoration:none; }
     .progress-shell { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr); gap:16px; align-items:start; }
-    .progress-table-box { overflow:hidden; }
+    .progress-table-box { overflow:hidden; max-height:min(640px,calc(100vh - 260px)); display:flex; flex-direction:column; }
+    .progress-table-box > div:last-child { overflow:auto; min-height:0; scrollbar-width:thin; scrollbar-color:#B9CDF5 transparent; }
     .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #E5EDF8; }
     .section-title { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:900; }
     .role-table { width:100%; border-collapse:collapse; }
@@ -114,7 +139,9 @@
     .focus-line { display:flex; justify-content:space-between; gap:12px; align-items:center; }
     .focus-name { color:#001F5B; font-weight:900; }
     .focus-meta { margin-top:6px; color:#64748B; font-size:12px; }
-    .list-box { overflow:hidden; border:1px solid #D4E0F7; border-radius:8px; background:#fff; }
+    .list-box { overflow:auto; max-height:min(640px,calc(100vh - 260px)); border:1px solid #D4E0F7; border-radius:8px; background:#fff; scrollbar-width:thin; scrollbar-color:#B9CDF5 transparent; }
+    .list-box::-webkit-scrollbar, .progress-table-box > div:last-child::-webkit-scrollbar { width:8px; height:8px; }
+    .list-box::-webkit-scrollbar-thumb, .progress-table-box > div:last-child::-webkit-scrollbar-thumb { background:#B9CDF5; border-radius:999px; }
     .modal-backdrop { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(0,20,60,.46); overflow:hidden; }
     .modal-backdrop.open { display:flex; }
     .task-modal { width:min(680px,100%); max-height:calc(100vh - 36px); display:flex; flex-direction:column; overflow:hidden; border-radius:10px; background:#fff; box-shadow:0 26px 70px rgba(0,31,91,.28); }
@@ -132,8 +159,8 @@
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .ghost-btn { border:1px solid #D4E0F7; border-radius:8px; padding:11px 16px; background:#fff; color:#334155; font-weight:900; cursor:pointer; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; padding:20px; border-top:1px solid #E5EAF5; flex-shrink:0; }
-    @media (max-width:1200px) { .dispatch-hero, .progress-hero, .dispatch-layout, .progress-shell { grid-template-columns:1fr; } .board-grid, .metric-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:760px) { .board-grid, .metric-strip, .form-grid { grid-template-columns:1fr; } .role-table { min-width:760px; } .dispatch-hero, .progress-hero { padding:20px; } .dispatch-hero h2, .progress-hero h2 { font-size:30px; } }
+    @media (max-width:1200px) { .dispatch-hero, .progress-hero, .dispatch-layout, .progress-shell { grid-template-columns:1fr; } .board-grid, .metric-strip, .project-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:760px) { .board-grid, .metric-strip, .project-grid, .form-grid { grid-template-columns:1fr; } .role-table { min-width:760px; } .dispatch-hero, .progress-hero { padding:20px; } .dispatch-hero h2, .progress-hero h2 { font-size:30px; } }
 </style>
 
 <div class="role-page {{ $isProgressPage ? 'progress-page' : 'dispatch-page' }}">
@@ -187,7 +214,61 @@
         <div class="metric-card alert"><span>Quá hạn</span><strong>{{ $overdueTasks }}</strong></div>
     </section>
 
+    @if(($projectGroups ?? collect())->isNotEmpty())
+        <section class="mobifone-panel project-map">
+            <div class="project-map-head">
+                <div class="project-map-title"><i data-lucide="workflow" style="width:22px;height:22px"></i>Cấu trúc công việc lớn</div>
+                <span class="mini-count">{{ $projectGroups->count() }} nhóm</span>
+            </div>
+            <div class="project-grid">
+                @foreach($projectGroups as $project)
+                    <article class="project-card">
+                        <div class="project-card-top">
+                            <span class="project-code"><i data-lucide="folder-kanban" style="width:14px;height:14px"></i>{{ $project['code'] }}</span>
+                            <div class="project-name">{{ $project['name'] }}</div>
+                            <div class="project-summary">
+                                <span>{{ $project['total'] }} việc nhỏ</span>
+                                <span>{{ $project['done'] }} hoàn thành</span>
+                                <span>{{ $project['progress'] }}%</span>
+                            </div>
+                            <div class="project-progress"><span style="width:{{ $project['progress'] }}%"></span></div>
+                        </div>
+                        <div class="subtask-list">
+                            @foreach($project['tasks'] as $task)
+                                <div class="subtask-item">
+                                    <div class="subtask-main">
+                                        <div class="subtask-title">{{ $task['name'] }}</div>
+                                        <span class="subtask-step">Bước {{ $task['project_step'] ?? $loop->iteration }}</span>
+                                    </div>
+                                    <div class="people-line">
+                                        <span><b>Chủ trì:</b> {{ $task['lead'] }}</span>
+                                        <span><b>Cùng nhận:</b> {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
+                                        <span><b>Hạn:</b> {{ $task['deadline'] }} - <b>{{ $task['status'] }}</b></span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     <div class="action-row">
+        <div class="left-tools">
+            <div class="segmented">
+                <a href="{{ route($taskRoute, $routeParams(['view' => 'kanban', 'filter' => $filter])) }}" class="{{ $viewType === 'kanban' ? 'active' : '' }}"><i data-lucide="columns-3" style="width:16px;height:16px"></i>Kanban</a>
+                <a href="{{ route($taskRoute, $routeParams(['view' => 'list', 'filter' => $filter])) }}" class="{{ $viewType === 'list' ? 'active' : '' }}"><i data-lucide="list" style="width:16px;height:16px"></i>Danh sách</a>
+            </div>
+            <div class="filters">
+                @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $item)
+                    <a href="{{ route($taskRoute, $routeParams(['view' => $viewType, 'filter' => $item])) }}" class="filter-pill {{ $filter === $item ? 'active' : '' }}">{{ $item }}</a>
+                @endforeach
+            </div>
+        </div>
+        @if($isProgressPage)
+            <a class="primary-action" href="{{ route($taskRoute) }}"><i data-lucide="send" style="width:18px;height:18px"></i>Sang giao việc</a>
+        @else
         <div class="left-tools">
             <div class="segmented">
                 <a href="{{ route($taskRoute, $routeParams(['view' => 'kanban', 'filter' => $filter])) }}" class="{{ $viewType === 'kanban' ? 'active' : '' }}"><i data-lucide="columns-3" style="width:16px;height:16px"></i>Kanban</a>
@@ -232,22 +313,35 @@
                                 <th>Hạn</th>
                                 <th>Tiến độ</th>
                                 <th>File</th>
-                                <th></th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($mappedTasksList as $task)
                                 <tr>
                                     <td class="task-code">{{ $task['code'] }}</td>
-                                    <td><strong style="color:#001F5B">{{ $task['name'] }}</strong><br><span style="color:#64748B">{{ $task['status'] }}</span></td>
-                                    <td>{{ $task['assignee'] }}</td>
-                                    <td>{{ $task['deadline'] }}</td>
+                                    <td>
+                                        <strong style="color:#001F5B">{{ $task['name'] }}</strong><br>
+                                        <span style="color:#64748B">{{ $task['status'] }}</span>
+                                    </td>
+                                    <td>
+                                        <strong style="color:#003DA5">{{ $task['lead'] }}</strong>
+                                        <br><span style="color:#64748B;font-size:12px">Cùng nhận: {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
+                                    </td>
+                                    <td>
+                                        {{ $task['deadline'] }}
+                                        @if(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
+                                            <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:800; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">HẠN NHẬN: {{ $task['acceptance_deadline'] }}</span>
+                                        @endif
+                                    </td>
                                     <td class="row-progress">
-                                        <div class="progress-percent"><span>{{ $task['progress'] }}%</span><span>{{ $task['status'] }}</span></div>
+                                        <div class="progress-percent"><span>{{ $task['progress'] }}%</span></div>
                                         <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%"></div></div>
                                     </td>
                                     <td>{{ $task['documents_count'] }}</td>
-                                    <td><a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a></td>
+                                    <td>
+                                        <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:34px">Chưa có công việc để theo dõi.</td></tr>
@@ -300,7 +394,7 @@
                                     <th>Hạn</th>
                                     <th>Tiến độ</th>
                                     <th>File</th>
-                                    <th></th>
+                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -308,11 +402,16 @@
                                     <tr>
                                         <td class="task-code">{{ $task['code'] }}</td>
                                         <td><strong style="color:#001F5B">{{ $task['name'] }}</strong><br><span style="color:#64748B">{{ $task['description'] ?: 'Chưa có mô tả.' }}</span></td>
-                                        <td>{{ $task['assignee'] }}</td>
+                                        <td>
+                                            <strong style="color:#003DA5">{{ $task['lead'] }}</strong>
+                                            <br><span style="color:#64748B;font-size:12px">Cùng nhận: {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
+                                        </td>
                                         <td style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : '' }}">
                                              {{ $task['deadline'] }}
                                              @if($task['is_overdue'])
                                                  <br><span style="font-size:10px; padding:2px 6px; background:#FFEBEB; color:#E4002B; border-radius:4px; font-weight:900; border:1px solid #FFCDCD; display:inline-block; margin-top:4px;">QUÁ HẠN</span>
+                                             @elseif(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
+                                                 <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:800; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">HẠN NHẬN: {{ $task['acceptance_deadline'] }}</span>
                                              @endif
                                          </td>
                                         <td>{{ $task['progress'] }}%</td>
@@ -320,6 +419,11 @@
                                         <td>
                                              <div style="display:flex; gap:8px; align-items:center; justify-content:flex-start">
                                                  <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
+                                                 @if(Auth::user()->isDirector() || Auth::user()->isLeader())
+                                                     <button type="button" class="btn primary" style="background:#003DA5;border-color:#003DA5;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer;color:#fff;border-radius:4px" onclick="openEditTaskModal({{ json_encode($task) }})">
+                                                         <i data-lucide="edit-3" style="width:14px;height:14px"></i>Sửa
+                                                     </button>
+                                                 @endif
                                                  @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
                                                      <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
                                                          <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
@@ -352,11 +456,17 @@
                                                 <span class="priority-chip">{{ $task['priority'] }}</span>
                                                 @if($task['is_overdue'])
                                                     <span class="priority-chip" style="background:#FEF2F2; color:#B91C1C; margin-left:6px; border:1px solid #FCA5A5">Quá hạn</span>
+                                                @elseif(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
+                                                    <span class="priority-chip" style="background:#FEF3C7; color:#D97706; margin-left:6px; border:1px solid #FCD34D" title="Chờ nhận trong 2h (hoặc 4h sau 17h)">Hạn nhận: {{ $task['acceptance_deadline'] }}</span>
                                                 @endif
                                                 <span class="task-code">{{ $task['code'] }}</span>
                                             </div>
                                             <div class="task-name">{{ $task['name'] }}</div>
                                             <div class="task-desc">{{ $task['description'] ?: 'Chưa có mô tả.' }}</div>
+                                            <div class="task-people">
+                                                <span><b>Chủ trì:</b> {{ $task['lead'] }}</span>
+                                                <span><b>Cùng nhận:</b> {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
+                                            </div>
                                             <div class="progress-meta"><span>Tiến độ</span><span>{{ $task['progress'] }}%</span></div>
                                             <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%"></div></div>
                                             <div class="task-foot">
@@ -367,9 +477,14 @@
                                                 <span><i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:-2px"></i> {{ $task['documents_count'] }}</span>
                                             </div>
                                             <div style="margin-top:13px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-                                                 <strong style="color:#001F5B;font-size:12px">{{ $task['assignee'] }}</strong>
+                                                 <strong style="color:#001F5B;font-size:12px">{{ $task['assignee_count'] }} người</strong>
                                                  <div style="display:flex; gap:6px; align-items:center">
                                                      <a class="detail-link" href="{{ route($detailRoute, $detailParams($task['id'])) }}"><i data-lucide="eye" style="width:15px;height:15px"></i>Chi tiết</a>
+                                                     @if(Auth::user()->isDirector() || Auth::user()->isLeader())
+                                                         <button type="button" class="btn primary" style="background:#003DA5;border-color:#003DA5;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer;color:#fff;border-radius:4px" onclick="openEditTaskModal({{ json_encode($task) }})">
+                                                             <i data-lucide="edit-3" style="width:14px;height:14px"></i>Sửa
+                                                         </button>
+                                                     @endif
                                                      @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
                                                          <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
                                                              <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
