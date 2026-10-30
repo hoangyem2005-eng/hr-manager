@@ -97,7 +97,7 @@
                 <select name="dept" onchange="this.form.submit()" class="member-select">
                     <option value="">Tất cả phòng ban</option>
                     @foreach($departments as $d)
-                        <option value="{{ $d->TENPHONG }}" {{ $deptFilter == $d->TENPHONG ? 'selected' : '' }}>{{ $d->TENPHONG }}</option>
+                        <option value="{{ $d->TENPHONG }}" {{ ($deptFilter == $d->TENPHONG || $deptFilter == $d->id) ? 'selected' : '' }}>{{ $d->TENPHONG }}</option>
                     @endforeach
                 </select>
 

@@ -26,7 +26,7 @@ class ProfileController extends Controller
             'chá» xá»­lÃ½' => 'chờ xử lý',
             'đang lÃ m' => 'đang làm',
             'chờ xá»­ lÃ½' => 'chờ xử lý',
-            'Ä‘ang review' => 'đang review',
+            'Ä‘ang review' => 'chờ đánh giá',
             'quÃ¡ háº¡n' => 'quá hạn',
         ];
 
@@ -43,8 +43,8 @@ class ProfileController extends Controller
             if (in_array($statusLower, ['todo', 'chờ xử lý'], true)) {
                 return 'Chờ xử lý';
             }
-            if (in_array($statusLower, ['đang review', 'review'], true)) {
-                return 'Đang review';
+            if (in_array($statusLower, ['đang review', 'review', 'chờ đánh giá'], true)) {
+                return 'Chờ đánh giá';
             }
             if ($statusLower === 'quá hạn') {
                 return 'Quá hạn';
@@ -59,7 +59,7 @@ class ProfileController extends Controller
         $createdTasks = Task::where('assigned_by', $user->id)->count();
         $totalAssigned = $assignedTasks->count();
         $completed = $assignedTasks->where('status', 'Hoàn thành')->count();
-        $inProgress = $assignedTasks->whereIn('status', ['Đang làm', 'Đang review'])->count();
+        $inProgress = $assignedTasks->whereIn('status', ['Đang làm', 'Chờ đánh giá'])->count();
         $overdue = $assignedTasks
             ->filter(fn (Task $task) => $task->deadline && $task->deadline->isPast() && $task->status !== 'Hoàn thành')
             ->count();

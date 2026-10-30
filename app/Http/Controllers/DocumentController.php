@@ -315,7 +315,7 @@ class DocumentController extends Controller
         }
 
         if ($user->isDirector()) {
-            return true;
+            return $doc->review_status === Document::STATUS_DIRECTOR_VISIBLE;
         }
 
         if ($user->isLeader()) {

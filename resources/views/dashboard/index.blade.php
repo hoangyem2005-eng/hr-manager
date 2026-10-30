@@ -117,8 +117,8 @@
                                             <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Hoàn thành</span>
                                         @elseif($task['status'] == 'Đang làm')
                                             <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Đang làm</span>
-                                        @elseif($task['status'] == 'Đang review')
-                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Đang review</span>
+                                        @elseif($task['status'] == 'Chờ đánh giá')
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Chờ đánh giá</span>
                                         @elseif($task['status'] == 'Quá hạn')
                                             <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Quá hạn</span>
                                         @else

@@ -400,11 +400,52 @@
                         WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }}
                     </div>
                 </div>
-                <a href="{{ route('employee.dashboard') }}" class="back-btn">
-                    <i data-lucide="arrow-left" style="width:14px;height:14px"></i>
-                    Quay lại
-                </a>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    @if(in_array($task->status, ['Chờ xử lý', 'Todo'], true))
+                        <form method="POST" action="{{ route('employee.task.accept', $task->id) }}" onsubmit="return confirm('Bạn có chắc chắn muốn nhận công việc này?')">
+                            @csrf
+                            <button type="submit" style="height:38px;padding:0 16px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                                <i data-lucide="check" style="width:15px;height:15px"></i> Nhận việc
+                            </button>
+                        </form>
+                        <button type="button" onclick="openDeclineDetailModal()" style="height:38px;padding:0 14px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                            <i data-lucide="x" style="width:15px;height:15px"></i> Không nhận
+                        </button>
+                    @endif
+                    <a href="{{ route('employee.dashboard') }}" class="back-btn">
+                        <i data-lucide="arrow-left" style="width:14px;height:14px"></i>
+                        Quay lại
+                    </a>
+                </div>
             </div>
+
+            {{-- Thông báo chờ tiếp nhận việc --}}
+            @if(in_array($task->status, ['Chờ xử lý', 'Todo'], true))
+                <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+                    <div>
+                        <div style="font-weight:900;color:#1E40AF;font-size:14px;display:flex;align-items:center;gap:6px">
+                            <i data-lucide="clock" style="width:18px;height:18px"></i> Công việc đang chờ bạn tiếp nhận
+                        </div>
+                        <div style="font-size:12px;color:#3B82F6;margin-top:2px">
+                            Vui lòng xác nhận nhận việc để bắt đầu thực hiện hoặc phản hồi không nhận.
+                            @if($task->acceptance_deadline)
+                                <strong>(Hạn nhận: {{ $task->acceptance_deadline->format('H:i d/m/Y') }})</strong>
+                            @endif
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <form method="POST" action="{{ route('employee.task.accept', $task->id) }}" onsubmit="return confirm('Bạn có chắc chắn muốn nhận công việc này?')">
+                            @csrf
+                            <button type="submit" style="height:36px;padding:0 16px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                                <i data-lucide="check" style="width:15px;height:15px"></i> Nhận việc
+                            </button>
+                        </form>
+                        <button type="button" onclick="openDeclineDetailModal()" style="height:36px;padding:0 14px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                            <i data-lucide="x" style="width:15px;height:15px"></i> Không nhận
+                        </button>
+                    </div>
+                </div>
+            @endif
 
             {{-- Detail Grid --}}
             <div class="detail-grid">
@@ -440,7 +481,7 @@
                                 $s  = $task->status ?? '';
                                 $bc = str_contains($s, 'Hoàn') ? 'badge-done'
                                     : (str_contains($s, 'Quá') ? 'badge-overdue'
-                                    : (str_contains($s, 'review') ? 'badge-review'
+                                    : (str_contains($s, 'review') || str_contains($s, 'đánh giá') ? 'badge-review'
                                     : (str_contains($s, 'Đang') ? 'badge-doing' : 'badge-pending')));
                             @endphp
                             <span class="status-badge {{ $bc }}">{{ $s ?: 'Chờ xử lý' }}</span>
@@ -456,6 +497,83 @@
                             <div class="prog-fill {{ $prog >= 100 ? 'green' : 'blue' }}" style="width:{{ $prog }}%"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {{-- ===== PANEL NỘP CÔNG VIỆC CHO CẤP TRÊN DUYỆT (KÈM MÔ TẢ) ===== --}}
+            <div class="panel" style="border: 2px solid #2563EB25; background: linear-gradient(135deg, #F8FAFF 0%, #EFF6FF 100%);">
+                <div class="panel-head" style="background: linear-gradient(90deg, #001F5B 0%, #003DA5 100%); color: #fff; border-radius: 12px 12px 0 0;">
+                    <div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:#fff">
+                        <i data-lucide="send" style="color:#93C5FD"></i>
+                        Nộp công việc cho cấp trên duyệt
+                    </div>
+                </div>
+
+                <div style="padding: 22px;">
+                    @if($task->status === 'Chờ đánh giá')
+                        <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:16px; margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:8px;color:#1D4ED8;font-weight:800;font-size:14px">
+                                <i data-lucide="check-circle-2" style="width:18px;height:18px"></i>
+                                Công việc đã được nộp và đang chờ cấp trên duyệt / đánh giá
+                            </div>
+                            <p style="font-size:12px;color:#3B82F6;margin-top:4px">
+                                Cấp trên (Trưởng phòng/Giám đốc) sẽ xem đoạn mô tả và file đính kèm để chấm điểm và phê duyệt hoàn thành.
+                            </p>
+                        </div>
+                    @elseif($task->status === 'Hoàn thành')
+                        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:16px; margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:8px;color:#15803D;font-weight:800;font-size:14px">
+                                <i data-lucide="award" style="width:18px;height:18px"></i>
+                                Công việc đã được cấp trên duyệt hoàn thành
+                                @if($task->evaluation_score)
+                                    ({{ $task->evaluation_score }}★)
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($task->employee_note)
+                        <div style="margin-bottom: 18px;">
+                            <label style="display:block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#001F5B;margin-bottom:8px">
+                                📝 Đoạn mô tả dành cho cấp trên khi nộp duyệt:
+                            </label>
+                            <div style="background:#fff;border:1px solid #D4E0F7;border-radius:10px;padding:14px 16px;color:#1E293B;font-size:14px;line-height:1.7;white-space:pre-line">
+                                {{ $task->employee_note }}
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($task->status !== 'Hoàn thành')
+                        <form method="POST" action="{{ route('employee.task.submit-review', $task->id) }}" id="submit-review-form">
+                            @csrf
+                            <div style="margin-bottom: 14px;">
+                                <label for="employee_note" style="display:block;font-size:13px;font-weight:800;color:#001F5B;margin-bottom:8px">
+                                    {{ $task->employee_note ? 'Cập nhật đoạn mô tả / báo cáo nộp cấp trên:' : 'Nhập đoạn mô tả khi nộp công việc cho cấp trên duyệt *:' }}
+                                </label>
+                                <textarea
+                                    id="employee_note"
+                                    name="employee_note"
+                                    rows="4"
+                                    style="width:100%;border:1px solid #CBD5E1;border-radius:10px;padding:12px 14px;font-family:inherit;font-size:13px;outline:none;resize:vertical;box-sizing:border-box"
+                                    placeholder="Mô tả tóm tắt kết quả hoàn thành công việc, đường dẫn sản phẩm, ghi chú hoặc đề xuất dành cho cấp trên duyệt..."
+                                    maxlength="2000"
+                                    required>{{ old('employee_note', $task->employee_note) }}</textarea>
+                                <span style="font-size:11px;color:#64748B;margin-top:4px;display:block">Tối đa 2000 ký tự. Đoạn mô tả này sẽ hiển thị trực tiếp cho cấp trên khi chấm điểm và duyệt hoàn thành.</span>
+                            </div>
+
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px">
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <label for="review_progress" style="font-size:12px;font-weight:700;color:#475569">Tiến độ hoàn thành (%):</label>
+                                    <input type="number" id="review_progress" name="progress" min="80" max="100" value="{{ $task->progress < 80 ? 100 : $task->progress }}" style="width:75px;height:36px;border:1px solid #CBD5E1;border-radius:8px;padding:0 10px;font-weight:800;color:#001F5B;outline:none;text-align:center">
+                                </div>
+
+                                <button type="submit" class="upload-btn" style="background:linear-gradient(135deg,#001F5B 0%,#003DA5 100%);height:42px;padding:0 22px;border-radius:9px" onclick="return confirm('Bạn có chắc chắn muốn nộp công việc này cho cấp trên duyệt?')">
+                                    <i data-lucide="send" style="width:16px;height:16px"></i>
+                                    {{ $task->status === 'Chờ đánh giá' ? 'Cập nhật mô tả nộp duyệt' : 'Nộp công việc cho cấp trên duyệt' }}
+                                </button>
+                            </div>
+                        </form>
+                    @endif
                 </div>
             </div>
 
@@ -643,6 +761,38 @@ dropZone.addEventListener('drop', e => {
     dropZone.classList.remove('drag-over');
     addFiles(Array.from(e.dataTransfer.files));
 });
+
+function openDeclineDetailModal() {
+    const modal = document.getElementById('decline-detail-modal');
+    if (modal) modal.style.display = 'grid';
+}
+
+function closeDeclineDetailModal() {
+    const modal = document.getElementById('decline-detail-modal');
+    if (modal) modal.style.display = 'none';
+}
 </script>
+
+{{-- Modal từ chối nhận việc --}}
+<div id="decline-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,31,91,.45);backdrop-filter:blur(4px);z-index:999;place-items:center;padding:20px">
+    <div style="width:min(480px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 48px rgba(0,0,0,.2);overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #EFF4FD;background:#F8FAFF">
+            <h3 style="font-size:15px;font-weight:900;color:#001F5B;margin:0">Từ chối nhận công việc</h3>
+            <button type="button" onclick="closeDeclineDetailModal()" style="background:none;border:none;cursor:pointer;color:#64748B"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+        </div>
+        <form method="POST" action="{{ route('employee.task.decline', $task->id) }}">
+            @csrf
+            <div style="padding:20px">
+                <p style="font-weight:800;color:#001F5B;margin-bottom:12px;font-size:14px">WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }}: {{ $task->task_name }}</p>
+                <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#475569">Lý do từ chối (tùy chọn / gửi cho cấp trên):</label>
+                <textarea name="reason" rows="3" style="width:100%;border:1px solid #D4E0F7;border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" placeholder="Nhập lý do bạn không thể nhận công việc này..."></textarea>
+            </div>
+            <div style="padding:14px 20px;border-top:1px solid #EFF4FD;background:#F8FAFF;display:flex;justify-content:flex-end;gap:10px">
+                <button type="button" onclick="closeDeclineDetailModal()" style="padding:8px 16px;border-radius:7px;background:#fff;border:1px solid #D4E0F7;color:#64748B;font-weight:700;font-size:13px;cursor:pointer">Hủy bỏ</button>
+                <button type="submit" style="padding:8px 16px;border-radius:7px;background:#DC2626;border:none;color:#fff;font-weight:800;font-size:13px;cursor:pointer">Xác nhận không nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>

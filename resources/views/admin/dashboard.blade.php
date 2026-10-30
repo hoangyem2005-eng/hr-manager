@@ -103,7 +103,20 @@
                             <td style="font-weight:800;color:#111827">{{ $t['name'] }}</td>
                             <td>{{ $t['assignee'] }}</td>
                             <td>{{ $t['dept'] }}</td>
-                            <td style="{{ $t['is_overdue'] ? 'color:#B91C1C;font-weight:900' : '' }}">{{ $t['deadline'] }}</td>
+                            <td style="{{ $t['is_overdue'] ? 'color:#B91C1C;font-weight:900' : (!empty($t['is_due_soon']) ? 'color:#D97706;font-weight:900' : '') }}">
+                                {{ $t['deadline'] }}
+                                @if($t['is_overdue'])
+                                    <br><span style="font-size:10px;padding:2px 6px;background:#FEE2E2;color:#B91C1C;border-radius:4px;font-weight:900;border:1px solid #FCA5A5;display:inline-block;margin-top:4px;">QUÁ HẠN</span>
+                                @elseif(!empty($t['is_due_soon']))
+                                    <br><span style="font-size:10px;padding:2px 6px;background:#FEF3C7;color:#D97706;border-radius:4px;font-weight:900;border:1px solid #FCD34D;display:inline-block;margin-top:4px;">
+                                        @if($t['days_left'] === 0)
+                                            HẾT HẠN HÔM NAY
+                                        @else
+                                            CÒN {{ $t['days_left'] }} NGÀY
+                                        @endif
+                                    </span>
+                                @endif
+                            </td>
                             <td><span class="exec-chip {{ $class }}">{{ $t['status'] }}</span></td>
                         </tr>
                     @empty

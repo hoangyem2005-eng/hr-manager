@@ -21,6 +21,11 @@ class Task extends Model
         'overdue_email_sent_at',
         'is_proposal',
         'proposal_step',
+        'employee_note',
+        'evaluation_score',
+        'evaluation_comment',
+        'evaluated_by',
+        'evaluated_at',
     ];
 
     protected $casts = [
@@ -29,6 +34,8 @@ class Task extends Model
         'overdue_email_sent_at' => 'datetime',
         'is_proposal' => 'boolean',
         'proposal_step' => 'integer',
+        'evaluation_score' => 'integer',
+        'evaluated_at' => 'datetime',
     ];
 
     // ==================== QUAN HỆ ====================
@@ -54,6 +61,12 @@ class Task extends Model
     public function assignees()
     {
         return $this->belongsToMany(User::class, 'task_assignees')->withTimestamps();
+    }
+
+    /** Người chấm điểm (Trưởng phòng / Giám đốc) */
+    public function evaluator()
+    {
+        return $this->belongsTo(User::class, 'evaluated_by');
     }
 
     /** File đính kèm của công việc */

@@ -49,7 +49,7 @@
                             'Done', 'Hoàn thành' => 'done',
                             'In Progress', 'Đang làm' => 'doing',
                             'Overdue', 'Quá hạn' => 'overdue',
-                            'Đang review' => 'review',
+                            'Đang review', 'Chờ đánh giá' => 'review',
                             default => '',
                         };
                         $displayStatus = match($task->status) {
@@ -57,9 +57,21 @@
                             'In Progress', 'Đang làm' => 'Đang làm',
                             'Todo', 'Chờ xử lý' => 'Chờ xử lý',
                             'Overdue', 'Quá hạn' => 'Quá hạn',
-                            'Đang review' => 'Đang review',
+                            'Đang review', 'Chờ đánh giá' => 'Chờ đánh giá',
                             default => $task->status,
                         };
+                        $isOverdue = in_array($task->status, ['Overdue', 'Quá hạn']) || (!in_array($task->status, ['Done', 'Hoàn thành']) && $task->deadline && \Carbon\Carbon::parse($task->deadline)->endOfDay()->isPast());
+                        $isDueSoon = false;
+                        $daysLeft = null;
+                        if (!$isOverdue && !in_array($task->status, ['Done', 'Hoàn thành']) && $task->deadline) {
+                            $dlEnd = \Carbon\Carbon::parse($task->deadline)->endOfDay();
+                            if ($dlEnd->isFuture()) {
+                                $daysLeft = (int) \Carbon\Carbon::now()->startOfDay()->diffInDays($dlEnd->copy()->startOfDay(), false);
+                                if ($daysLeft <= 3 && $daysLeft >= 0) {
+                                    $isDueSoon = true;
+                                }
+                            }
+                        }
                     @endphp
                     <tr>
                         <td class="code">WH-{{ str_pad($task->id, 3, '0', STR_PAD_LEFT) }}</td>
@@ -69,7 +81,20 @@
                         </td>
                         <td>{{ $task->assignee->name ?? 'Chưa gán' }}</td>
                         <td>{{ $task->creator->name ?? 'Hệ thống' }}</td>
-                        <td>{{ $task->deadline ? \Carbon\Carbon::parse($task->deadline)->format('d/m/Y') : 'Không có' }}</td>
+                        <td style="{{ $isOverdue ? 'color:#DC2626;font-weight:800;' : ($isDueSoon ? 'color:#D97706;font-weight:800;' : '') }}">
+                            {{ $task->deadline ? \Carbon\Carbon::parse($task->deadline)->format('d/m/Y') : 'Không có' }}
+                            @if($isOverdue)
+                                <br><span style="font-size:10px;padding:2px 6px;background:#FEE2E2;color:#DC2626;border-radius:4px;font-weight:900;border:1px solid #FCA5A5;display:inline-block;margin-top:4px;">QUÁ HẠN</span>
+                            @elseif($isDueSoon)
+                                <br><span style="font-size:10px;padding:2px 6px;background:#FEF3C7;color:#D97706;border-radius:4px;font-weight:900;border:1px solid #FCD34D;display:inline-block;margin-top:4px;">
+                                    @if($daysLeft === 0)
+                                        HẾT HẠN HÔM NAY
+                                    @else
+                                        CÒN {{ $daysLeft }} NGÀY
+                                    @endif
+                                </span>
+                            @endif
+                        </td>
                         <td><strong>{{ $task->progress ?? 0 }}%</strong></td>
                         <td><span class="status {{ $statusClass }}">{{ $displayStatus }}</span></td>
                         <td>

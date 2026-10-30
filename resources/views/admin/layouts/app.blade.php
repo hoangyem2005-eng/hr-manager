@@ -45,6 +45,10 @@
             <i data-lucide="users" style="width:17px;height:17px"></i>
             <span class="s-label">Tất cả nhân viên</span>
         </a>
+        <a href="{{ route('admin.employees') }}" class="mf-nav-item {{ request()->routeIs('admin.employees') ? 'active' : '' }}">
+            <i data-lucide="folder-open" style="width:17px;height:17px"></i>
+            <span class="s-label">Hồ sơ nhân viên</span>
+        </a>
         <a href="{{ route('phongban.danhsach') }}" class="mf-nav-item {{ request()->routeIs('phongban.*') ? 'active' : '' }}">
             <i data-lucide="building-2" style="width:17px;height:17px"></i>
             <span class="s-label">Phòng ban</span>

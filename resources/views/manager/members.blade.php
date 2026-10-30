@@ -72,7 +72,7 @@
         <form method="GET" action="{{ route('manager.members') }}" class="team-search">
             <div class="search-field">
                 <i data-lucide="search"></i>
-                <input class="team-input" name="search" value="{{ $search }}" placeholder="Tìm tên hoặc email nhân viên..." />
+                <input class="team-input" name="search" value="{{ $search }}" placeholder="Tìm tên, email hoặc mã NV..." />
             </div>
             <button type="submit" class="team-btn">Lọc</button>
             @if($search !== '')

@@ -81,17 +81,34 @@
                         default => 'bell',
                     };
                 @endphp
-                <form method="POST" action="{{ route($openRoute, $n['id']) }}">
+                <form method="POST" action="{{ route($openRoute, $n['id']) }}" id="role-notif-form-{{ $n['id'] }}">
                     @csrf
-                    <button type="submit" class="notif-item {{ !$n['read'] ? 'unread' : '' }}">
+                    <div class="notif-item {{ !$n['read'] ? 'unread' : '' }}" onclick="document.getElementById('role-notif-form-{{ $n['id'] }}').submit()">
                         <span class="notif-icon {{ $n['type'] }}"><i data-lucide="{{ $icon }}" style="width:20px;height:20px"></i></span>
                         <span>
                             <span class="notif-title">{{ $n['title'] }}</span>
                             <span class="notif-desc">{{ $n['desc'] }}</span>
                             <span class="notif-time">{{ $n['time'] }}</span>
+
+                            @if(!empty($n['can_accept']) && !empty($n['task_id']))
+                                <div style="display:flex;align-items:center;gap:8px;margin-top:8px" onclick="event.stopPropagation()">
+                                    <button type="button"
+                                        onclick="roleAcceptTask({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')"
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;background:#16A34A;color:#fff;border:none;font-size:12px;font-weight:800;cursor:pointer">
+                                        <i data-lucide="check" style="width:13px;height:13px"></i>
+                                        Nhận việc
+                                    </button>
+                                    <button type="button"
+                                        onclick="roleOpenDeclineModal({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')"
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:12px;font-weight:800;cursor:pointer">
+                                        <i data-lucide="x" style="width:13px;height:13px"></i>
+                                        Không nhận
+                                    </button>
+                                </div>
+                            @endif
                         </span>
                         @if(!$n['read'])<span class="unread-dot"></span>@endif
-                    </button>
+                    </div>
                 </form>
             @empty
                 <div class="empty-state">
@@ -101,6 +118,70 @@
             @endforelse
         </div>
     </section>
+
+    {{-- Decline Modal for Role Notifications --}}
+    <div id="role-decline-modal" style="display:none;position:fixed;inset:0;background:rgba(0,31,91,.45);backdrop-filter:blur(4px);z-index:999;place-items:center;padding:20px">
+        <div style="width:min(460px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 48px rgba(0,0,0,.2);overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #EFF4FD;background:#F8FAFF">
+                <h3 style="font-size:15px;font-weight:900;color:#001F5B;margin:0">Từ chối nhận công việc</h3>
+                <button type="button" onclick="roleCloseDeclineModal()" style="background:none;border:none;cursor:pointer;color:#64748B"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+            </div>
+            <form id="role-decline-form" method="POST" action="">
+                @csrf
+                <div style="padding:20px">
+                    <p id="role-decline-task-name" style="font-weight:800;color:#001F5B;margin-bottom:12px;font-size:13px"></p>
+                    <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#475569">Lý do từ chối (tùy chọn):</label>
+                    <textarea id="role-reason" name="reason" rows="3" style="width:100%;border:1px solid #D4E0F7;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" placeholder="Nhập lý do không thể nhận việc..."></textarea>
+                </div>
+                <div style="padding:12px 20px;border-top:1px solid #EFF4FD;background:#F8FAFF;display:flex;justify-content:flex-end;gap:10px">
+                    <button type="button" onclick="roleCloseDeclineModal()" style="padding:7px 14px;border-radius:6px;background:#fff;border:1px solid #D4E0F7;color:#64748B;font-weight:700;font-size:12px;cursor:pointer">Hủy</button>
+                    <button type="submit" style="padding:7px 14px;border-radius:6px;background:#DC2626;border:none;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Xác nhận không nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function roleAcceptTask(taskId, taskName) {
+            if (!confirm(`Bạn có chắc chắn muốn nhận công việc "${taskName || 'này'}"?`)) return;
+
+            fetch(`{{ url('/employee/tasks') }}/${taskId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    alert(data.message || 'Đã tiếp nhận công việc!');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Không thể tiếp nhận công việc. Vui lòng thử lại.');
+            });
+        }
+
+        function roleOpenDeclineModal(taskId, taskName) {
+            const modal = document.getElementById('role-decline-modal');
+            const form = document.getElementById('role-decline-form');
+            const nameEl = document.getElementById('role-decline-task-name');
+            if (nameEl) nameEl.textContent = taskName ? `Công việc: ${taskName}` : '';
+            if (form) form.action = `{{ url('/employee/tasks') }}/${taskId}/decline`;
+            if (modal) modal.style.display = 'grid';
+        }
+
+        function roleCloseDeclineModal() {
+            const modal = document.getElementById('role-decline-modal');
+            if (modal) modal.style.display = 'none';
+        }
+    </script>
 
     <aside class="panel">
         @if($canBroadcastNotifications)

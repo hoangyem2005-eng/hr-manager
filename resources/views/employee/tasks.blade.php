@@ -192,7 +192,7 @@
     $user = Auth::user();
     $totalTasks = count($mappedTasksList);
     $doneTasks = collect($mappedTasksList)->where('status', 'Hoàn thành')->count();
-    $doingTasks = collect($mappedTasksList)->whereIn('status', ['Đang làm', 'Đang review'])->count();
+    $doingTasks = collect($mappedTasksList)->whereIn('status', ['Đang làm', 'Chờ đánh giá'])->count();
     $overdueTasks = collect($mappedTasksList)->where('status', 'Quá hạn')->count();
     $completionRate = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
 @endphp
@@ -308,7 +308,7 @@
                                         <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)" {{ ($task['status'] === 'Hoàn thành') ? 'disabled' : '' }}>
                                             <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                             <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
-                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            <option value="Chờ đánh giá" {{ $task['status'] === 'Chờ đánh giá' ? 'selected' : '' }}>Chờ đánh giá</option>
                                             @if($task['status'] === 'Hoàn thành')
                                                 <option value="Hoàn thành" selected disabled>Hoàn thành</option>
                                             @endif
@@ -356,7 +356,7 @@
                                              <select class="status-select" data-task-status="{{ $task['id'] }}" data-previous-status="{{ $task['status'] }}" onchange="updateEmployeeTaskStatus({{ $task['id'] }}, this.value)" {{ ($task['status'] === 'Hoàn thành') ? 'disabled' : '' }}>
                                                  <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                                  <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
-                                                 <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                                 <option value="Chờ đánh giá" {{ $task['status'] === 'Chờ đánh giá' ? 'selected' : '' }}>Chờ đánh giá</option>
                                                  @if($task['status'] === 'Hoàn thành')
                                                      <option value="Hoàn thành" selected disabled>Hoàn thành</option>
                                                  @endif
@@ -377,31 +377,86 @@
 </div>
 
 <div class="modal" id="create-modal">
-    <div class="modal-card">
+    <div class="modal-card" style="width:min(600px, 95vw); max-height:90vh; overflow-y:auto;">
         <div class="modal-head">
-            <div class="modal-title">Gửi đề xuất công việc</div>
+            <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+                <i data-lucide="send" style="width:20px;height:20px;color:var(--mf-blue)"></i>
+                Gửi đề xuất công việc
+            </div>
             <button type="button" class="close-btn" data-close-create><i data-lucide="x" style="width:18px;height:18px"></i></button>
         </div>
-        <form action="{{ route('employee.tasks.save') }}" method="POST">
+        <form action="{{ route('employee.tasks.save') }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="is_proposal" value="1">
             <div class="modal-body">
                 <div class="field">
-                    <label>Tên công việc *</label>
-                    <input type="text" name="task_name" required placeholder="Nhập tên công việc cần đề xuất">
+                    <label>Tên công việc đề xuất *</label>
+                    <input type="text" name="task_name" required placeholder="Nhập tên công việc bạn muốn đề xuất">
                 </div>
+
                 <div class="field">
-                    <label>Mô tả</label>
-                    <textarea name="description" placeholder="Mô tả ngắn nội dung công việc"></textarea>
+                    <label>Người duyệt đề xuất (Gửi trực tiếp cho ai) *</label>
+                    <select name="approver_id" required style="width:100%;border:1px solid #CBD5E1;border-radius:8px;padding:0 11px;min-height:42px;font-weight:600;color:#0F172A;background:#fff">
+                        <option value="">-- Chọn lãnh đạo / trưởng phòng có thẩm quyền duyệt --</option>
+                        @if(isset($approvers) && $approvers->isNotEmpty())
+                            <optgroup label="🏛️ Ban Giám đốc / Lãnh đạo">
+                                @foreach($approvers->filter(fn($u) => $u->isDirector()) as $appr)
+                                    <option value="{{ $appr->id }}">
+                                        {{ $appr->name }} - {{ $appr->role_display_name }} ({{ $appr->department->TENPHONG ?? 'Ban Giám Đốc' }})
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="🏢 Trưởng phòng / Quản lý phòng ban">
+                                @foreach($approvers->filter(fn($u) => $u->isLeader()) as $appr)
+                                    <option value="{{ $appr->id }}" {{ $appr->department_id == $user->department_id ? 'selected' : '' }}>
+                                        {{ $appr->name }} - {{ $appr->role_display_name }} ({{ $appr->department->TENPHONG ?? 'Phòng ban' }})
+                                        {{ $appr->department_id == $user->department_id ? ' [Phòng của bạn]' : '' }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                    </select>
+                    <small style="color:#64748B;font-size:11px;margin-top:4px;display:block">
+                        Hệ thống sẽ gửi thông báo và chuyển đề xuất trực tiếp đến người có thẩm quyền bạn đã chọn.
+                    </small>
                 </div>
+
                 <div class="field">
-                    <label>Deadline *</label>
-                    <input type="date" name="deadline" required value="{{ date('Y-m-d') }}">
+                    <label>Ghi chú & Nội dung đề xuất</label>
+                    <textarea name="description" rows="3" placeholder="Ghi chú chi tiết mục tiêu, lý do đề xuất, các bước thực hiện và kết quả dự kiến..."></textarea>
                 </div>
+
+                <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="field">
+                        <label>Deadline mong muốn *</label>
+                        <input type="date" name="deadline" required value="{{ date('Y-m-d', strtotime('+3 days')) }}">
+                    </div>
+                    <div class="field">
+                        <label>Mức độ ưu tiên</label>
+                        <select name="priority" style="width:100%;border:1px solid #CBD5E1;border-radius:8px;padding:0 11px;min-height:40px">
+                            <option value="Trung bình" selected>Trung bình</option>
+                            <option value="Cao">Cao (Khẩn cấp)</option>
+                            <option value="Thấp">Thấp</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Đính kèm tài liệu / File đề xuất</label>
+                    <div style="border:2px dashed #B9CDF5;border-radius:8px;padding:16px;text-align:center;background:#F8FAFF;cursor:pointer" onclick="document.getElementById('proposal-files-input').click()">
+                        <i data-lucide="upload-cloud" style="width:28px;height:28px;color:#003DA5;margin:0 auto 6px;display:block"></i>
+                        <span style="font-weight:700;color:#003DA5;font-size:13px">Nhấn để chọn file tài liệu</span>
+                        <span style="display:block;color:#64748B;font-size:11px;margin-top:2px">Hỗ trợ: PDF, Word, Excel, PowerPoint, Ảnh, Zip... (Tối đa 20MB/file)</span>
+                        <input type="file" id="proposal-files-input" name="attachments[]" multiple style="display:none" onchange="previewProposalFiles(this)">
+                    </div>
+                    <div id="proposal-files-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+                </div>
+
                 <input type="hidden" name="status" value="Chờ xử lý">
             </div>
             <div class="modal-actions">
                 <button type="button" class="ghost-btn" data-close-create>Hủy</button>
-                <button type="submit" class="primary-btn">Gửi đề xuất</button>
+                <button type="submit" class="primary-btn" id="emp-proposal-submit-btn" style="display:none"><i data-lucide="send" style="width:16px;height:16px"></i> Gửi đề xuất</button>
             </div>
         </form>
     </div>
@@ -450,17 +505,81 @@
     </div>
 </div>
 
+{{-- Modal Nộp công việc cho cấp trên duyệt --}}
+<div class="modal" id="submit-review-modal">
+    <div class="modal-card" style="width:min(540px, 95vw);">
+        <div class="modal-head" style="background:linear-gradient(90deg,#001F5B 0%,#003DA5 100%);color:#fff">
+            <div class="modal-title" style="color:#fff;display:flex;align-items:center;gap:8px">
+                <i data-lucide="send" style="width:18px;height:18px;color:#93C5FD"></i>
+                Nộp công việc cho cấp trên duyệt
+            </div>
+            <button type="button" class="close-btn" onclick="closeSubmitReviewModal()" style="color:#fff"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+        </div>
+        <form id="submit-review-form" method="POST" action="" onsubmit="submitReviewForm(event)">
+            @csrf
+            <div class="modal-body" style="padding:20px">
+                <p id="submit-review-task-title" style="font-weight:900;color:#001F5B;margin-bottom:12px;font-size:14px"></p>
+                <div class="field">
+                    <label style="font-size:13px;font-weight:800;color:#001F5B">Đoạn mô tả / Báo cáo kết quả gửi cấp trên duyệt *</label>
+                    <textarea id="submit-review-note" name="employee_note" rows="4" style="width:100%;border:1px solid #CBD5E1;border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;resize:vertical;box-sizing:border-box" placeholder="Mô tả kết quả công việc, link sản phẩm hoặc ghi chú dành cho cấp trên duyệt..." required maxlength="2000"></textarea>
+                    <span style="font-size:11px;color:#64748B;margin-top:4px;display:block">Đoạn mô tả này sẽ hiển thị trực tiếp cho cấp trên khi chấm điểm và duyệt hoàn thành.</span>
+                </div>
+                <div class="field" style="margin-top:12px">
+                    <label style="font-size:12px;font-weight:700;color:#475569">Tiến độ (%)</label>
+                    <input type="number" id="submit-review-progress" name="progress" min="80" max="100" value="100" style="width:90px;height:38px;border:1px solid #CBD5E1;border-radius:8px;padding:0 10px;font-weight:800;color:#001F5B;text-align:center">
+                </div>
+            </div>
+            <div class="modal-actions" style="padding:14px 20px;border-top:1px solid #EFF4FD;background:#F8FAFF;display:flex;justify-content:flex-end;gap:10px">
+                <button type="button" class="team-btn light" onclick="closeSubmitReviewModal()" style="padding:8px 16px;border-radius:7px;background:#fff;border:1px solid #D4E0F7;color:#64748B;font-weight:700;cursor:pointer">Hủy</button>
+                <button type="submit" class="primary-btn" style="padding:8px 18px;border-radius:7px;background:#003DA5;color:#fff;font-weight:800;cursor:pointer">
+                    <i data-lucide="send" style="width:14px;height:14px"></i> Xác nhận nộp duyệt
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     lucide.createIcons();
 
     const createModal = document.getElementById('create-modal');
     const detailModal = document.getElementById('detail-modal');
+    const submitReviewModal = document.getElementById('submit-review-modal');
+    const submitReviewFormEl = document.getElementById('submit-review-form');
+    let pendingReviewTaskId = null;
+    let pendingReviewSelects = [];
+
     const detailUploadForm = document.getElementById('detail-upload-form');
     const detailAttachments = document.getElementById('detail-attachments');
     const detailSelectedFiles = document.getElementById('detail-selected-files');
     const detailSelectedText = document.getElementById('detail-selected-text');
     const detailUploadSubmit = document.getElementById('detail-upload-submit');
-    document.querySelectorAll('[data-open-create]').forEach(btn => btn.addEventListener('click', () => createModal.classList.add('open')));
+    function updateEmpProposalSubmitVisibility() {
+        const modal = document.getElementById('create-modal');
+        if (!modal) return;
+        const submitBtn = document.getElementById('emp-proposal-submit-btn');
+        if (!submitBtn) return;
+
+        const taskName = (modal.querySelector('input[name="task_name"]')?.value || '').trim();
+        const approver = modal.querySelector('select[name="approver_id"]')?.value;
+        const deadline = (modal.querySelector('input[name="deadline"]')?.value || '').trim();
+
+        const isValid = taskName.length > 0 && Boolean(approver) && deadline.length > 0;
+        submitBtn.style.display = isValid ? 'inline-flex' : 'none';
+    }
+
+    const createForm = document.querySelector('#create-modal form');
+    if (createForm) {
+        createForm.addEventListener('input', updateEmpProposalSubmitVisibility);
+        createForm.addEventListener('change', updateEmpProposalSubmitVisibility);
+        createForm.addEventListener('keyup', updateEmpProposalSubmitVisibility);
+        createForm.addEventListener('reset', () => setTimeout(updateEmpProposalSubmitVisibility, 0));
+    }
+
+    document.querySelectorAll('[data-open-create]').forEach(btn => btn.addEventListener('click', () => {
+        createModal.classList.add('open');
+        updateEmpProposalSubmitVisibility();
+    }));
     document.querySelectorAll('[data-close-create]').forEach(btn => btn.addEventListener('click', () => createModal.classList.remove('open')));
     document.querySelectorAll('[data-close-detail]').forEach(btn => btn.addEventListener('click', () => detailModal.classList.remove('open')));
 
@@ -471,16 +590,40 @@
         detailSelectedText.textContent = files.length ? files.map(file => file.name).join(', ') : '';
     });
 
+    function previewProposalFiles(input) {
+        const list = document.getElementById('proposal-files-list');
+        if (!list) return;
+        list.innerHTML = '';
+        if (input.files && input.files.length > 0) {
+            Array.from(input.files).forEach(file => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:#E8F0FE;border:1px solid #B9CDF5;border-radius:6px;font-size:12px;color:#003DA5;font-weight:700';
+                item.innerHTML = '<i data-lucide="paperclip" style="width:14px;height:14px"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span>';
+                list.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+    }
+
     const employeeProgressByStatus = {
         'Chờ xử lý': 0,
         'Đang làm': 50,
-        'Đang review': 80,
+        'Chờ đánh giá': 80,
         'Hoàn thành': 100,
     };
 
     function updateEmployeeTaskStatus(taskId, status) {
         const selects = document.querySelectorAll(`[data-task-status="${taskId}"]`);
         const previous = Array.from(selects).find(select => select.dataset.previousStatus)?.dataset.previousStatus || status;
+
+        if (status === 'Chờ đánh giá') {
+            pendingReviewTaskId = taskId;
+            pendingReviewSelects = selects;
+            document.getElementById('submit-review-task-title').textContent = `Mã công việc: WH-${String(taskId).padStart(3, '0')}`;
+            submitReviewModal.classList.add('open');
+            return;
+        }
+
         const progress = employeeProgressByStatus[status] ?? 0;
         selects.forEach(select => select.disabled = true);
 
@@ -509,6 +652,48 @@
                 alert('Không cập nhật được trạng thái công việc. Vui lòng thử lại.');
             })
             .finally(() => selects.forEach(select => select.disabled = false));
+    }
+
+    function closeSubmitReviewModal() {
+        if (pendingReviewSelects && pendingReviewSelects.length) {
+            pendingReviewSelects.forEach(select => {
+                select.value = select.dataset.previousStatus || 'Đang làm';
+            });
+        }
+        submitReviewModal.classList.remove('open');
+        submitReviewFormEl.reset();
+        pendingReviewTaskId = null;
+    }
+
+    function submitReviewForm(e) {
+        e.preventDefault();
+        if (!pendingReviewTaskId) return;
+
+        const note = document.getElementById('submit-review-note').value;
+        const progress = document.getElementById('submit-review-progress').value;
+
+        fetch(`{{ url('/employee/tasks') }}/${pendingReviewTaskId}/submit-review`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ employee_note: note, progress: progress }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                alert('Đã nộp công việc cho cấp trên duyệt thành công!');
+                window.location.reload();
+            } else {
+                alert(data.message || 'Có lỗi xảy ra.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Không thể nộp công việc. Vui lòng thử lại.');
+        });
     }
 
     function openTaskDetail(task) {

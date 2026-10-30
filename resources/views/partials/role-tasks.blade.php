@@ -16,12 +16,17 @@
         ]);
     $totalTasks = isset($globalMetrics) ? $globalMetrics['total'] : count($mappedTasksList);
     $doneTasks = isset($globalMetrics) ? $globalMetrics['done'] : collect($mappedTasksList)->where('status', 'Hoàn thành')->count();
-    $doingTasks = isset($globalMetrics) ? $globalMetrics['doing'] : collect($mappedTasksList)->whereIn('status', ['Đang làm', 'Đang review'])->count();
+    $doingTasks = isset($globalMetrics) ? $globalMetrics['doing'] : collect($mappedTasksList)->whereIn('status', ['Đang làm', 'Chờ đánh giá'])->count();
     $pendingTasks = isset($globalMetrics) ? $globalMetrics['pending'] : collect($mappedTasksList)->whereIn('status', ['Chờ xử lý', 'Todo'])->count();
     $overdueTasks = isset($globalMetrics) ? $globalMetrics['overdue'] : collect($mappedTasksList)->where('status', 'Quá hạn')->count();
     $completionRate = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
     $avgProgress = $totalTasks > 0 ? round(collect($mappedTasksList)->avg('progress')) : 0;
     $topProgressTasks = collect($mappedTasksList)->sortByDesc('progress')->take(4)->values();
+    // Low-performance detection helper
+    $isLowPerformance = fn($task) => 
+        $task['is_overdue'] ||
+        (!empty($task['is_due_soon']) && ($task['progress'] ?? 0) < 50) ||
+        (in_array($task['status'] ?? '', ['Đang làm'], true) && ($task['days_left'] ?? 999) <= 3 && ($task['progress'] ?? 0) < 30);
 @endphp
 
 <style>
@@ -161,6 +166,17 @@
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; padding:20px; border-top:1px solid #E5EAF5; flex-shrink:0; }
     @media (max-width:1200px) { .dispatch-hero, .progress-hero, .dispatch-layout, .progress-shell { grid-template-columns:1fr; } .board-grid, .metric-strip, .project-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width:760px) { .board-grid, .metric-strip, .project-grid, .form-grid { grid-template-columns:1fr; } .role-table { min-width:760px; } .dispatch-hero, .progress-hero { padding:20px; } .dispatch-hero h2, .progress-hero h2 { font-size:30px; } }
+    /* Low-performance row/card highlighting */
+    .low-perf-row { background:#FFF5F5 !important; border-left:3px solid #E4002B; }
+    .low-perf-row td { color:#7F1D1D !important; }
+    .low-perf-row td strong { color:#B91C1C !important; }
+    .low-perf-row .progress-fill { background:#E4002B !important; }
+    .low-perf-row .progress-track { background:#FECACA !important; }
+    .low-perf-card { border-color:#FCA5A5 !important; background:linear-gradient(135deg,#FFF5F5,#FEF2F2) !important; box-shadow:0 0 0 2px #FCA5A5, 0 8px 24px rgba(228,0,43,.12) !important; }
+    .low-perf-card .task-name { color:#B91C1C !important; }
+    .low-perf-card .progress-fill { background:linear-gradient(90deg,#DC2626,#E4002B) !important; }
+    .low-perf-card .progress-track { background:#FECACA !important; }
+    .low-perf-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 7px; background:#FEE2E2; color:#B91C1C; border:1px solid #FCA5A5; border-radius:999px; font-weight:900; }
 </style>
 
 <div class="role-page {{ $isProgressPage ? 'progress-page' : 'dispatch-page' }}">
@@ -181,26 +197,26 @@
         <section class="dispatch-hero">
             <div>
                 <div class="hero-kicker"><i data-lucide="send" style="width:16px;height:16px"></i>{{ $isAdminPage ? 'Điều hành công việc cấp công ty' : 'Bàn giao việc trong phòng' }}</div>
-                <h2>{{ $isAdminPage ? 'Giao việc toàn công ty' : 'Bàn giao việc cho đội nhóm' }}</h2>
-                <p>{{ $isAdminPage ? 'Phân công việc theo phòng ban, theo dõi người nhận và giữ mọi đầu việc nằm trong một luồng rõ ràng.' : 'Chọn đúng nhân sự trong phòng, giao việc nhanh và nhìn ngay đội nào đang nhận thêm đầu việc mới.' }}</p>
+                <h2>{{ $isAdminPage ? 'Giao việc cho Trưởng phòng' : 'Bàn giao việc cho nhân viên' }}</h2>
+                <p>{{ $isAdminPage ? 'Lãnh đạo giao việc trực tiếp cho Trưởng phòng các đơn vị. Trưởng phòng sẽ tiếp nhận và phân công lại cho nhân viên trong phòng.' : 'Chọn đúng nhân sự trong phòng, giao việc nhanh và theo dõi tiến độ thực hiện.' }}</p>
                 <button type="button" class="primary-action red" style="margin-top:18px" onclick="openCreateNormalTaskModal()">
-                    <i data-lucide="plus" style="width:18px;height:18px"></i>{{ $isAdminPage ? 'Tạo giao việc' : 'Giao việc cho đội' }}
+                    <i data-lucide="plus" style="width:18px;height:18px"></i>{{ $isAdminPage ? 'Giao việc cho Trưởng phòng' : 'Giao việc cho nhân viên' }}
                 </button>
             </div>
             <aside class="dispatch-rail">
-                <div class="rail-title"><span>Đội nhận việc</span><span class="mini-count">{{ $allUsers->count() }} người</span></div>
+                <div class="rail-title"><span>{{ $isAdminPage ? 'Trưởng đơn vị' : 'Đội nhận việc' }}</span><span class="mini-count">{{ $allUsers->count() }} người</span></div>
                 <div class="rail-people">
                     @forelse($allUsers->take(4) as $assignee)
                         <div class="rail-person">
                             <div class="avatar-chip">{{ strtoupper(mb_substr($assignee->name ?? 'NV', 0, 2)) }}</div>
                             <div>
                                 <div class="person-name">{{ $assignee->name }}</div>
-                                <div class="person-meta">{{ $assignee->department->TENPHONG ?? 'Chưa xếp phòng' }}</div>
+                                <div class="person-meta">{{ $assignee->role->name ?? ($assignee->department->TENPHONG ?? 'Chưa xếp phòng') }}</div>
                             </div>
                             <span class="mini-count">{{ $assignee->tasks_count ?? 0 }}</span>
                         </div>
                     @empty
-                        <div class="empty-card">Chưa có nhân viên để giao việc.</div>
+                        <div class="empty-card">{{ $isAdminPage ? 'Chưa có Trưởng phòng để giao việc.' : 'Chưa có nhân viên để giao việc.' }}</div>
                     @endforelse
                 </div>
             </aside>
@@ -269,20 +285,6 @@
         @if($isProgressPage)
             <a class="primary-action" href="{{ route($taskRoute) }}"><i data-lucide="send" style="width:18px;height:18px"></i>Sang giao việc</a>
         @else
-        <div class="left-tools">
-            <div class="segmented">
-                <a href="{{ route($taskRoute, $routeParams(['view' => 'kanban', 'filter' => $filter])) }}" class="{{ $viewType === 'kanban' ? 'active' : '' }}"><i data-lucide="columns-3" style="width:16px;height:16px"></i>Kanban</a>
-                <a href="{{ route($taskRoute, $routeParams(['view' => 'list', 'filter' => $filter])) }}" class="{{ $viewType === 'list' ? 'active' : '' }}"><i data-lucide="list" style="width:16px;height:16px"></i>Danh sách</a>
-            </div>
-            <div class="filters">
-                @foreach(['Tất cả', 'Của tôi', 'Quá hạn'] as $item)
-                    <a href="{{ route($taskRoute, $routeParams(['view' => $viewType, 'filter' => $item])) }}" class="filter-pill {{ $filter === $item ? 'active' : '' }}">{{ $item }}</a>
-                @endforeach
-            </div>
-        </div>
-        @if($isProgressPage)
-            <a class="primary-action" href="{{ route($taskRoute) }}"><i data-lucide="send" style="width:18px;height:18px"></i>Sang giao việc</a>
-        @else
             <div style="display:flex; gap:8px; align-items:center">
                 <button type="button" class="primary-action" onclick="openCreateNormalTaskModal()">
                     <i data-lucide="plus" style="width:18px;height:18px"></i>{{ $isAdminPage ? 'Giao việc' : 'Giao việc cho đội' }}
@@ -318,25 +320,39 @@
                         </thead>
                         <tbody>
                             @forelse($mappedTasksList as $task)
-                                <tr>
+                                @php $lowPerf = $isLowPerformance($task); @endphp
+                                <tr class="{{ $lowPerf ? 'low-perf-row' : '' }}">
                                     <td class="task-code">{{ $task['code'] }}</td>
                                     <td>
-                                        <strong style="color:#001F5B">{{ $task['name'] }}</strong><br>
+                                        <strong style="color:{{ $lowPerf ? '#B91C1C' : '#001F5B' }}">{{ $task['name'] }}</strong><br>
                                         <span style="color:#64748B">{{ $task['status'] }}</span>
+                                        @if($lowPerf)
+                                            <br><span class="low-perf-badge" style="margin-top:4px"><i data-lucide="alert-triangle" style="width:10px;height:10px"></i>Chưa đạt tiến độ</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <strong style="color:#003DA5">{{ $task['lead'] }}</strong>
                                         <br><span style="color:#64748B;font-size:12px">Cùng nhận: {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
                                     </td>
-                                    <td>
+                                    <td style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : (!empty($task['is_due_soon']) ? 'color:#D97706; font-weight:800;' : '') }}">
                                         {{ $task['deadline'] }}
-                                        @if(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
+                                        @if($task['is_overdue'])
+                                            <br><span style="font-size:10px; padding:2px 6px; background:#FFEBEB; color:#E4002B; border-radius:4px; font-weight:900; border:1px solid #FFCDCD; display:inline-block; margin-top:4px;">QUÁ HẠN</span>
+                                        @elseif(!empty($task['is_due_soon']))
+                                            <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:900; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">
+                                                @if($task['days_left'] === 0)
+                                                    HẾT HẠN HÔM NAY
+                                                @else
+                                                    CÒN {{ $task['days_left'] }} NGÀY
+                                                @endif
+                                            </span>
+                                        @elseif(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
                                             <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:800; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">HẠN NHẬN: {{ $task['acceptance_deadline'] }}</span>
                                         @endif
                                     </td>
                                     <td class="row-progress">
-                                        <div class="progress-percent"><span>{{ $task['progress'] }}%</span></div>
-                                        <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%"></div></div>
+                                        <div class="progress-percent"><span style="{{ $lowPerf ? 'color:#B91C1C' : '' }}">{{ $task['progress'] }}%</span></div>
+                                        <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%; {{ $lowPerf ? 'background:#E4002B;' : '' }}"></div></div>
                                     </td>
                                     <td>{{ $task['documents_count'] }}</td>
                                     <td>
@@ -399,22 +415,39 @@
                             </thead>
                             <tbody>
                                 @forelse($mappedTasksList as $task)
-                                    <tr>
+                                    @php $lowPerf = $isLowPerformance($task); @endphp
+                                    <tr class="{{ $lowPerf ? 'low-perf-row' : '' }}">
                                         <td class="task-code">{{ $task['code'] }}</td>
-                                        <td><strong style="color:#001F5B">{{ $task['name'] }}</strong><br><span style="color:#64748B">{{ $task['description'] ?: 'Chưa có mô tả.' }}</span></td>
+                                        <td>
+                                            <strong style="color:{{ $lowPerf ? '#B91C1C' : '#001F5B' }}">{{ $task['name'] }}</strong><br>
+                                            <span style="color:#64748B">{{ $task['description'] ?: 'Chưa có mô tả.' }}</span>
+                                            @if($lowPerf)
+                                                <br><span class="low-perf-badge" style="margin-top:4px"><i data-lucide="alert-triangle" style="width:10px;height:10px"></i>Chưa đạt tiến độ</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <strong style="color:#003DA5">{{ $task['lead'] }}</strong>
                                             <br><span style="color:#64748B;font-size:12px">Cùng nhận: {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
                                         </td>
-                                        <td style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : '' }}">
+                                        <td style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : (!empty($task['is_due_soon']) ? 'color:#D97706; font-weight:800;' : '') }}">
                                              {{ $task['deadline'] }}
                                              @if($task['is_overdue'])
                                                  <br><span style="font-size:10px; padding:2px 6px; background:#FFEBEB; color:#E4002B; border-radius:4px; font-weight:900; border:1px solid #FFCDCD; display:inline-block; margin-top:4px;">QUÁ HẠN</span>
+                                             @elseif(!empty($task['is_due_soon']))
+                                                 <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:900; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">
+                                                     @if($task['days_left'] === 0)
+                                                         HẾT HẠN HÔM NAY
+                                                     @else
+                                                         CÒN {{ $task['days_left'] }} NGÀY
+                                                     @endif
+                                                 </span>
                                              @elseif(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
                                                  <br><span style="font-size:10px; padding:2px 6px; background:#FEF3C7; color:#D97706; border-radius:4px; font-weight:800; border:1px solid #FCD34D; display:inline-block; margin-top:4px;">HẠN NHẬN: {{ $task['acceptance_deadline'] }}</span>
                                              @endif
                                          </td>
-                                        <td>{{ $task['progress'] }}%</td>
+                                        <td>
+                                            <span style="{{ $lowPerf ? 'color:#B91C1C; font-weight:800;' : '' }}">{{ $task['progress'] }}%</span>
+                                        </td>
                                         <td>{{ $task['documents_count'] }}</td>
                                         <td>
                                              <div style="display:flex; gap:8px; align-items:center; justify-content:flex-start">
@@ -424,13 +457,25 @@
                                                          <i data-lucide="edit-3" style="width:14px;height:14px"></i>Sửa
                                                      </button>
                                                  @endif
-                                                 @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
-                                                     <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
-                                                         <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
-                                                     </button>
-                                                     <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
-                                                         <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
-                                                     </button>
+                                                 @if(request('mode') === 'proposal')
+                                                     @if(Auth::user()->isDirector() && $task['proposal_step'] === 2)
+                                                         <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                             <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                         </button>
+                                                         <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                             <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                         </button>
+                                                     @elseif(Auth::user()->isLeader() && $task['proposal_step'] === 1)
+                                                         <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                             <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                         </button>
+                                                         <button type="button" class="btn primary" style="background:#2563EB;border-color:#2563EB;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="escalateProposal({{ $task['id'] }})">
+                                                             <i data-lucide="share-2" style="width:14px;height:14px"></i>Gửi Giám đốc
+                                                         </button>
+                                                         <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                             <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                         </button>
+                                                     @endif
                                                  @endif
                                              </div>
                                          </td>
@@ -451,11 +496,23 @@
                                 </div>
                                 <div class="column-body">
                                     @forelse($col['tasks'] as $task)
-                                        <article class="task-card">
+                                        @php $lowPerf = $isLowPerformance($task); @endphp
+                                        <article class="task-card {{ $lowPerf ? 'low-perf-card' : '' }}">
                                             <div class="task-top">
                                                 <span class="priority-chip">{{ $task['priority'] }}</span>
+                                                @if($lowPerf && !$task['is_overdue'] && empty($task['is_due_soon']))
+                                                    <span class="low-perf-badge" style="margin-left:6px"><i data-lucide="alert-triangle" style="width:10px;height:10px"></i>Chưa đạt</span>
+                                                @endif
                                                 @if($task['is_overdue'])
                                                     <span class="priority-chip" style="background:#FEF2F2; color:#B91C1C; margin-left:6px; border:1px solid #FCA5A5">Quá hạn</span>
+                                                @elseif(!empty($task['is_due_soon']))
+                                                    <span class="priority-chip" style="background:#FFFBEB; color:#D97706; margin-left:6px; border:1px solid #FCD34D" title="Sắp hết hạn">
+                                                        @if($task['days_left'] === 0)
+                                                            Hết hạn hôm nay
+                                                        @else
+                                                            Còn {{ $task['days_left'] }} ngày
+                                                        @endif
+                                                    </span>
                                                 @elseif(!empty($task['acceptance_deadline']) && in_array($task['status'], ['Chờ xử lý', 'Todo'], true))
                                                     <span class="priority-chip" style="background:#FEF3C7; color:#D97706; margin-left:6px; border:1px solid #FCD34D" title="Chờ nhận trong 2h (hoặc 4h sau 17h)">Hạn nhận: {{ $task['acceptance_deadline'] }}</span>
                                                 @endif
@@ -467,11 +524,11 @@
                                                 <span><b>Chủ trì:</b> {{ $task['lead'] }}</span>
                                                 <span><b>Cùng nhận:</b> {{ !empty($task['collaborators']) ? implode(', ', $task['collaborators']) : 'Không có' }}</span>
                                             </div>
-                                            <div class="progress-meta"><span>Tiến độ</span><span>{{ $task['progress'] }}%</span></div>
-                                            <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%"></div></div>
+                                            <div class="progress-meta"><span>Tiến độ</span><span style="{{ $lowPerf ? 'color:#B91C1C; font-weight:900;' : '' }}">{{ $task['progress'] }}%</span></div>
+                                            <div class="progress-track"><div class="progress-fill" style="width:{{ $task['progress'] }}%; {{ $lowPerf ? 'background:linear-gradient(90deg,#DC2626,#E4002B);' : '' }}"></div></div>
                                             <div class="task-foot">
-                                                <span style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : '' }}">
-                                                    <i data-lucide="calendar" style="width:14px;height:14px;vertical-align:-2px; {{ $task['is_overdue'] ? 'color:#E4002B;' : '' }}"></i> 
+                                                <span style="{{ $task['is_overdue'] ? 'color:#E4002B; font-weight:800;' : (!empty($task['is_due_soon']) ? 'color:#D97706; font-weight:800;' : '') }}">
+                                                    <i data-lucide="calendar" style="width:14px;height:14px;vertical-align:-2px; {{ $task['is_overdue'] ? 'color:#E4002B;' : (!empty($task['is_due_soon']) ? 'color:#D97706;' : '') }}"></i> 
                                                      {{ $task['deadline'] }}
                                                 </span>
                                                 <span><i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:-2px"></i> {{ $task['documents_count'] }}</span>
@@ -485,13 +542,25 @@
                                                              <i data-lucide="edit-3" style="width:14px;height:14px"></i>Sửa
                                                          </button>
                                                      @endif
-                                                     @if(request('mode') === 'proposal' && Auth::user()->isDirector() && $task['proposal_step'] === 2)
-                                                         <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
-                                                             <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
-                                                         </button>
-                                                         <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
-                                                             <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
-                                                         </button>
+                                                     @if(request('mode') === 'proposal')
+                                                         @if(Auth::user()->isDirector() && $task['proposal_step'] === 2)
+                                                             <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                                 <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                             </button>
+                                                             <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                                 <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                             </button>
+                                                         @elseif(Auth::user()->isLeader() && $task['proposal_step'] === 1)
+                                                             <button type="button" class="btn primary" style="background:#16A34A;border-color:#16A34A;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="openApproveProposalModal({{ json_encode($task) }})">
+                                                                 <i data-lucide="check" style="width:14px;height:14px"></i>Phê duyệt
+                                                             </button>
+                                                             <button type="button" class="btn primary" style="background:#2563EB;border-color:#2563EB;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="escalateProposal({{ $task['id'] }})">
+                                                                 <i data-lucide="share-2" style="width:14px;height:14px"></i>Gửi Giám đốc
+                                                             </button>
+                                                             <button type="button" class="btn primary" style="background:#DC2626;border-color:#DC2626;padding:4px 8px;min-height:auto;font-size:12px;cursor:pointer" onclick="rejectProposal({{ $task['id'] }})">
+                                                                 <i data-lucide="x-circle" style="width:14px;height:14px"></i>Không đồng ý
+                                                             </button>
+                                                         @endif
                                                      @endif
                                                  </div>
                                              </div>
@@ -515,7 +584,7 @@
             <span>{{ $isAdminPage ? 'Giao việc cấp công ty' : 'Giao việc trong phòng' }}</span>
             <button type="button" class="ghost-btn" onclick="document.getElementById('createTaskModal').classList.remove('open')">Đóng</button>
         </div>
-        <form method="POST" action="{{ route($saveRoute) }}">
+        <form method="POST" action="{{ route($saveRoute) }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="is_proposal" id="partial-is-proposal" value="0">
             <div class="modal-body">
@@ -523,9 +592,36 @@
                     <label>Tên công việc *</label>
                     <input name="task_name" required placeholder="Nhập tên công việc">
                 </div>
+
+                <div class="field" id="proposal-approver-field" style="display:none">
+                    <label>Người duyệt đề xuất (Gửi trực tiếp cho ai) *</label>
+                    <select name="approver_id" style="width:100%;border:1px solid #CBD5E1;border-radius:8px;padding:8px 11px;min-height:42px;font-weight:600;color:#0F172A;background:#fff">
+                        <option value="">-- Chọn lãnh đạo / trưởng phòng có thẩm quyền duyệt --</option>
+                        @if(isset($approvers) && $approvers->isNotEmpty())
+                            <optgroup label="🏛️ Ban Giám đốc / Lãnh đạo">
+                                @foreach($approvers->filter(fn($u) => $u->isDirector()) as $appr)
+                                    <option value="{{ $appr->id }}">
+                                        {{ $appr->name }} - {{ $appr->role_display_name }} ({{ $appr->department->TENPHONG ?? 'Ban Giám Đốc' }})
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="🏢 Trưởng phòng / Quản lý phòng ban">
+                                @foreach($approvers->filter(fn($u) => $u->isLeader()) as $appr)
+                                    <option value="{{ $appr->id }}">
+                                        {{ $appr->name }} - {{ $appr->role_display_name }} ({{ $appr->department->TENPHONG ?? 'Phòng ban' }})
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                    </select>
+                    <small style="color:#64748B;font-size:11px;margin-top:4px;display:block">
+                        Đề xuất sẽ được chuyển trực tiếp cho người có thẩm quyền bạn đã chọn.
+                    </small>
+                </div>
+
                 <div class="field">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                        <label style="margin:0">Người cùng làm *</label>
+                        <label style="margin:0">{{ $isAdminPage ? 'Chọn Trưởng phòng / Trưởng đơn vị nhận việc *' : 'Chọn nhân viên cùng làm *' }}</label>
                         <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#003DA5;cursor:pointer;user-select:none;margin:0">
                             <input type="checkbox" id="select-all-assignees" style="cursor:pointer;width:14px;height:14px;margin:0;accent-color:#003DA5">
                             Chọn tất cả
@@ -549,7 +645,7 @@
                                             <input type="checkbox" name="assigned_to[]" value="{{ $assignee->id }}" style="width:14px; height:14px; margin:0;">
                                             <span style="display:block; text-align:left; font-size:12px; line-height:1.2; font-weight:700; color:#001F5B;">
                                                 {{ $assignee->name }}
-                                                <small style="display:block; font-size:10px; color:#64748B; font-weight:500; margin-top:2px;">{{ $assignee->role->name ?? 'Nhân viên' }}</small>
+                                                <small style="display:block; font-size:10px; color:#64748B; font-weight:500; margin-top:2px;">{{ $assignee->role->name ?? 'Trưởng đơn vị' }}</small>
                                             </span>
                                         </label>
                                     @endforeach
@@ -557,7 +653,9 @@
                             </div>
                         @endforeach
                     </div>
-                    <div style="margin-top:6px;color:#64748B;font-size:12px;font-weight:700">Tích nhiều nhân viên để cùng làm chung một công việc.</div>
+                    <div style="margin-top:6px;color:#64748B;font-size:12px;font-weight:700">
+                        {{ $isAdminPage ? 'Lãnh đạo giao việc cho Trưởng phòng các đơn vị. Trưởng phòng sẽ tiếp nhận và phân công lại cho nhân viên.' : 'Tích chọn nhân viên trong phòng để giao việc.' }}
+                    </div>
                 </div>
                 <div class="form-grid">
                     <div class="field">
@@ -569,25 +667,55 @@
                         <select name="status">
                             <option>Chờ xử lý</option>
                             <option>Đang làm</option>
-                            <option>Đang review</option>
+                            <option>Chờ đánh giá</option>
                             <option>Hoàn thành</option>
                         </select>
                     </div>
                 </div>
                 <div class="field">
-                    <label>Mô tả</label>
-                    <textarea name="description" placeholder="Ghi chú yêu cầu, phạm vi, tài liệu cần chuẩn bị..."></textarea>
+                    <label>Mô tả / Ghi chú đề xuất</label>
+                    <textarea name="description" placeholder="Ghi chú yêu cầu, phạm vi, lý do đề xuất, tài liệu cần chuẩn bị..."></textarea>
+                </div>
+                <div class="field">
+                    <label>Đính kèm tài liệu / File</label>
+                    <input type="file" name="attachments[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.rar,.txt" style="width:100%;padding:8px;border:1px dashed #B9CDF5;border-radius:6px;background:#F8FAFF">
+                    <small style="color:#64748B;font-size:11px;margin-top:2px;display:block">Hỗ trợ: PDF, Word, Excel, PowerPoint, Ảnh, Zip... (Tối đa 20MB/file)</small>
                 </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="ghost-btn" onclick="document.getElementById('createTaskModal').classList.remove('open')">Hủy</button>
-                <button type="submit" class="primary-action">Lưu công việc</button>
+                <button type="submit" class="primary-action" id="task-modal-submit-btn" style="display:none">Lưu công việc</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    window.updateSubmitButtonVisibility = () => {
+        const m = document.getElementById('createTaskModal');
+        if (!m) return;
+        const submitBtn = m.querySelector('#task-modal-submit-btn') || m.querySelector('button[type="submit"]');
+        if (!submitBtn) return;
+
+        const taskName = (m.querySelector('input[name="task_name"]')?.value || '').trim();
+        const deadline = (m.querySelector('input[name="deadline"]')?.value || '').trim();
+        const isProposal = m.querySelector('#partial-is-proposal')?.value === '1';
+
+        let isValid = taskName.length > 0 && deadline.length > 0;
+
+        if (isValid) {
+            if (isProposal) {
+                const approver = m.querySelector('select[name="approver_id"]')?.value;
+                isValid = Boolean(approver && approver !== '');
+            } else {
+                const checkedCount = m.querySelectorAll('input[name="assigned_to[]"]:checked').length;
+                isValid = checkedCount > 0;
+            }
+        }
+
+        submitBtn.style.display = isValid ? 'inline-flex' : 'none';
+    };
+
     window.rejectProposal = (taskId) => {
         if (!confirm('Bạn có chắc chắn muốn từ chối đề xuất công việc này?')) return;
         
@@ -598,6 +726,18 @@
         document.body.appendChild(f);
         f.submit();
     };
+
+    window.escalateProposal = (taskId) => {
+        if (!confirm('Bạn có chắc chắn muốn duyệt và chuyển đề xuất này lên Ban Giám đốc?')) return;
+        
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = "/dashboard/tasks/" + taskId + "/escalate";
+        f.innerHTML = '@csrf';
+        document.body.appendChild(f);
+        f.submit();
+    };
+
     window.openCreateNormalTaskModal = () => {
         const m = document.getElementById('createTaskModal');
         if (m) {
@@ -612,8 +752,12 @@
             if (isProposalField) isProposalField.value = '0';
             const assigneeField = m.querySelector('input[name="assigned_to[]"]')?.closest('.field');
             if (assigneeField) assigneeField.style.display = 'block';
+            const approverField = document.getElementById('proposal-approver-field');
+            if (approverField) approverField.style.display = 'none';
             const submitBtn = m.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.innerText = 'Lưu công việc';
+            if (window.updateSelectAllState) window.updateSelectAllState();
+            window.updateSubmitButtonVisibility();
             m.classList.add('open');
         }
     };
@@ -627,13 +771,16 @@
                 form.action = "{{ route($saveRoute) }}";
             }
             const modalTitle = m.querySelector('.modal-head span');
-            if (modalTitle) modalTitle.innerText = "Gửi đề xuất công việc lên cấp trên";
+            if (modalTitle) modalTitle.innerText = "Gửi đề xuất công việc";
             const isProposalField = document.getElementById('partial-is-proposal');
             if (isProposalField) isProposalField.value = '1';
             const assigneeField = m.querySelector('input[name="assigned_to[]"]')?.closest('.field');
             if (assigneeField) assigneeField.style.display = 'none';
+            const approverField = document.getElementById('proposal-approver-field');
+            if (approverField) approverField.style.display = 'block';
             const submitBtn = m.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.innerText = 'Gửi đề xuất';
+            window.updateSubmitButtonVisibility();
             m.classList.add('open');
         }
     };
@@ -644,7 +791,7 @@
             const form = m.querySelector('form');
             if (form) {
                 form.reset();
-                form.action = "/dashboard/tasks/" + task.id + "/update";
+                form.action = "/dashboard/tasks/" + task.id + "/approve-proposal";
             }
             const modalTitle = m.querySelector('.modal-head span');
             if (modalTitle) modalTitle.innerText = "Giao việc (Phê duyệt đề xuất)";
@@ -660,6 +807,8 @@
             
             const assigneeField = m.querySelector('input[name="assigned_to[]"]')?.closest('.field');
             if (assigneeField) assigneeField.style.display = 'block';
+            const approverField = document.getElementById('proposal-approver-field');
+            if (approverField) approverField.style.display = 'none';
             
             const proposerId = task.assigned_by;
             const checkboxes = m.querySelectorAll('input[name="assigned_to[]"]');
@@ -668,7 +817,9 @@
             });
             
             const submitBtn = m.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.innerText = 'Giao việc';
+            if (submitBtn) submitBtn.innerText = 'Phê duyệt & Giao việc';
+            if (window.updateSelectAllState) window.updateSelectAllState();
+            window.updateSubmitButtonVisibility();
             m.classList.add('open');
         }
     };
@@ -697,6 +848,8 @@
             
             const assigneeField = m.querySelector('input[name="assigned_to[]"]')?.closest('.field');
             if (assigneeField) assigneeField.style.display = 'block';
+            const approverField = document.getElementById('proposal-approver-field');
+            if (approverField) approverField.style.display = 'none';
             
             const checkboxes = m.querySelectorAll('input[name="assigned_to[]"]');
             checkboxes.forEach(cb => {
@@ -709,6 +862,7 @@
             if (window.updateSelectAllState) {
                 window.updateSelectAllState();
             }
+            window.updateSubmitButtonVisibility();
             
             m.classList.add('open');
         }
@@ -728,9 +882,20 @@
         if (window.updateSelectAllState) {
             window.updateSelectAllState();
         }
+        window.updateSubmitButtonVisibility();
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('createTaskModal');
+        if (modal) {
+            const form = modal.querySelector('form');
+            if (form) {
+                form.addEventListener('input', window.updateSubmitButtonVisibility);
+                form.addEventListener('change', window.updateSubmitButtonVisibility);
+                form.addEventListener('keyup', window.updateSubmitButtonVisibility);
+            }
+        }
+
         const selectAllCheckbox = document.getElementById('select-all-assignees');
         if (selectAllCheckbox) {
             const individualCheckboxes = document.querySelectorAll('#createTaskModal input[name="assigned_to[]"]');
@@ -754,6 +919,8 @@
                         }
                     }
                 });
+
+                window.updateSubmitButtonVisibility();
             };
 
             selectAllCheckbox.addEventListener('change', function() {

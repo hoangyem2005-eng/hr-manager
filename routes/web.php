@@ -21,8 +21,7 @@ Route::get('/', [DashboardController::class, 'landing'])->name('landing');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::redirect('/register', '/login');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -32,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/edit', [ProfileController::class, 'updateInfo'])->name('profile.update');
     Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password.edit');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask']);
 });
 
 // ==================== ROLE-BASED DASHBOARDS ====================
@@ -48,6 +48,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('notifications.read');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('user.store');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('user.update');
+    Route::get('/employees', [AdminController::class, 'employees'])->name('employees');
     Route::delete('/users/{id}', [AdminController::class, 'destroyUser'])->name('user.destroy');
 });
 
@@ -78,6 +79,11 @@ Route::middleware(['auth'])->prefix('employee')->name('employee.')->group(functi
     Route::post('/notifications/{notification}/open', [DashboardController::class, 'openNotification'])->name('notifications.open');
     Route::get('/notifications/{id}/read', [DashboardController::class, 'readNotification'])->name('notifications.read');
     Route::patch('/tasks/{id}/progress', [EmployeeController::class, 'updateProgress'])->name('task.progress');
+    // Nhân viên nhận / từ chối công việc
+    Route::post('/tasks/{id}/accept', [EmployeeController::class, 'acceptTask'])->name('task.accept');
+    Route::post('/tasks/{id}/decline', [EmployeeController::class, 'declineTask'])->name('task.decline');
+    // Nhân viên nộp công việc cho cấp trên duyệt kèm đoạn mô tả
+    Route::post('/tasks/{id}/submit-review', [EmployeeController::class, 'submitForReview'])->name('task.submit-review');
     // Nhân viên xem chi tiết task của mình (không dùng layout admin)
     Route::get('/tasks/{id}', [EmployeeController::class, 'taskDetail'])->name('task.detail');
     // Nhân viên upload file đính kèm cho task
@@ -115,10 +121,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     // 2. Phân hệ Quản lý công việc (Kanban & List)
     Route::get('/tasks', [DashboardController::class, 'tasks'])->name('dashboard.tasks');
+    Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
 
     // Thao tác quản trị công việc (Chỉ dành cho Trưởng phòng/Giám đốc)
     Route::middleware(['role:1,2'])->group(function () {
-        Route::post('/tasks/save', [DashboardController::class, 'saveTask'])->name('dashboard.tasks.save');
         Route::post('/tasks/{id}/update', [DashboardController::class, 'updateTask'])->name('dashboard.tasks.update');
         Route::delete('/tasks/{id}/delete', [DashboardController::class, 'deleteTask'])->name('dashboard.tasks.delete');
         Route::post('/tasks/{id}/escalate', [DashboardController::class, 'escalateProposal'])->name('dashboard.tasks.escalate');
@@ -169,6 +175,17 @@ Route::middleware(['auth'])->prefix('cong-viec')->group(function () {
 
     // Chi tiết công việc: người giao/người nhận được xem, giao diện theo đúng vai trò.
     Route::get('/{id}', [TaskController::class, 'show'])->name('congviec.chitiet');
+
+    // Nhân viên tiếp nhận hoặc từ chối công việc
+    Route::post('/{id}/nhan-viec', [TaskController::class, 'acceptTask'])->name('congviec.accept');
+    Route::post('/{id}/tu-choi', [TaskController::class, 'declineTask'])->name('congviec.decline');
+
+    // Nhân viên gửi ghi chú tự đánh giá / nộp duyệt khi trạng thái "Chờ đánh giá"
+    Route::patch('/{id}/nhan-xet', [TaskController::class, 'submitEmployeeNote'])->name('congviec.nhanxet');
+    Route::post('/{id}/nop-duyet', [TaskController::class, 'submitEmployeeNote'])->name('congviec.nopduyet');
+
+    // Cấp trên chấm điểm sao + nhận xét + duyệt hoàn thành
+    Route::patch('/{id}/cham-diem', [TaskController::class, 'submitEvaluation'])->name('congviec.chamdiem');
 });
 
 // ==================== MODULE PHÒNG BAN ====================

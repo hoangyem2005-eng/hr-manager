@@ -26,14 +26,14 @@ class RoleTaskCreationTest extends TestCase
         $this->artisan('migrate:fresh')->run();
     }
 
-    public function test_director_can_assign_a_task_to_any_user(): void
+    public function test_director_can_assign_a_task_to_department_head(): void
     {
         $director = User::factory()->create(['role_id' => User::ROLE_ADMIN, 'department_id' => 1]);
-        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 2]);
+        $manager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 2]);
 
         $this->actingAs($director)->post(route('dashboard.tasks.save'), [
             'task_name' => 'Kiem tra tien do toan cong ty',
-            'assigned_to' => $employee->id,
+            'assigned_to' => $manager->id,
             'deadline' => now()->addWeek()->toDateString(),
             'description' => 'Bao cao tong hop theo phong ban',
             'status' => 'Chờ xử lý',
@@ -42,23 +42,40 @@ class RoleTaskCreationTest extends TestCase
         $this->assertDatabaseHas('tasks', [
             'task_name' => 'Kiem tra tien do toan cong ty',
             'assigned_by' => $director->id,
-            'assigned_to' => $employee->id,
+            'assigned_to' => $manager->id,
         ]);
         $this->assertDatabaseHas('task_assignees', [
             'task_id' => Task::where('task_name', 'Kiem tra tien do toan cong ty')->value('id'),
-            'user_id' => $employee->id,
+            'user_id' => $manager->id,
         ]);
     }
 
-    public function test_director_can_assign_one_task_to_multiple_users(): void
+    public function test_director_cannot_assign_task_directly_to_regular_employee(): void
     {
         $director = User::factory()->create(['role_id' => User::ROLE_ADMIN, 'department_id' => 1]);
-        $firstEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 1]);
-        $secondEmployee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 2]);
+        $employee = User::factory()->create(['role_id' => User::ROLE_EMPLOYEE, 'department_id' => 2]);
+
+        $this->actingAs($director)->from(route('dashboard.tasks'))->post(route('dashboard.tasks.save'), [
+            'task_name' => 'Giao viec truc tiep cho nhan vien',
+            'assigned_to' => $employee->id,
+            'deadline' => now()->addWeek()->toDateString(),
+            'status' => 'Chờ xử lý',
+        ])->assertRedirect(route('dashboard.tasks'));
+
+        $this->assertDatabaseMissing('tasks', [
+            'task_name' => 'Giao viec truc tiep cho nhan vien',
+        ]);
+    }
+
+    public function test_director_can_assign_one_task_to_multiple_department_heads(): void
+    {
+        $director = User::factory()->create(['role_id' => User::ROLE_ADMIN, 'department_id' => 1]);
+        $firstManager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 1]);
+        $secondManager = User::factory()->create(['role_id' => User::ROLE_MANAGER, 'department_id' => 2]);
 
         $this->actingAs($director)->post(route('dashboard.tasks.save'), [
             'task_name' => 'Lap bao cao lien phong',
-            'assigned_to' => [$firstEmployee->id, $secondEmployee->id],
+            'assigned_to' => [$firstManager->id, $secondManager->id],
             'deadline' => now()->addWeek()->toDateString(),
             'description' => 'Moi phong nop mot phan',
             'status' => 'Chờ xử lý',
@@ -67,11 +84,11 @@ class RoleTaskCreationTest extends TestCase
         $task = Task::where('task_name', 'Lap bao cao lien phong')->firstOrFail();
 
         $this->assertSame($director->id, (int) $task->assigned_by);
-        $this->assertSame($firstEmployee->id, (int) $task->assigned_to);
+        $this->assertSame($firstManager->id, (int) $task->assigned_to);
         $this->assertSame(1, Task::where('task_name', 'Lap bao cao lien phong')->count());
-        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $firstEmployee->id]);
-        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $secondEmployee->id]);
-        $this->assertSame(2, Notification::where('title', 'Bạn vừa được giao công việc mới')->count());
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $firstManager->id]);
+        $this->assertDatabaseHas('task_assignees', ['task_id' => $task->id, 'user_id' => $secondManager->id]);
+        $this->assertSame(2, Notification::where('title', 'Lãnh đạo giao công việc mới cho phòng ban')->count());
     }
 
     public function test_manager_can_only_assign_tasks_inside_their_department(): void
@@ -374,7 +391,7 @@ class RoleTaskCreationTest extends TestCase
             'assigned_by' => $manager->id,
             'assigned_to' => $employee->id,
             'deadline' => now()->addDay()->toDateString(),
-            'status' => 'Đang review',
+            'status' => 'Chờ đánh giá',
             'progress' => 80,
         ]);
 
@@ -451,19 +468,19 @@ class RoleTaskCreationTest extends TestCase
 
         $this->actingAs($employee)
             ->patchJson(route('employee.task.progress', $task->id), [
-                'status' => 'Đang review',
+                'status' => 'Chờ đánh giá',
                 'progress' => 80,
             ])
             ->assertOk()
             ->assertJson([
                 'ok' => true,
-                'status' => 'Đang review',
+                'status' => 'Chờ đánh giá',
                 'progress' => 80,
             ]);
 
         $this->assertDatabaseHas('tasks', [
             'id' => $task->id,
-            'status' => 'Đang review',
+            'status' => 'Chờ đánh giá',
             'progress' => 80,
         ]);
     }

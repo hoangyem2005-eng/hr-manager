@@ -893,7 +893,6 @@
                     <a href="#roles">Vai trò</a>
                     <a href="#workflow">Luồng việc</a>
                     <a href="#insights">Báo cáo</a>
-                    <a href="{{ route('register') }}">Đăng ký</a>
                     <a href="{{ route('login') }}" class="login-btn">Đăng nhập</a>
                 </nav>
             </div>
@@ -918,7 +917,7 @@
                             <span class="headline-line"><span class="headline-soft">đội ngũ nội bộ</span></span>
                         </h1>
                         <p class="hero-desc">
-                            WorkHub gom giao việc, phòng ban, tiến độ, tài liệu và thông báo vào một không gian rõ ràng cho Giám đốc, Trưởng phòng và Nhân viên.
+                            WorkHub gom giao việc, phòng ban, tiến độ, tài liệu và thông báo vào một không gian rõ ràng cho Lãnh đạo, Trưởng phòng và Nhân viên.
                         </p>
                         <div class="hero-actions">
                             <a href="{{ route('login') }}" class="btn btn-primary">
@@ -943,24 +942,24 @@
                         <div class="ops-body">
                             <div class="ops-row">
                                 <div class="ops-icon"><i data-lucide="send"></i></div>
-                                <div><strong>Giao việc cấp công ty</strong><span>Giám đốc theo dõi toàn bộ tiến độ</span></div>
-                                <div class="ops-badge">57%</div>
+                                <div><strong>Giao việc cấp công ty</strong><span>Lãnh đạo theo dõi toàn bộ tiến độ</span></div>
+                                <div class="ops-badge">{{ $companyProgress }}%</div>
                             </div>
                             <div class="ops-row">
                                 <div class="ops-icon"><i data-lucide="users"></i></div>
                                 <div><strong>Phòng ban xử lý</strong><span>Trưởng phòng phân công đúng nhân sự</span></div>
-                                <div class="ops-badge">12 việc</div>
+                                <div class="ops-badge">{{ $doingTasks }} việc</div>
                             </div>
                             <div class="ops-row">
                                 <div class="ops-icon"><i data-lucide="paperclip"></i></div>
                                 <div><strong>Tài liệu đính kèm</strong><span>File được duyệt trước khi gửi lên cấp trên</span></div>
-                                <div class="ops-badge">8 file</div>
+                                <div class="ops-badge">{{ $totalDocuments }} file</div>
                             </div>
                         </div>
                         <div class="ops-metrics">
-                            <div class="ops-metric"><b>24</b><span>Công việc</span></div>
-                            <div class="ops-metric"><b>3</b><span>Phòng ban</span></div>
-                            <div class="ops-metric"><b>92%</b><span>Đúng hạn</span></div>
+                            <div class="ops-metric"><b>{{ $totalTasks }}</b><span>Công việc</span></div>
+                            <div class="ops-metric"><b>{{ $totalDepartments }}</b><span>Phòng ban</span></div>
+                            <div class="ops-metric"><b>{{ $onTimeRate }}%</b><span>Đúng hạn</span></div>
                         </div>
                         <div class="ops-timeline" aria-label="Luồng vận hành đang chạy">
                             <div class="ops-step">Tạo</div>
@@ -974,24 +973,10 @@
 
             <div class="activity-ticker" aria-label="Hoạt động vận hành đang chạy">
                 <div class="ticker-track">
-                    @foreach([
-                        ['send', 'Giám đốc vừa giao mục tiêu tuần'],
-                        ['users', 'Phòng Nhân sự cập nhật 6 việc'],
-                        ['paperclip', 'Tài liệu mới được đính kèm'],
-                        ['bell', 'Nhắc hạn xử lý tự động'],
-                        ['bar-chart-3', 'Báo cáo hiệu suất đang đồng bộ'],
-                        ['shield-check', 'Quyền truy cập theo chức vụ'],
-                    ] as $item)
+                    @foreach($tickerItems as $item)
                         <span class="ticker-item"><span class="ticker-dot"></span><i data-lucide="{{ $item[0] }}"></i>{{ $item[1] }}</span>
                     @endforeach
-                    @foreach([
-                        ['send', 'Giám đốc vừa giao mục tiêu tuần'],
-                        ['users', 'Phòng Nhân sự cập nhật 6 việc'],
-                        ['paperclip', 'Tài liệu mới được đính kèm'],
-                        ['bell', 'Nhắc hạn xử lý tự động'],
-                        ['bar-chart-3', 'Báo cáo hiệu suất đang đồng bộ'],
-                        ['shield-check', 'Quyền truy cập theo chức vụ'],
-                    ] as $item)
+                    @foreach($tickerItems as $item)
                         <span class="ticker-item"><span class="ticker-dot"></span><i data-lucide="{{ $item[0] }}"></i>{{ $item[1] }}</span>
                     @endforeach
                 </div>
@@ -1012,13 +997,13 @@
                             <div class="role-top director">
                                 <span class="role-status">Toàn quyền</span>
                                 <i data-lucide="crown"></i>
-                                <h3>Giám đốc</h3>
+                                <h3>Lãnh đạo</h3>
                                 <p>Điều hành toàn công ty</p>
                             </div>
                             <div class="role-preview">
-                                <div class="preview-row"><span>Tiến độ công ty <small>24 công việc</small></span><b class="preview-pill">92%</b></div>
-                                <div class="preview-track"><i style="--w:92%"></i></div>
-                                <div class="preview-row"><span>Phòng ban đang xử lý</span><small>3/3 online</small></div>
+                                <div class="preview-row"><span>Tiến độ công ty <small>{{ $totalTasks }} công việc</small></span><b class="preview-pill">{{ $companyProgress }}%</b></div>
+                                <div class="preview-track"><i style="--w:{{ $companyProgress }}%"></i></div>
+                                <div class="preview-row"><span>Phòng ban đang xử lý</span><small>{{ $activeDepartmentsCount }}/{{ $totalDepartments }} phòng ban</small></div>
                             </div>
                             <div class="role-list">
                                 <span><i data-lucide="check"></i>Giao việc cho mọi phòng ban</span>
@@ -1035,14 +1020,14 @@
                                 <p>Điều phối đội ngũ trong phòng</p>
                             </div>
                             <div class="role-preview">
-                                <div class="preview-row"><span>Việc chờ phân công <small>từ Giám đốc</small></span><b class="preview-pill">5</b></div>
-                                <div class="preview-track"><i style="--w:68%"></i></div>
-                                <div class="preview-row"><span>Nhân viên khả dụng</span><small>6 người</small></div>
+                                <div class="preview-row"><span>Việc chờ phân công <small>từ Lãnh đạo</small></span><b class="preview-pill">{{ $pendingAssignTasksCount }}</b></div>
+                                <div class="preview-track"><i style="--w:{{ $deptHeadProgress }}%"></i></div>
+                                <div class="preview-row"><span>Nhân viên khả dụng</span><small>{{ $availableEmployeesCount }} người</small></div>
                             </div>
                             <div class="role-list">
                                 <span><i data-lucide="check"></i>Nhận việc cấp trên giao</span>
                                 <span><i data-lucide="check"></i>Phân công nhân viên trong phòng</span>
-                                <span><i data-lucide="check"></i>Duyệt tài liệu gửi Giám đốc</span>
+                                <span><i data-lucide="check"></i>Duyệt tài liệu gửi Lãnh đạo</span>
                             </div>
                         </article>
 
@@ -1054,9 +1039,9 @@
                                 <p>Tập trung vào việc được giao</p>
                             </div>
                             <div class="role-preview">
-                                <div class="preview-row"><span>Việc hôm nay <small>ưu tiên cao</small></span><b class="preview-pill">3</b></div>
-                                <div class="preview-track"><i style="--w:54%"></i></div>
-                                <div class="preview-row"><span>Tài liệu đã gửi</span><small>8 file</small></div>
+                                <div class="preview-row"><span>Việc hôm nay <small>ưu tiên cao</small></span><b class="preview-pill">{{ $highPriorityTasksCount }}</b></div>
+                                <div class="preview-track"><i style="--w:{{ $employeeProgress }}%"></i></div>
+                                <div class="preview-row"><span>Tài liệu đã gửi</span><small>{{ $totalDocuments }} file</small></div>
                             </div>
                             <div class="role-list">
                                 <span><i data-lucide="check"></i>Xem danh sách công việc cá nhân</span>
@@ -1113,19 +1098,25 @@
                         <div class="insight-card">
                             <div class="insight-title"><i data-lucide="bar-chart-3"></i> Hiệu suất phòng ban</div>
                             <div class="bars">
-                                <div class="bar-line"><span>Nhân sự</span><div class="track"><div class="fill" style="width: 72%"></div></div><b>72%</b></div>
-                                <div class="bar-line"><span>Đào tạo</span><div class="track"><div class="fill green" style="width: 84%"></div></div><b>84%</b></div>
-                                <div class="bar-line"><span>Pháp chế</span><div class="track"><div class="fill red" style="width: 48%"></div></div><b>48%</b></div>
+                                @forelse($departmentStats as $dept)
+                                    <div class="bar-line">
+                                        <span>{{ $dept['name'] }}</span>
+                                        <div class="track"><div class="fill {{ $dept['fill_class'] }}" style="width: {{ $dept['rate'] }}%"></div></div>
+                                        <b>{{ $dept['rate'] }}%</b>
+                                    </div>
+                                @empty
+                                    <div class="bar-line"><span>Chưa có dữ liệu</span><div class="track"><div class="fill" style="width: 0%"></div></div><b>0%</b></div>
+                                @endforelse
                             </div>
                         </div>
 
                         <div class="insight-card">
-                            <div class="insight-title"><i data-lucide="activity"></i> Tình hình tuần này</div>
+                            <div class="insight-title"><i data-lucide="activity"></i> Tình hình vận hành</div>
                             <div class="mini-stats">
-                                <div class="mini-stat"><b>18</b><span>Hoàn thành</span></div>
-                                <div class="mini-stat"><b>6</b><span>Đang làm</span></div>
-                                <div class="mini-stat"><b>2</b><span>Quá hạn</span></div>
-                                <div class="mini-stat"><b>11</b><span>Tài liệu</span></div>
+                                <div class="mini-stat"><b>{{ $doneTasks }}</b><span>Hoàn thành</span></div>
+                                <div class="mini-stat"><b>{{ $doingTasks }}</b><span>Đang làm</span></div>
+                                <div class="mini-stat"><b>{{ $overdueCount }}</b><span>Quá hạn</span></div>
+                                <div class="mini-stat"><b>{{ $totalDocuments }}</b><span>Tài liệu</span></div>
                             </div>
                         </div>
                     </div>
@@ -1137,7 +1128,7 @@
                     <div>
                         <div class="section-kicker">Ready for work</div>
                         <h2>Bắt đầu điều hành công việc trong WorkHub.</h2>
-                        <p>Đăng nhập để tiếp tục vào không gian phù hợp với chức vụ của bạn: Giám đốc, Trưởng phòng hoặc Nhân viên.</p>
+                        <p>Đăng nhập để tiếp tục vào không gian phù hợp với chức vụ của bạn: Lãnh đạo, Trưởng phòng hoặc Nhân viên.</p>
                     </div>
                     <a href="{{ route('login') }}" class="btn btn-primary">
                         Đăng nhập ngay <i data-lucide="log-in"></i>

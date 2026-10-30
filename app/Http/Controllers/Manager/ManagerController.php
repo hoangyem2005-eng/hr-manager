@@ -21,9 +21,8 @@ class ManagerController extends Controller
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
             $user = Auth::user();
-            if (!$user || !$user->isLeader()) {
-                // Nếu là Giám đốc, redirect sang admin dashboard
-                if ($user && $user->isDirector()) {
+            if (!$user || (!$user->isLeader() && (int)$user->role_id !== User::ROLE_MANAGER)) {
+                if ($user && (int)$user->role_id === User::ROLE_ADMIN) {
                     return redirect()->route('admin.dashboard');
                 }
                 return redirect()->route('employee.dashboard')
@@ -50,7 +49,7 @@ class ManagerController extends Controller
                 });
                 $total  = $memberTasks()->count();
                 $done   = $memberTasks()->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
-                $doing  = $memberTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
+                $doing  = $memberTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Chờ đánh giá', 'Đang review', 'Review', 'Ä‘ang review'])->count();
                 $overdue = $memberTasks()->whereIn('status', ['Quá hạn', 'Overdue', 'quÃ¡ háº¡n'])->count();
                 return [
                     'id'         => $u->id,
@@ -66,39 +65,82 @@ class ManagerController extends Controller
                 ];
             });
 
-        // Công việc trong phòng mình đã giao (assigned_by = tôi)
+        // Công việc trong phòng mình đã giao (assigned_by = tôi) - ưu tiên việc sắp hết hạn
         $myAssignedTasks = Task::with(['assignee', 'assignees', 'documents'])
             ->where('assigned_by', $user->id)
+            ->orderByRaw("CASE WHEN status IN ('Hoàn thành', 'Done', 'hoàn thành') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get()
-            ->map(fn($t) => [
-                'id'       => $t->id,
-                'code'     => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
-                'name'     => $t->task_name,
-                'assignee' => ($t->assignees->isNotEmpty() ? $t->assignees->pluck('name')->join(', ') : ($t->assignee->name ?? '—')),
-                'status'   => $t->status,
-                'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
-                'progress' => $t->progress ?? 0,
-                'documents_count' => $t->documents->count(),
-            ]);
+            ->map(function ($t) {
+                $status = $this->cleanVietnameseText($t->status);
+                $isOverdue = ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast());
+                $isDueSoon = false;
+                $daysLeft = null;
+                if (!$isOverdue && $status !== 'Hoàn thành' && $t->deadline) {
+                    $deadlineEnd = Carbon::parse($t->deadline)->endOfDay();
+                    if ($deadlineEnd->isFuture()) {
+                        $daysLeft = (int) Carbon::now()->startOfDay()->diffInDays($deadlineEnd->copy()->startOfDay(), false);
+                        if ($daysLeft <= 3 && $daysLeft >= 0) {
+                            $isDueSoon = true;
+                        }
+                    }
+                }
+
+                return [
+                    'id'       => $t->id,
+                    'code'     => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
+                    'name'     => $this->cleanVietnameseText($t->task_name),
+                    'assignee' => ($t->assignees->isNotEmpty() ? $t->assignees->pluck('name')->join(', ') : ($t->assignee->name ?? '—')),
+                    'status'   => $status,
+                    'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
+                    'progress' => $t->progress ?? 0,
+                    'documents_count' => $t->documents->count(),
+                    'is_overdue' => $isOverdue,
+                    'is_due_soon' => $isDueSoon,
+                    'days_left' => $daysLeft,
+                ];
+            });
 
         $incomingTasks = Task::with('assigner')
             ->where('assigned_to', $user->id)
             ->where('assigned_by', '!=', $user->id)
-            ->whereNotIn('status', ['Hoàn thành'])
+            ->whereNotIn('status', ['Hoàn thành', 'Done', 'hoàn thành'])
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get()
-            ->map(fn($t) => [
-                'id' => $t->id,
-                'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
-                'name' => $t->task_name,
-                'assigner' => $t->assigner->name ?? 'Giám đốc',
-                'status' => $t->status,
-                'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
-                'description' => $t->description,
-            ]);
+            ->map(function ($t) {
+                $status = $this->cleanVietnameseText($t->status);
+                $isOverdue = ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast());
+                $isDueSoon = false;
+                $daysLeft = null;
+                if (!$isOverdue && $status !== 'Hoàn thành' && $t->deadline) {
+                    $deadlineEnd = Carbon::parse($t->deadline)->endOfDay();
+                    if ($deadlineEnd->isFuture()) {
+                        $daysLeft = (int) Carbon::now()->startOfDay()->diffInDays($deadlineEnd->copy()->startOfDay(), false);
+                        if ($daysLeft <= 3 && $daysLeft >= 0) {
+                            $isDueSoon = true;
+                        }
+                    }
+                }
+
+                return [
+                    'id' => $t->id,
+                    'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
+                    'name' => $this->cleanVietnameseText($t->task_name),
+                    'assigner' => $t->assigner->name ?? 'Giám đốc',
+                    'status' => $status,
+                    'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
+                    'description' => $this->cleanVietnameseText($t->description),
+                    'is_overdue' => $isOverdue,
+                    'is_due_soon' => $isDueSoon,
+                    'days_left' => $daysLeft,
+                ];
+            });
 
         // Công việc được giao cho nhân viên trong phòng
         $teamMemberIds = User::where('department_id', $deptId)->pluck('id');
@@ -107,7 +149,7 @@ class ManagerController extends Controller
                 ->orWhereHas('assignees', fn ($assignees) => $assignees->whereIn('users.id', $teamMemberIds));
         });
         $pendingCount  = $teamTasks()->whereIn('status', ['Chờ xử lý', 'Todo', 'chá»  xá»­ lÃ½', 'chá» xá»­lÃ½', 'chờ xá»­ lÃ½'])->count();
-        $doingCount    = $teamTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
+        $doingCount    = $teamTasks()->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Chờ đánh giá', 'Đang review', 'Review', 'Ä‘ang review'])->count();
         $doneCount     = $teamTasks()->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
         $overdueCount  = $teamTasks()->whereIn('status', ['Quá hạn', 'Overdue', 'quÃ¡ háº¡n'])->count();
 
@@ -133,9 +175,20 @@ class ManagerController extends Controller
             ->where('id', '!=', $manager->id);
 
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            $employeeId = null;
+            if (preg_match('/^(?:NV|ID)?\s*[-#:]?\s*0*(\d+)$/i', $search, $matches)) {
+                $employeeId = (int) $matches[1];
+            } elseif (ctype_digit($search)) {
+                $employeeId = (int) $search;
+            }
+
+            $query->where(function ($q) use ($search, $employeeId) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
+
+                if ($employeeId !== null) {
+                    $q->orWhere('id', $employeeId);
+                }
             });
         }
 
@@ -148,7 +201,7 @@ class ManagerController extends Controller
         $teamMembers->setCollection($teamMembers->getCollection()->map(function (User $member) {
             $total = Task::where('assigned_to', $member->id)->count();
             $done = Task::where('assigned_to', $member->id)->whereIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])->count();
-            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Đang review', 'Review', 'Ä‘ang review'])->count();
+            $doing = Task::where('assigned_to', $member->id)->whereIn('status', ['Đang làm', 'In Progress', 'inprogress', 'in_progress', 'Ä‘ang lÃ m', 'Ä‘anglÃ m', 'đang lÃ m', 'Chờ đánh giá', 'Đang review', 'Review', 'Ä‘ang review'])->count();
             $overdue = Task::where('assigned_to', $member->id)
                 ->whereNotIn('status', ['Hoàn thành', 'Done', 'hoÃ n thÃ nh', 'hoÃ nthÃ nh'])
                 ->whereNotNull('deadline')
@@ -440,5 +493,48 @@ class ManagerController extends Controller
             );
         }
         return mb_strtoupper(mb_substr($name, 0, 2));
+    }
+
+    private function cleanVietnameseText($value)
+    {
+        if (!is_string($value) || $value === '') {
+            return $value;
+        }
+
+        return str_replace(
+            [
+                'NhÃ¢n sá»±',
+                'Ä Ã o táº¡o',
+                'PhÃ¡p cháº¿',
+                'Quáº£n lÃ½',
+                'NhÃ¢n viÃªn',
+                'HoÃ n thÃ nh',
+                'Ä ang lÃ m',
+                'QuÃ¡ háº¡n',
+                'Chá»  xá»­ lÃ½',
+                'HoÃ ng Thá»‹ Em',
+                'Nguyá»…n VÄƒn An',
+                'Tráº§n Thá»‹ BÃ­ch',
+                'LÃª Minh ChÃ¢u',
+                'Pháº¡m Quá»‘c DÅ©ng',
+            ],
+            [
+                'Nhân sự',
+                'Đào tạo',
+                'Pháp chế',
+                'Trưởng phòng',
+                'Nhân viên',
+                'Hoàn thành',
+                'Đang làm',
+                'Quá hạn',
+                'Chờ xử lý',
+                'Hoàng Thị Em',
+                'Nguyễn Văn An',
+                'Trần Thị Bích',
+                'Lê Minh Châu',
+                'Phạm Quốc Dũng',
+            ],
+            $value
+        );
     }
 }

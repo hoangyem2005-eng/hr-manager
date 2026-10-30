@@ -76,8 +76,30 @@
 
         <div class="form-actions">
             <a class="btn secondary" href="{{ route('congviec.danhsach') }}">Hủy</a>
-            <button class="btn primary" type="submit"><i data-lucide="save"></i>Lưu công việc</button>
+            <button class="btn primary" id="admin-task-form-submit" type="submit" style="{{ empty(old('task_name', $task->task_name)) ? 'display:none' : '' }}"><i data-lucide="save"></i>Lưu công việc</button>
         </div>
     </form>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form.grid-form');
+        const submitBtn = document.getElementById('admin-task-form-submit');
+        if (form && submitBtn) {
+            const checkValidity = () => {
+                const name = (form.querySelector('input[name="task_name"]')?.value || '').trim();
+                const assignee = form.querySelector('select[name="assigned_to"]')?.value;
+                const deadline = (form.querySelector('input[name="deadline"]')?.value || '').trim();
+
+                const isValid = name.length > 0 && Boolean(assignee) && deadline.length > 0;
+                submitBtn.style.display = isValid ? 'inline-flex' : 'none';
+            };
+
+            form.addEventListener('input', checkValidity);
+            form.addEventListener('change', checkValidity);
+            form.addEventListener('keyup', checkValidity);
+            checkValidity();
+        }
+    });
+</script>
 @endsection

@@ -80,17 +80,32 @@ class AdminController extends Controller
         $statusChart = [
             ['name' => 'Hoàn thành', 'value' => $doneTasks,  'color' => '#16A34A'],
             ['name' => 'Đang làm',   'value' => $doingTasks, 'color' => '#D97706'],
-            ['name' => 'Đang review','value' => Task::whereIn('status', ['Đang review', 'Äang review'])->count(), 'color' => '#2563EB'],
-            ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Chá» xá»­ lÃ½'])->count(),  'color' => '#6B7280'],
+            ['name' => 'Chờ đánh giá','value' => Task::whereIn('status', ['Chờ đánh giá', 'Đang review', 'Ä ang review'])->count(), 'color' => '#2563EB'],
+            ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Chá»  xá»­ lÃ½'])->count(),  'color' => '#6B7280'],
         ];
 
-        // Công việc gần đây toàn công ty
+        // Công việc gần đây toàn công ty (ưu tiên việc sắp hết hạn/quá hạn)
         $recentTasks = Task::with(['assignee.department', 'assignees.department', 'creator'])
+            ->orderByRaw("CASE WHEN status IN ('Hoàn thành', 'Done', 'hoàn thành') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
             ->orderBy('created_at', 'desc')
             ->take(8)
             ->get()
             ->map(function ($t) {
                 $status = $this->cleanVietnameseText($t->status);
+                $isOverdue = ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast());
+                $isDueSoon = false;
+                $daysLeft = null;
+                if (!$isOverdue && $status !== 'Hoàn thành' && $t->deadline) {
+                    $deadlineEnd = Carbon::parse($t->deadline)->endOfDay();
+                    if ($deadlineEnd->isFuture()) {
+                        $daysLeft = (int) Carbon::now()->startOfDay()->diffInDays($deadlineEnd->copy()->startOfDay(), false);
+                        if ($daysLeft <= 3 && $daysLeft >= 0) {
+                            $isDueSoon = true;
+                        }
+                    }
+                }
 
                 return [
                     'id'       => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
@@ -99,7 +114,9 @@ class AdminController extends Controller
                     'dept'     => $this->cleanVietnameseText($t->assignees->isNotEmpty() ? $t->assignees->map(fn ($user) => $user->department->TENPHONG ?? null)->filter()->unique()->join(', ') : ($t->assignee->department->TENPHONG ?? '—')),
                     'status'   => $status,
                     'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : '—',
-                    'is_overdue' => $status === 'Quá hạn',
+                    'is_overdue' => $isOverdue,
+                    'is_due_soon' => $isDueSoon,
+                    'days_left' => $daysLeft,
                 ];
             });
 
@@ -209,6 +226,112 @@ class AdminController extends Controller
             ->with('success', "Đã xóa tài khoản {$name}!");
     }
 
+    /** Hồ sơ nhân viên — trang lưu trữ toàn bộ thông tin nhân sự */
+    public function employees(Request $request)
+    {
+        $search   = trim((string) $request->get('search', ''));
+        $deptId   = trim((string) $request->get('dept', ''));
+        $roleId   = trim((string) $request->get('role', ''));
+        $statusF  = trim((string) $request->get('status', ''));
+        $sortBy   = $request->get('sort', 'name');
+
+        $query = User::with(['department', 'role', 'assignedTasks', 'documents']);
+
+        if ($search !== '') {
+            $employeeId = null;
+            if (preg_match('/^(?:NV|ID)?\s*[-#:]?\s*0*(\d+)$/i', $search, $matches)) {
+                $employeeId = (int) $matches[1];
+            } elseif (ctype_digit($search)) {
+                $employeeId = (int) $search;
+            }
+
+            $query->where(function ($inner) use ($search, $employeeId) {
+                $inner->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+
+                if ($employeeId !== null) {
+                    $inner->orWhere('id', $employeeId);
+                }
+            });
+        }
+
+        if ($deptId !== '' && $deptId !== 'Tất cả phòng ban') {
+            if (is_numeric($deptId)) {
+                $query->where(function ($q) use ($deptId) {
+                    $q->where('department_id', (int) $deptId)
+                      ->orWhereHas('department', fn ($sub) => $sub->where('id', (int) $deptId));
+                });
+            } else {
+                $query->whereHas('department', function ($q) use ($deptId) {
+                    $q->where('TENPHONG', $deptId)
+                      ->orWhere('name', $deptId);
+                });
+            }
+        }
+
+        if ($roleId !== '') {
+            $query->where('role_id', (int) $roleId);
+        }
+
+        if ($statusF !== '') {
+            $query->where('is_active', $statusF === 'active');
+        }
+
+        $query = match ($sortBy) {
+            'tasks'   => $query->withCount('assignedTasks')->orderByDesc('assigned_tasks_count'),
+            'joined'  => $query->orderByDesc('created_at'),
+            'dept'    => $query->orderBy('department_id'),
+            default   => $query->orderBy('name'),
+        };
+
+        $employees = $query->get()->map(function (User $u) {
+            $tasks        = $u->assignedTasks;
+            $totalTasks   = $tasks->count();
+            $doneTasks    = $tasks->filter(fn ($t) => in_array(mb_strtolower($this->cleanVietnameseText($t->status ?? '')), ['hoàn thành', 'done'], true) || (int)($t->progress ?? 0) >= 100)->count();
+            $overdueTasks = $tasks->filter(fn ($t) => !in_array(mb_strtolower($this->cleanVietnameseText($t->status ?? '')), ['hoàn thành', 'done'], true) && $t->deadline && Carbon::parse($t->deadline)->lt(Carbon::today()))->count();
+            $doingTasks   = $tasks->filter(fn ($t) => in_array(mb_strtolower($this->cleanVietnameseText($t->status ?? '')), ['đang làm', 'chờ đánh giá'], true))->count();
+            $doneRate     = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
+
+            return [
+                'id'           => $u->id,
+                'code'         => 'NV' . str_pad($u->id, 3, '0', STR_PAD_LEFT),
+                'name'         => $this->cleanVietnameseText($u->name),
+                'email'        => $u->email,
+                'dept'         => $this->cleanVietnameseText($u->department?->TENPHONG ?? $u->department?->name ?? '—'),
+                'dept_id'      => $u->department_id,
+                'role_id'      => $u->role_id,
+                'role_name'    => $this->cleanVietnameseText($u->role?->name ?? '—'),
+                'is_active'    => $u->is_active,
+                'avatar'       => $this->getInitials($u->name),
+                'joined'       => $u->created_at?->format('d/m/Y') ?? '—',
+                'total_tasks'  => $totalTasks,
+                'done_tasks'   => $doneTasks,
+                'overdue_tasks'=> $overdueTasks,
+                'doing_tasks'  => $doingTasks,
+                'done_rate'    => $doneRate,
+                'doc_count'    => $u->documents->count(),
+                'last_active'  => $u->updated_at?->format('d/m/Y H:i') ?? '—',
+            ];
+        });
+
+        $departments = Department::orderBy('TENPHONG')->get();
+        $roles       = Role::all();
+        $unreadCount = Notification::where('user_id', Auth::id())->where('is_read', 0)->count();
+
+        // Summary stats
+        $totalEmployees  = $employees->count();
+        $activeEmployees = $employees->where('is_active', true)->count();
+        $totalTasksSum   = $employees->sum('total_tasks');
+        $avgDoneRate     = $totalEmployees > 0 ? round($employees->avg('done_rate')) : 0;
+
+        return view('admin.employees', compact(
+            'employees', 'departments', 'roles',
+            'totalEmployees', 'activeEmployees', 'totalTasksSum', 'avgDoneRate',
+            'search', 'deptId', 'roleId', 'statusF', 'sortBy',
+            'unreadCount'
+        ));
+    }
+
     // ===================== Helper =====================
     private function getInitials(string $name): string
     {
@@ -232,14 +355,14 @@ class AdminController extends Controller
         return str_replace(
             [
                 'NhÃ¢n sá»±',
-                'ÄÃ o táº¡o',
+                'Ä Ã o táº¡o',
                 'PhÃ¡p cháº¿',
                 'Quáº£n lÃ½',
                 'NhÃ¢n viÃªn',
                 'HoÃ n thÃ nh',
-                'Äang lÃ m',
+                'Ä ang lÃ m',
                 'QuÃ¡ háº¡n',
-                'Chá» xá»­ lÃ½',
+                'Chá»  xá»­ lÃ½',
                 'HoÃ ng Thá»‹ Em',
                 'Nguyá»…n VÄƒn An',
                 'Tráº§n Thá»‹ BÃ­ch',

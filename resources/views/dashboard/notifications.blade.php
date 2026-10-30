@@ -59,9 +59,10 @@
                             ];
                             $c = $colors[$n['type']] ?? $colors['task'];
                         @endphp
-                        <form method="POST" action="{{ route('dashboard.notifications.open', $n['id']) }}" class="notif-item-form">
+                        <form method="POST" action="{{ route('dashboard.notifications.open', $n['id']) }}" class="notif-item-form" id="dash-notif-form-{{ $n['id'] }}">
                             @csrf
-                            <button type="submit"
+                            <div
+                                onclick="document.getElementById('dash-notif-form-{{ $n['id'] }}').submit()"
                                 class="w-full text-left flex gap-4 p-4 hover:bg-gray-50/70 transition-colors cursor-pointer notif-item border-0 {{ !$n['read'] ? 'bg-[#E8F0FE]/40' : 'bg-white' }}"
                                 data-type="{{ $n['type'] }}"
                                 data-read="{{ $n['read'] ? 'true' : 'false' }}">
@@ -73,10 +74,27 @@
                                     <span class="block text-sm font-bold text-[#001F5B]">{{ $n['title'] }}</span>
                                     <span class="block text-xs text-gray-500 mt-0.5 truncate">{{ $n['desc'] }}</span>
                                     <span class="block text-[10px] text-gray-400 mt-1.5 font-mono">{{ $n['time'] }}</span>
+
+                                    @if(!empty($n['can_accept']) && !empty($n['task_id']))
+                                        <div class="flex items-center gap-2 mt-2.5" onclick="event.stopPropagation()">
+                                            <button type="button"
+                                                onclick="dashAcceptTask({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors">
+                                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                                Nhận việc
+                                            </button>
+                                            <button type="button"
+                                                onclick="dashOpenDeclineModal({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-colors">
+                                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                                Không nhận
+                                            </button>
+                                        </div>
+                                    @endif
                                 </span>
 
                                 <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 {{ !$n['read'] ? 'bg-[#003DA5]' : 'bg-transparent' }} unread-dot"></span>
-                            </button>
+                            </div>
                         </form>
                     @empty
                         <div class="p-8 text-center text-sm text-gray-500">
@@ -219,8 +237,70 @@
             emptyTitle.innerText = copy[0];
             emptyDesc.innerText = copy[1];
             emptyState.classList.toggle('hidden', visibleCount !== 0);
-        }
     };
 
+    window.dashAcceptTask = (taskId, taskName) => {
+        if (!confirm(`Bạn có chắc chắn muốn tiếp nhận công việc "${taskName || 'này'}"?`)) return;
+
+        fetch(`{{ url('/employee/tasks') }}/${taskId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                alert(data.message || 'Đã tiếp nhận công việc!');
+                window.location.reload();
+            } else {
+                alert(data.message || 'Có lỗi xảy ra.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Không thể tiếp nhận công việc. Vui lòng thử lại.');
+        });
+    };
+
+    window.dashOpenDeclineModal = (taskId, taskName) => {
+        const modal = document.getElementById('dash-decline-modal');
+        const form = document.getElementById('dash-decline-form');
+        const title = document.getElementById('dash-decline-task-name');
+        if (title) title.textContent = taskName ? `Công việc: ${taskName}` : '';
+        if (form) form.action = `{{ url('/employee/tasks') }}/${taskId}/decline`;
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.dashCloseDeclineModal = () => {
+        const modal = document.getElementById('dash-decline-modal');
+        if (modal) modal.classList.add('hidden');
+    };
 </script>
+
+{{-- Modal từ chối nhận việc --}}
+<div id="dash-decline-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#001F5B]">Từ chối nhận công việc</h3>
+            <button type="button" onclick="dashCloseDeclineModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="dash-decline-form" method="POST" action="">
+            @csrf
+            <div class="p-5 space-y-3">
+                <p id="dash-decline-task-name" class="font-bold text-[#001F5B] text-sm"></p>
+                <label for="dash-reason" class="block text-xs font-bold text-gray-600 uppercase tracking-wide">Lý do từ chối (tùy chọn):</label>
+                <textarea id="dash-reason" name="reason" rows="3" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-[#003DA5] focus:ring-2 focus:ring-[#003DA5]/10 outline-none resize-none" placeholder="Nhập lý do bạn không thể nhận việc này..."></textarea>
+            </div>
+            <div class="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex justify-end gap-2.5">
+                <button type="button" onclick="dashCloseDeclineModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors">Hủy bỏ</button>
+                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">Xác nhận không nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection

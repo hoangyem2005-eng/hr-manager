@@ -1006,7 +1006,7 @@
 
     // Update task status
     function updateTask(id, status) {
-        const progressMap = { 'Chờ xử lý': 0, 'Đang làm': 50, 'Đang review': 80, 'Hoàn thành': 100 };
+        const progressMap = { 'Chờ xử lý': 0, 'Đang làm': 50, 'Chờ đánh giá': 80, 'Hoàn thành': 100 };
         const progress = progressMap[status] ?? 0;
 
         fetch(`/employee/tasks/${id}/progress`, {
@@ -1032,7 +1032,7 @@
             const card = document.getElementById('task-' + id);
             if (card) {
                 card.classList.remove('pending', 'doing', 'done', 'overdue');
-                const stateMap = { 'Hoàn thành': 'done', 'Đang làm': 'doing', 'Đang review': 'doing', 'Chờ xử lý': 'pending' };
+                const stateMap = { 'Hoàn thành': 'done', 'Đang làm': 'doing', 'Chờ đánh giá': 'doing', 'Chờ xử lý': 'pending' };
                 const newState = stateMap[status] || 'pending';
                 card.classList.add(newState);
                 card.dataset.status = newState;

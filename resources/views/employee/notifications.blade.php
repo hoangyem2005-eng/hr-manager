@@ -156,6 +156,21 @@
         .metric span { color: #64748B; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 900; }
         .metric strong { display: block; margin-top: 7px; color: var(--mf-blue-dark); font-size: 24px; font-weight: 900; }
         .quick-link { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #D4E0F7; border-radius: 8px; padding: 13px; background: #F8FAFF; color: var(--mf-blue-dark); font-size: 13px; font-weight: 900; }
+        .notif-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .btn-accept-notif { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; background: #16A34A; color: #fff; font-size: 12px; font-weight: 800; border: none; cursor: pointer; transition: background .15s; }
+        .btn-accept-notif:hover { background: #15803D; }
+        .btn-decline-notif { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 7px; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .15s; }
+        .btn-decline-notif:hover { background: #FEE2E2; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,31,91,.45); backdrop-filter: blur(4px); z-index: 999; display: none; place-items: center; padding: 20px; }
+        .modal-backdrop.active { display: grid; }
+        .modal-box { width: min(480px, 100%); background: #fff; border-radius: 12px; box-shadow: 0 24px 48px rgba(0,0,0,.2); overflow: hidden; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #EFF4FD; background: #F8FAFF; }
+        .modal-head h3 { font-size: 16px; font-weight: 900; color: #001F5B; }
+        .modal-close { background: none; border: none; cursor: pointer; color: #64748B; padding: 4px; }
+        .modal-body { padding: 20px; }
+        .modal-body label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #374151; }
+        .modal-body textarea { width: 100%; border: 1px solid #D4E0F7; border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 90px; box-sizing: border-box; }
+        .modal-foot { padding: 14px 20px; border-top: 1px solid #EFF4FD; background: #F8FAFF; display: flex; justify-content: flex-end; gap: 10px; }
         .hidden { display: none !important; }
         @media (max-width: 1100px) { .workspace { grid-template-columns: 1fr; } .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { height: auto; position: static; } .hero { flex-direction: column; } .notif-item { grid-template-columns: 42px minmax(0, 1fr); } .unread-dot { display: none; } }
@@ -281,12 +296,13 @@
                                 ];
                                 $icon = $iconMap[$n['type']] ?? 'bell';
                             @endphp
-                            <form method="POST" action="{{ route('employee.notifications.open', $n['id']) }}" class="notif-form">
+                            <form method="POST" action="{{ route('employee.notifications.open', $n['id']) }}" class="notif-form" id="notif-form-{{ $n['id'] }}">
                                 @csrf
-                                <button type="submit"
+                                <div
                                     class="notif-item {{ !$n['read'] ? 'unread' : '' }}"
                                     data-type="{{ $n['type'] }}"
-                                    data-read="{{ $n['read'] ? 'true' : 'false' }}">
+                                    data-read="{{ $n['read'] ? 'true' : 'false' }}"
+                                    onclick="document.getElementById('notif-form-{{ $n['id'] }}').submit()">
                                     <span class="notif-icon {{ $n['type'] }}">
                                         <i data-lucide="{{ $icon }}" style="width:20px;height:20px"></i>
                                     </span>
@@ -297,9 +313,23 @@
                                             <i data-lucide="clock-3" style="width:13px;height:13px"></i>
                                             {{ $n['time'] }}
                                         </span>
+
+                                        {{-- Nút Nhận việc và Không nhận khi có task chờ tiếp nhận --}}
+                                        @if(!empty($n['can_accept']) && !empty($n['task_id']))
+                                            <div class="notif-actions" onclick="event.stopPropagation()">
+                                                <button type="button" class="btn-accept-notif" onclick="acceptTask({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')">
+                                                    <i data-lucide="check" style="width:14px;height:14px"></i>
+                                                    Nhận việc
+                                                </button>
+                                                <button type="button" class="btn-decline-notif" onclick="openDeclineModal({{ $n['task_id'] }}, '{{ addslashes($n['task_name'] ?? '') }}')">
+                                                    <i data-lucide="x" style="width:14px;height:14px"></i>
+                                                    Không nhận
+                                                </button>
+                                            </div>
+                                        @endif
                                     </span>
                                     <span class="{{ !$n['read'] ? 'unread-dot' : '' }}"></span>
-                                </button>
+                                </div>
                             </form>
                         @empty
                             <div class="empty-state">
@@ -345,6 +375,28 @@
     </main>
 </div>
 
+{{-- Modal từ chối nhận việc --}}
+<div class="modal-backdrop" id="decline-modal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="decline-modal-title">Từ chối nhận công việc</h3>
+            <button type="button" class="modal-close" onclick="closeDeclineModal()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+        </div>
+        <form id="decline-form" method="POST" action="">
+            @csrf
+            <div class="modal-body">
+                <p id="decline-task-name" style="font-weight:800;color:#001F5B;margin-bottom:12px;font-size:14px"></p>
+                <label for="decline-reason">Lý do từ chối (tùy chọn / gửi cho cấp trên):</label>
+                <textarea id="decline-reason" name="reason" placeholder="Nhập lý do bạn không thể nhận công việc này..."></textarea>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn-decline-notif" style="background:#fff;color:#64748B;border-color:#D4E0F7" onclick="closeDeclineModal()">Hủy bỏ</button>
+                <button type="submit" class="btn-decline-notif">Xác nhận không nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     lucide.createIcons();
 
@@ -388,6 +440,47 @@
             }
         });
     });
+
+    function acceptTask(taskId, taskName) {
+        if (!confirm(`Bạn có chắc chắn muốn nhận công việc "${taskName || 'này'}"?`)) return;
+
+        fetch(`{{ url('/employee/tasks') }}/${taskId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                alert(data.message || 'Đã tiếp nhận công việc!');
+                window.location.reload();
+            } else {
+                alert(data.message || 'Có lỗi xảy ra.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Không thể tiếp nhận công việc. Vui lòng thử lại.');
+        });
+    }
+
+    const declineModal = document.getElementById('decline-modal');
+    const declineForm = document.getElementById('decline-form');
+    const declineTaskName = document.getElementById('decline-task-name');
+
+    function openDeclineModal(taskId, taskName) {
+        declineTaskName.textContent = taskName ? `Công việc: ${taskName}` : '';
+        declineForm.action = `{{ url('/employee/tasks') }}/${taskId}/decline`;
+        declineModal.classList.add('active');
+    }
+
+    function closeDeclineModal() {
+        declineModal.classList.remove('active');
+        declineForm.reset();
+    }
 </script>
 </body>
 </html>

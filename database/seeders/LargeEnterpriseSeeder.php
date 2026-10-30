@@ -109,7 +109,7 @@ class LargeEnterpriseSeeder extends Seeder
             'Xử lý phản hồi của khách hàng VIP'
         ];
 
-        $statuses = ['Chờ xử lý', 'Đang làm', 'Đang review', 'Hoàn thành', 'Quá hạn'];
+        $statuses = ['Chờ xử lý', 'Đang làm', 'Chờ đánh giá', 'Hoàn thành', 'Quá hạn'];
         $priorities = ['Thấp', 'Trung bình', 'Cao'];
 
         for ($i = 1; $i <= 500; $i++) {
@@ -129,7 +129,7 @@ class LargeEnterpriseSeeder extends Seeder
                 $progress = 100;
             } elseif ($status === 'Đang làm') {
                 $progress = rand(10, 80);
-            } elseif ($status === 'Đang review') {
+            } elseif ($status === 'Chờ đánh giá') {
                 $progress = rand(80, 95);
             }
 

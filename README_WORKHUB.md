@@ -37,7 +37,7 @@ Giao diện quản lý công việc toàn chức năng:
 - Active members list
 
 #### 3. **Kanban Board**
-- 4 columns: Chờ xử lý → Đang làm → Đang review → Hoàn thành
+- 4 columns: Chờ xử lý → Đang làm → Chờ đánh giá → Hoàn thành
 - Kanban + List view toggle
 - Filters (Tất cả, Của tôi, Chưa giao, Quá hạn)
 - Create task modal

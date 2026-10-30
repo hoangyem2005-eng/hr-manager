@@ -38,12 +38,14 @@
     .bar-fill { height:100%; border-radius:inherit; background:#003DA5; }
     .bar-fill.red { background:#E4002B; }
     .bar-fill.green { background:#16A34A; }
-    .daily-chart { margin-top:26px; display:flex; align-items:end; gap:10px; min-height:260px; border-bottom:1px solid #D9E5F7; }
+    .daily-chart { margin-top:26px; display:flex; align-items:end; gap:8px; min-height:260px; border-bottom:1px solid #D9E5F7; }
     .day-col { flex:1; display:grid; grid-template-rows:1fr auto; gap:10px; height:260px; }
-    .day-bars { display:flex; align-items:end; justify-content:center; gap:5px; height:220px; }
-    .day-bar { width:16px; min-height:4px; border-radius:999px 999px 0 0; background:#003DA5; }
-    .day-bar.done { background:#E4002B; }
-    .day-label { text-align:center; color:#94A3B8; font-size:11px; font-weight:900; }
+    .day-bars { display:flex; align-items:end; justify-content:center; gap:4px; height:220px; }
+    .day-bar { width:12px; min-height:4px; border-radius:999px 999px 0 0; background:#2563EB; transition:opacity .15s; }
+    .day-bar:hover { opacity:.75; }
+    .day-bar.done { background:#16A34A; }
+    .day-bar.over { background:#E4002B; }
+    .day-label { text-align:center; color:#94A3B8; font-size:11px; font-weight:900; line-height:1.4; }
     .doc-list { margin-top:18px; display:grid; gap:10px; }
     .doc-item { display:grid; grid-template-columns:1fr auto; gap:10px; border:1px solid #E5EAF5; border-radius:8px; padding:12px; }
     .doc-item strong { color:#001F5B; font-size:13px; }
@@ -51,6 +53,17 @@
     .doc-pill { align-self:start; border-radius:999px; padding:5px 10px; background:#E8F0FE; color:#003DA5; font-size:11px; font-weight:900; }
     @media (max-width:1180px) { .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .panel-grid { grid-template-columns:1fr; } }
     @media (max-width:760px) { .report-hero { grid-template-columns:1fr; } .hero-mini { grid-template-columns:1fr 1fr; } .metric-grid { grid-template-columns:1fr; } }
+    /* Week navigator */
+    .chart-nav { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; }
+    .chart-nav-week { font-size:13px; font-weight:900; color:#001F5B; text-align:center; flex:1; }
+    .chart-nav-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; height:32px; padding:0 12px; border:1px solid #D4E0F7; border-radius:8px; background:#fff; color:#003DA5; font-size:12px; font-weight:900; cursor:pointer; transition:background .15s,border-color .15s; }
+    .chart-nav-btn:hover { background:#EEF4FF; border-color:#003DA5; }
+    .chart-nav-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .chart-nav-btn.today-btn { border-color:#E4002B; color:#E4002B; }
+    .chart-nav-btn.today-btn:hover { background:#FFF0F3; }
+    .chart-legend { display:flex; gap:16px; margin-top:10px; }
+    .chart-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:900; color:#64748B; }
+    .chart-legend-dot { width:10px; height:10px; border-radius:999px; }
 </style>
 
 <div class="report-page">
@@ -93,16 +106,30 @@
         <div class="panel">
             <h3>Nhịp vận hành 7 ngày</h3>
             <p>So sánh số việc được tạo và số việc hoàn thành theo ngày.</p>
-            <div class="daily-chart">
-                @foreach($lineData as $day)
-                    <div class="day-col">
-                        <div class="day-bars">
-                            <div class="day-bar" style="height:{{ max(4, ($day['assigned'] / $lineMax) * 210) }}px"></div>
-                            <div class="day-bar done" style="height:{{ max(4, ($day['completed'] / $lineMax) * 210) }}px"></div>
-                        </div>
-                        <div class="day-label">{{ $day['label'] }}</div>
-                    </div>
-                @endforeach
+
+            {{-- Week navigator --}}
+            <div class="chart-nav" id="chartNav">
+                <button class="chart-nav-btn" id="chartPrev" onclick="chartNavigate(-1)" title="Tuần trước">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Trước
+                </button>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+                    <span class="chart-nav-week" id="chartWeekLabel"></span>
+                    <button class="chart-nav-btn today-btn" id="chartToday" onclick="chartGoToday()" style="height:24px;font-size:11px;padding:0 10px">Tuần này</button>
+                </div>
+                <button class="chart-nav-btn" id="chartNext" onclick="chartNavigate(1)" title="Tuần sau">
+                    Tiếp
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="daily-chart" id="dailyChart">
+                {{-- rendered by JS --}}
+            </div>
+            <div class="chart-legend">
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#2563EB"></div>Công việc tạo mới</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#16A34A"></div>Hoàn thành</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#E4002B"></div>Quá hạn</div>
             </div>
         </div>
 
@@ -154,3 +181,69 @@
         </div>
     </section>
 </div>
+
+<script>
+(function() {
+    const WEEKS = @json($lineDataWeeks);
+    // Find index of current week (weekOffset === 0)
+    let currentIdx = WEEKS.findIndex(w => w.weekOffset === 0);
+    if (currentIdx < 0) currentIdx = Math.max(0, WEEKS.length - 4);
+    let activeIdx = currentIdx;
+
+    function renderChart(idx) {
+        const week = WEEKS[idx];
+        if (!week) return;
+
+        // Update week label
+        document.getElementById('chartWeekLabel').textContent = week.label;
+
+        // Disable/enable nav buttons
+        document.getElementById('chartPrev').disabled = idx <= 0;
+        document.getElementById('chartNext').disabled = idx >= WEEKS.length - 1;
+
+        // Highlight today button if showing current week
+        const todayBtn = document.getElementById('chartToday');
+        todayBtn.style.opacity = idx === currentIdx ? '.4' : '1';
+        todayBtn.style.pointerEvents = idx === currentIdx ? 'none' : '';
+
+        // Calculate max for scaling
+        const maxVal = Math.max(1, ...week.days.flatMap(d => [d.assigned, d.completed, d.overdue || 0]));
+        const BAR_H = 210;
+        const MIN_H = 4;
+
+        const html = week.days.map(day => {
+            const aH = Math.max(MIN_H, (day.assigned          / maxVal) * BAR_H);
+            const cH = Math.max(MIN_H, (day.completed         / maxVal) * BAR_H);
+            const oH = Math.max(MIN_H, ((day.overdue || 0)    / maxVal) * BAR_H);
+            const isToday = day.date === '{{ \Carbon\Carbon::today()->format("Y-m-d") }}';
+            const todayOpacity = isToday ? 'opacity:.6;' : '';
+            const tooltip = `${day.label}: ${day.assigned} tạo mới, ${day.completed} hoàn thành, ${day.overdue || 0} quá hạn`;
+            return `<div class="day-col" title="${tooltip}">`
+                 + `  <div class="day-bars">`
+                 + `    <div class="day-bar" style="height:${aH}px;${todayOpacity}" title="Tạo mới: ${day.assigned}"></div>`
+                 + `    <div class="day-bar done" style="height:${cH}px;${todayOpacity}" title="Hoàn thành: ${day.completed}"></div>`
+                 + `    <div class="day-bar over" style="height:${oH}px;${todayOpacity}" title="Quá hạn: ${day.overdue || 0}"></div>`
+                 + `  </div>`
+                 + `  <div class="day-label" style="${isToday ? 'color:#2563EB;font-weight:900;' : ''}">${day.label}${isToday ? '<br><span style="font-size:9px;color:#E4002B">Hôm nay</span>' : ''}</div>`
+                 + `</div>`;
+        }).join('');
+
+        document.getElementById('dailyChart').innerHTML = html;
+    }
+
+    window.chartNavigate = function(delta) {
+        const next = activeIdx + delta;
+        if (next < 0 || next >= WEEKS.length) return;
+        activeIdx = next;
+        renderChart(activeIdx);
+    };
+
+    window.chartGoToday = function() {
+        activeIdx = currentIdx;
+        renderChart(activeIdx);
+    };
+
+    // Initial render
+    renderChart(activeIdx);
+})();
+</script>

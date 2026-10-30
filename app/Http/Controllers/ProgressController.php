@@ -48,8 +48,10 @@ class ProgressController extends Controller
             ->when(!$user->isDirector() && !$user->isLeader(), function ($q) use ($user) {
                 $q->where('assigned_to', $user->id);
             })
-            ->orderByRaw('ISNULL(deadline)')   // Task có deadline lên trước
-            ->orderBy('deadline')
+            ->orderByRaw("CASE WHEN status IN ('Done', 'Hoàn thành', 'hoàn thành') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
+            ->orderBy('created_at', 'desc')
             ->paginate(15)
             ->withQueryString();
 

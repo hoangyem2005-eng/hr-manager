@@ -41,7 +41,10 @@ class TaskController extends Controller
             ->when(!$user->isLeader() && !$user->isDirector(), function ($q) use ($user) {
                 $q->where('assigned_to', $user->id);
             })
-            ->latest()
+            ->orderByRaw("CASE WHEN status IN ('Hoàn thành', 'Done') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
+            ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
@@ -55,10 +58,29 @@ class TaskController extends Controller
      */
     public function create()
     {
-        $users  = User::orderBy('name')->get();
+        $currentUser = Auth::user();
+        if ($currentUser->isDirector()) {
+            $users = User::with(['department', 'role'])
+                ->where('role_id', '!=', User::ROLE_EMPLOYEE)
+                ->where('id', '!=', $currentUser->id)
+                ->orderBy('department_id')
+                ->orderBy('name')
+                ->get();
+            $title = 'Giao công việc cho Trưởng phòng';
+        } elseif ($currentUser->isLeader()) {
+            $users = User::with(['department', 'role'])
+                ->where('department_id', $currentUser->department_id)
+                ->where('role_id', User::ROLE_EMPLOYEE)
+                ->orderBy('name')
+                ->get();
+            $title = 'Giao công việc cho nhân viên';
+        } else {
+            $users = collect([$currentUser]);
+            $title = 'Đề xuất công việc mới';
+        }
+
         $task   = new Task(['status' => 'Todo', 'progress' => 0]);
         $action = route('congviec.luu');
-        $title  = 'Giao công việc mới';
 
         return view('admin.layouts.congviec.form', compact('users', 'task', 'action', 'title'));
     }
@@ -69,6 +91,14 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateTask($request);
+        $currentUser = Auth::user();
+
+        if ($currentUser->isDirector() && !empty($validated['assigned_to'])) {
+            $assignee = User::find($validated['assigned_to']);
+            if ($assignee && $assignee->role_id === User::ROLE_EMPLOYEE) {
+                return back()->withInput()->withErrors(['assigned_to' => 'Lãnh đạo không trực tiếp giao việc cho nhân viên, vui lòng giao cho Trưởng phòng/Quản lý đơn vị.']);
+            }
+        }
 
         $task = Task::create([
             'task_name'   => $validated['task_name'],
@@ -87,7 +117,7 @@ class TaskController extends Controller
         }
 
         // Gửi thông báo cho người được giao việc
-        $this->notifyAssignee($task, 'Bạn vừa được giao công việc mới');
+        $this->notifyAssignee($task, $currentUser->isDirector() ? 'Lãnh đạo giao công việc mới cho đơn vị' : 'Bạn vừa được giao công việc mới');
 
         return redirect()
             ->route('congviec.danhsach')
@@ -131,7 +161,12 @@ class TaskController extends Controller
             $task->documents->filter(fn (Document $document) => $this->canViewDocument($document, $user))->values()
         );
 
-        return view('manager.task-detail', compact('task'));
+        $myTeam = User::where('department_id', $user->department_id)
+            ->where('role_id', User::ROLE_EMPLOYEE)
+            ->orderBy('name')
+            ->get();
+
+        return view('manager.task-detail', compact('task', 'myTeam'));
     }
 
     // ==================== CHỈNH SỬA CÔNG VIỆC ====================
@@ -141,10 +176,30 @@ class TaskController extends Controller
      */
     public function edit($id)
     {
-        $task   = Task::with('documents')->findOrFail($id);
-        $users  = User::orderBy('name')->get();
+        $task = Task::with('documents')->findOrFail($id);
+        $currentUser = Auth::user();
+
+        if ($currentUser->isDirector()) {
+            $users = User::with(['department', 'role'])
+                ->where('role_id', '!=', User::ROLE_EMPLOYEE)
+                ->where('id', '!=', $currentUser->id)
+                ->orderBy('department_id')
+                ->orderBy('name')
+                ->get();
+            $title = 'Sửa công việc giao Trưởng phòng';
+        } elseif ($currentUser->isLeader()) {
+            $users = User::with(['department', 'role'])
+                ->where('department_id', $currentUser->department_id)
+                ->where('role_id', User::ROLE_EMPLOYEE)
+                ->orderBy('name')
+                ->get();
+            $title = 'Sửa công việc nhân viên';
+        } else {
+            $users = collect([$currentUser]);
+            $title = 'Sửa đề xuất công việc';
+        }
+
         $action = route('congviec.capnhat', $task->id);
-        $title  = 'Sửa công việc';
 
         return view('admin.layouts.congviec.form', compact('users', 'task', 'action', 'title'));
     }
@@ -302,6 +357,258 @@ class TaskController extends Controller
         return redirect()
             ->back()
             ->with('thongbao', 'Tải lên tệp đính kèm thành công.');
+    }
+
+    // ==================== ĐÁNH GIÁ CÔNG VIỆC ====================
+
+    /**
+     * Nhân viên tiếp nhận công việc.
+     */
+    public function acceptTask(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+        $user = Auth::user();
+
+        abort_unless(
+            (int) $task->assigned_to === (int) $user->id
+                || $task->assignees->contains('id', $user->id),
+            403,
+            'Bạn không có quyền thao tác trên công việc này.'
+        );
+
+        $task->update([
+            'status' => 'Đang làm',
+            'progress' => $task->progress > 0 ? $task->progress : 10,
+        ]);
+
+        Notification::where('user_id', $user->id)
+            ->where('task_id', $task->id)
+            ->update(['is_read' => true]);
+
+        if ($task->assigned_by && (int)$task->assigned_by !== (int)$user->id) {
+            try {
+                Notification::create([
+                    'user_id' => $task->assigned_by,
+                    'task_id' => $task->id,
+                    'title'   => 'Nhân viên đã nhận việc',
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT)
+                               . ': ' . $user->name . ' đã tiếp nhận công việc "' . $task->task_name . '".',
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning('Lỗi tạo notification nhận việc: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Đã tiếp nhận công việc thành công.',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'progress' => $task->progress,
+                ],
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Bạn đã tiếp nhận công việc: {$task->task_name}");
+    }
+
+    /**
+     * Nhân viên từ chối nhận công việc kèm lý do.
+     */
+    public function declineTask(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+        $user = Auth::user();
+
+        abort_unless(
+            (int) $task->assigned_to === (int) $user->id
+                || $task->assignees->contains('id', $user->id),
+            403,
+            'Bạn không có quyền thao tác trên công việc này.'
+        );
+
+        $request->validate([
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $reason = trim($request->input('reason', ''));
+
+        $task->update([
+            'status' => 'Từ chối',
+            'employee_note' => $reason ? ('[Lý do không nhận việc]: ' . $reason) : $task->employee_note,
+        ]);
+
+        Notification::where('user_id', $user->id)
+            ->where('task_id', $task->id)
+            ->update(['is_read' => true]);
+
+        if ($task->assigned_by && (int)$task->assigned_by !== (int)$user->id) {
+            try {
+                Notification::create([
+                    'user_id' => $task->assigned_by,
+                    'task_id' => $task->id,
+                    'title'   => 'Nhân viên không nhận việc',
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT)
+                               . ': ' . $user->name . ' từ chối nhận việc "' . $task->task_name . '".'
+                               . ($reason ? ' Lý do: ' . $reason : ''),
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning('Lỗi tạo notification từ chối nhận việc: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Đã phản hồi không nhận công việc.',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                ],
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Đã phản hồi không nhận công việc: {$task->task_name}");
+    }
+
+    /**
+     * Nhân viên gửi ghi chú tự đánh giá / nộp việc cho cấp trên duyệt.
+     */
+    public function submitEmployeeNote(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+        $user = Auth::user();
+
+        // Chỉ người được giao (hoặc cộng tác viên) mới được gửi
+        abort_unless(
+            (int) $task->assigned_to === (int) $user->id
+                || $task->assignees->contains('id', $user->id),
+            403,
+            'Bạn không có quyền gửi đánh giá cho công việc này.'
+        );
+
+        $request->validate([
+            'employee_note' => 'nullable|string|max:2000',
+            'progress' => 'nullable|integer|min:0|max:100',
+        ], [
+            'employee_note.max' => 'Ghi chú / mô tả không được vượt quá 2000 ký tự.',
+        ]);
+
+        $note = $request->input('employee_note');
+        $progress = $request->filled('progress') ? (int) $request->input('progress') : ($task->progress < 80 ? 100 : $task->progress);
+
+        $task->update([
+            'status' => 'Chờ đánh giá',
+            'progress' => $progress,
+            'employee_note' => $note,
+        ]);
+
+        if ($task->assigned_by && (int)$task->assigned_by !== (int)$user->id) {
+            try {
+                Notification::create([
+                    'user_id' => $task->assigned_by,
+                    'task_id' => $task->id,
+                    'title'   => 'Nhân viên nộp việc chờ duyệt',
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT)
+                               . ': ' . $user->name . ' đã nộp công việc "' . $task->task_name . '" để chờ duyệt.'
+                               . ($note ? ' Mô tả: ' . \Illuminate\Support\Str::limit($note, 80) : ''),
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning('Lỗi tạo notification nộp việc: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Đã gửi ghi chú / nộp công việc cho cấp trên duyệt.',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'progress' => $task->progress,
+                    'employee_note' => $task->employee_note,
+                ]
+            ]);
+        }
+
+        return redirect()->back()->with('thongbao', 'Đã nộp công việc cho cấp trên duyệt.');
+    }
+
+    /**
+     * Cấp trên chấm điểm (1-5 sao) + nhận xét + tùy chọn duyệt Hoàn thành / Trả lại.
+     */
+    public function submitEvaluation(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+        $user = Auth::user();
+
+        // Chỉ Trưởng phòng hoặc Giám đốc mới được chấm
+        abort_unless($user->isLeader() || $user->isDirector(), 403, 'Bạn không có quyền chấm điểm.');
+        abort_unless($task->status === 'Chờ đánh giá', 422, 'Công việc chưa ở trạng thái Chờ đánh giá.');
+
+        $validated = $request->validate([
+            'evaluation_score'   => 'required|integer|min:1|max:5',
+            'evaluation_comment' => 'nullable|string|max:2000',
+            'action'             => 'required|in:approve,return',
+        ], [
+            'evaluation_score.required' => 'Vui lòng chọn số sao đánh giá.',
+            'evaluation_score.min'      => 'Số sao tối thiểu là 1.',
+            'evaluation_score.max'      => 'Số sao tối đa là 5.',
+            'action.required'           => 'Vui lòng chọn hành động.',
+            'action.in'                 => 'Hành động không hợp lệ.',
+        ]);
+
+        $newStatus = $validated['action'] === 'approve' ? 'Hoàn thành' : 'Đang làm';
+        $newProgress = $validated['action'] === 'approve' ? 100 : $task->progress;
+
+        $task->update([
+            'evaluation_score'   => $validated['evaluation_score'],
+            'evaluation_comment' => $validated['evaluation_comment'] ?? null,
+            'evaluated_by'       => $user->id,
+            'evaluated_at'       => now(),
+            'status'             => $newStatus,
+            'progress'           => $newProgress,
+        ]);
+
+        // Thông báo cho nhân viên
+        if ($task->assigned_to && User::where('id', $task->assigned_to)->exists()) {
+            $actionLabel = $validated['action'] === 'approve' ? 'được duyệt hoàn thành' : 'trả lại để tiếp tục';
+            try {
+                Notification::create([
+                    'user_id' => $task->assigned_to,
+                    'task_id' => $task->id,
+                    'title'   => 'Kết quả đánh giá công việc',
+                    'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT)
+                               . ': ' . $task->task_name
+                               . ' đã ' . $actionLabel
+                               . ' (' . $validated['evaluation_score'] . '★ bởi ' . $user->name . ').',
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning('Không thể tạo thông báo đánh giá cho task #' . $task->id . ': ' . $e->getMessage());
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'      => true,
+                'status'  => $newStatus,
+                'message' => $validated['action'] === 'approve'
+                    ? 'Đã duyệt hoàn thành công việc.'
+                    : 'Đã trả lại công việc để tiếp tục.',
+            ]);
+        }
+
+        $msg = $validated['action'] === 'approve'
+            ? 'Đã duyệt hoàn thành công việc.'
+            : 'Đã trả lại công việc để tiếp tục.';
+
+        return redirect()->back()->with('thongbao', $msg);
     }
 
     // ==================== XÓA FILE ĐỘC LẬP ====================
@@ -507,11 +814,7 @@ class TaskController extends Controller
             return true;
         }
 
-        if ($user->isDirector()) {
-            return true;
-        }
-
-        if ($user->isLeader()) {
+        if ($user->isLeader() || (int) $user->role_id === User::ROLE_MANAGER) {
             $document->loadMissing(['task.assignee', 'uploader']);
             $document->task?->loadMissing('assignees');
 
@@ -521,6 +824,10 @@ class TaskController extends Controller
                 || (int) optional($document->task)->assigned_by === (int) $user->id
                 || (int) optional($document->task)->assigned_to === (int) $user->id
                 || optional($document->task)->assignees?->contains('id', $user->id);
+        }
+
+        if ($user->isDirector()) {
+            return $document->review_status === Document::STATUS_DIRECTOR_VISIBLE;
         }
 
         return false;

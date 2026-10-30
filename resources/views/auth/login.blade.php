@@ -478,7 +478,7 @@
                     <a href="{{ route('landing') }}" class="btn btn-ghost"><i data-lucide="chevron-left"></i> Quay lại trang chủ</a>
                 </form>
 
-                <div class="switch-auth">Chưa có tài khoản? <a href="{{ route('register') }}" class="link">Đăng ký ngay</a></div>
+                <div class="switch-auth">Hệ thống phân quyền nội bộ MobiFone WorkHub</div>
                 <div class="copyright">© 2026 MobiFone WorkHub · v2.4.1</div>
             </div>
         </section>

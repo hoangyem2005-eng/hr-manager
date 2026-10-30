@@ -127,7 +127,7 @@ class DashboardController extends Controller
                 'assigned_by' => 1,
                 'assigned_to' => 5,
                 'deadline' => Carbon::now()->addDays(5),
-                'status' => 'Đang review',
+                'status' => 'Chờ đánh giá',
             ]);
             Task::create([
                 'task_name' => 'Cập nhật chính sách phúc lợi nhân viên',
@@ -234,10 +234,11 @@ class DashboardController extends Controller
             'báº£o hiá»ƒm' => 'bảo hiểm',
             'nghá»‰ mÃ¡t' => 'nghỉ mát',
             'HoÃ n thÃ nh' => 'Hoàn thành',
-            'Äang lÃ m' => 'Đang làm',
+            'Ä ang lÃ m' => 'Đang làm',
             'QuÃ¡ háº¡n' => 'Quá hạn',
-            'Chá» xá»­ lÃ½' => 'Chờ xử lý',
-            'Äang review' => 'Đang review',
+            'Chá»  xá»­ lÃ½' => 'Chờ xử lý',
+            'Ä ang review' => 'Chờ đánh giá',
+            'Đang review' => 'Chờ đánh giá',
             'Trung bÃ¬nh' => 'Trung bình',
             'Tháº¥p' => 'Thấp',
             'KhÃ´ng cÃ³' => 'Không có',
@@ -267,7 +268,123 @@ class DashboardController extends Controller
 
     public function landing()
     {
-        return view('landing');
+        $this->ensureMockDataExists();
+
+        $today = Carbon::today();
+        $allTasks = Task::with(['assignee.department', 'assigner', 'documents'])->get();
+        $departments = Department::all();
+        $allUsers = User::with('department')->get();
+        $totalDocuments = Document::count();
+
+        $totalTasks = $allTasks->count();
+        $totalDepartments = $departments->count();
+
+        $normalizedStatus = function (Task $task): string {
+            return mb_strtolower($this->cleanVietnameseText($task->status ?? ''));
+        };
+
+        $isDone = function (Task $task) use ($normalizedStatus): bool {
+            $status = $normalizedStatus($task);
+            return in_array($status, ['hoàn thành', 'done'], true) || (int) ($task->progress ?? 0) >= 100;
+        };
+
+        $isOverdue = function (Task $task) use ($today, $isDone): bool {
+            return !$isDone($task)
+                && $task->deadline
+                && Carbon::parse($task->deadline)->lt($today);
+        };
+
+        $completedTasks = $allTasks->filter($isDone);
+        $overdueTasks = $allTasks->filter($isOverdue);
+        $inProgressTasks = $allTasks->filter(function (Task $task) use ($normalizedStatus, $isDone, $isOverdue) {
+            $status = $normalizedStatus($task);
+            return !$isDone($task)
+                && !$isOverdue($task)
+                && (str_contains($status, 'đang làm') || str_contains($status, 'review') || (int) ($task->progress ?? 0) > 0);
+        });
+
+        $doneTasks = $completedTasks->count();
+        $overdueCount = $overdueTasks->count();
+        $doingTasks = $inProgressTasks->count();
+
+        $onTimeRate = $totalTasks > 0 ? max(0, round((($totalTasks - $overdueCount) / $totalTasks) * 100)) : 100;
+
+        $avgProgress = $totalTasks > 0 ? round($allTasks->avg('progress') ?? 0) : 0;
+        $companyProgress = $avgProgress > 0 ? $avgProgress : ($totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0);
+
+        // Card 1: Lãnh đạo stats
+        $activeDepartmentsCount = $departments->filter(function ($dept) use ($allTasks) {
+            return $allTasks->contains(fn ($t) => (int) optional($t->assignee)->department_id === (int) $dept->id);
+        })->count();
+        if ($activeDepartmentsCount === 0) {
+            $activeDepartmentsCount = $totalDepartments;
+        }
+
+        // Card 2: Trưởng phòng stats
+        $pendingAssignTasksCount = $allTasks->filter(function (Task $task) use ($normalizedStatus, $isDone) {
+            $status = $normalizedStatus($task);
+            return !$isDone($task) && (str_contains($status, 'chờ') || $status === 'todo' || is_null($task->assigned_to));
+        })->count();
+        $deptHeadProgress = $totalTasks > 0 ? min(100, round((($doingTasks + $doneTasks) / $totalTasks) * 100)) : 0;
+        $availableEmployeesCount = $allUsers->where('role_id', User::ROLE_EMPLOYEE)->count();
+        if ($availableEmployeesCount === 0) {
+            $availableEmployeesCount = $allUsers->count();
+        }
+
+        // Card 3: Nhân viên stats
+        $highPriorityTasksCount = $allTasks->filter(function (Task $task) use ($isDone) {
+            return !$isDone($task) && in_array($task->priority, ['Cao', 'Khẩn cấp', 'High'], true);
+        })->count();
+        if ($highPriorityTasksCount === 0 && $doingTasks > 0) {
+            $highPriorityTasksCount = $doingTasks;
+        }
+        $employeeProgress = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
+
+        // Department performance stats
+        $departmentStats = $departments->map(function (Department $dept) use ($allTasks, $isDone) {
+            $deptTasks = $allTasks->filter(fn (Task $t) => (int) optional($t->assignee)->department_id === (int) $dept->id);
+            $total = $deptTasks->count();
+            $completed = $deptTasks->filter($isDone)->count();
+            $rate = $total > 0 ? round(($completed / $total) * 100) : 0;
+
+            $fillClass = $rate >= 70 ? 'green' : ($rate < 50 ? 'red' : '');
+            return [
+                'name' => $this->cleanVietnameseText($dept->TENPHONG ?: $dept->name),
+                'total' => $total,
+                'completed' => $completed,
+                'rate' => $rate,
+                'fill_class' => $fillClass,
+            ];
+        });
+
+        // Dynamic ticker items
+        $tickerItems = [
+            ['send', 'Lãnh đạo vừa giao mục tiêu tuần'],
+            ['users', 'Phòng ' . ($departments->first()->TENPHONG ?? 'Kinh doanh') . ' đang xử lý ' . ($doingTasks ?: $totalTasks) . ' công việc'],
+            ['paperclip', 'Tài liệu mới được đính kèm vào hệ thống'],
+            ['bell', 'Tỷ lệ đúng hạn toàn chi nhánh đạt ' . $onTimeRate . '%'],
+            ['bar-chart-3', 'Báo cáo hiệu suất ' . $totalDepartments . ' phòng ban đang đồng bộ'],
+            ['shield-check', 'Quyền truy cập phân cấp theo chức vụ'],
+        ];
+
+        return view('landing', compact(
+            'totalTasks',
+            'totalDepartments',
+            'totalDocuments',
+            'doneTasks',
+            'overdueCount',
+            'doingTasks',
+            'onTimeRate',
+            'companyProgress',
+            'activeDepartmentsCount',
+            'pendingAssignTasksCount',
+            'deptHeadProgress',
+            'availableEmployeesCount',
+            'highPriorityTasksCount',
+            'employeeProgress',
+            'departmentStats',
+            'tickerItems'
+        ));
     }
 
     public function index()
@@ -279,8 +396,14 @@ class DashboardController extends Controller
         $doneTasks = Task::where('status', 'Hoàn thành')->count();
         $overdueTasks = Task::where('status', 'Quá hạn')->count();
 
-        // 2. Lấy danh sách công việc gần đây
-        $tasks = Task::with('assignee')->orderBy('updated_at', 'desc')->take(5)->get();
+        // 2. Lấy danh sách công việc gần đây (ưu tiên việc sắp hết hạn)
+        $tasks = Task::with('assignee')
+            ->orderByRaw("CASE WHEN status IN ('Hoàn thành', 'Done') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
         // Map thông tin thực tế từ database
         $projectNames = [
@@ -316,7 +439,7 @@ class DashboardController extends Controller
                 'priority' => $t->priority ?? 'Trung bình',
                 'deadline' => $t->deadline ? Carbon::parse($t->deadline)->format('d/m/Y') : 'Không có',
                 'status' => $status,
-                'progress' => $t->progress ?? ($status == 'Hoàn thành' ? 100 : ($status == 'Đang làm' ? 65 : ($status == 'Đang review' ? 80 : 0)))
+                'progress' => $t->progress ?? ($status == 'Hoàn thành' ? 100 : ($status == 'Đang làm' ? 65 : ($status == 'Chờ đánh giá' ? 80 : 0)))
             ];
         });
 
@@ -336,7 +459,7 @@ class DashboardController extends Controller
         $statusDistribution = [
             ['name' => 'Hoàn thành', 'value' => Task::where('status', 'Hoàn thành')->count()],
             ['name' => 'Đang làm', 'value' => Task::where('status', 'Đang làm')->count()],
-            ['name' => 'Đang review', 'value' => Task::where('status', 'Đang review')->count()],
+            ['name' => 'Chờ đánh giá', 'value' => Task::where('status', 'Chờ đánh giá')->count()],
             ['name' => 'Chờ xử lý', 'value' => Task::whereIn('status', ['Chờ xử lý', 'Todo'])->count()],
         ];
 
@@ -376,7 +499,11 @@ class DashboardController extends Controller
                 if ($isProposalMode) {
                     $q->where('is_proposal', true)
                       ->where('proposal_step', 1)
-                      ->whereIn('assigned_to', $teamMemberIds);
+                      ->where(function ($sub) use ($currentUser, $teamMemberIds) {
+                          $sub->whereIn('assigned_to', $teamMemberIds)
+                              ->orWhere('assigned_by', $currentUser->id)
+                              ->orWhereIn('assigned_by', $teamMemberIds);
+                      });
                 } else {
                     $q->where('is_proposal', false)
                       ->where(function ($sub) use ($currentUser, $teamMemberIds) {
@@ -387,11 +514,19 @@ class DashboardController extends Controller
                 }
             });
         } elseif ($currentUser->isEmployee()) {
-            $query->where('is_proposal', false)
-                ->where(function ($q) use ($currentUser) {
-                    $q->where('assigned_to', $currentUser->id)
-                        ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
-                });
+            if ($isProposalMode) {
+                $query->where('is_proposal', true)
+                    ->where(function ($q) use ($currentUser) {
+                        $q->where('assigned_to', $currentUser->id)
+                          ->orWhere('assigned_by', $currentUser->id);
+                    });
+            } else {
+                $query->where('is_proposal', false)
+                    ->where(function ($q) use ($currentUser) {
+                        $q->where('assigned_to', $currentUser->id)
+                            ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $currentUser->id));
+                    });
+            }
         }
 
         // Helper to normalize English and legacy statuses to standard Vietnamese
@@ -407,13 +542,31 @@ class DashboardController extends Controller
             if (in_array($statusLower, ['todo', 'chờ xử lý'], true)) {
                 return 'Chờ xử lý';
             }
-            if ($statusLower === 'đang review') {
-                return 'Đang review';
+            if (in_array($statusLower, ['đang review', 'chờ đánh giá'], true)) {
+                return 'Chờ đánh giá';
             }
             if ($statusLower === 'quá hạn') {
                 return 'Quá hạn';
             }
+            if (in_array($statusLower, ['từ chối', 'không nhận', 'rejected', 'declined'], true)) {
+                return 'Từ chối';
+            }
             return $status;
+        };
+
+        // Helper to check if task is assigned to a department head / leader
+        $isDeptHeadAssignee = function ($task) {
+            $assignees = $task->assignees->isNotEmpty() ? $task->assignees : collect([$task->assignee])->filter();
+            return $assignees->contains(function ($u) {
+                return $u && ($u->isLeader() || in_array((int) $u->role_id, [
+                    \App\Models\User::ROLE_DEPT_HEAD_BIZ,
+                    \App\Models\User::ROLE_DEPT_DEP_BIZ,
+                    \App\Models\User::ROLE_DEPT_HEAD_TEL,
+                    \App\Models\User::ROLE_DEPT_HEAD_GEN,
+                    \App\Models\User::ROLE_MANAGER,
+                    \App\Models\User::ROLE_ADMIN,
+                ], true));
+            });
         };
 
         // Clone the base query to calculate global metrics that don't change when filtering
@@ -422,11 +575,17 @@ class DashboardController extends Controller
             'total' => $baseTasks->count(),
             'doing' => $baseTasks->filter(function($t) use ($normalizeStatus) {
                 $status = $normalizeStatus($t->status);
-                return in_array($status, ['Đang làm', 'Chờ xử lý', 'Đang review', 'Todo'], true);
+                return in_array($status, ['Đang làm', 'Chờ xử lý', 'Chờ đánh giá', 'Todo'], true);
             })->count(),
-            'pending' => $baseTasks->filter(function($t) use ($normalizeStatus) {
+            'pending' => $baseTasks->filter(function($t) use ($normalizeStatus, $currentUser, $isDeptHeadAssignee) {
                 $status = $normalizeStatus($t->status);
-                return in_array($status, ['Chờ xử lý', 'Todo'], true);
+                if (!in_array($status, ['Chờ xử lý', 'Todo'], true)) {
+                    return false;
+                }
+                if ($currentUser->isDirector()) {
+                    return $isDeptHeadAssignee($t);
+                }
+                return true;
             })->count(),
             'done' => $baseTasks->filter(function($t) use ($normalizeStatus) {
                 $status = $normalizeStatus($t->status);
@@ -452,7 +611,7 @@ class DashboardController extends Controller
                   });
             });
         } elseif ($filter === 'Đang xử lý') {
-            $query->whereIn('status', ['Đang làm', 'Chờ xử lý', 'Đang review', 'Todo']);
+            $query->whereIn('status', ['Đang làm', 'Chờ xử lý', 'Chờ đánh giá', 'Todo']);
         } elseif ($filter === 'Hoàn thành') {
             $query->where('status', 'Hoàn thành');
         }
@@ -466,12 +625,18 @@ class DashboardController extends Controller
             });
         }
 
-        $allTasks = $query->with('documents.uploader')->orderBy('created_at', 'desc')->get();
+        $allTasks = $query->with('documents.uploader')
+            ->orderByRaw("CASE WHEN status IN ('Hoàn thành', 'Done') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END ASC")
+            ->orderBy('deadline', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
+        $pendingColLabel = $currentUser->isDirector() ? 'Chờ TP nhận việc' : 'Chờ xử lý';
         $cols = [
-            'pending' => ['label' => 'Chờ xử lý', 'color' => '#6B7280', 'bg' => '#F9FAFB', 'tasks' => []],
+            'pending' => ['label' => $pendingColLabel, 'color' => '#6B7280', 'bg' => '#F9FAFB', 'tasks' => []],
             'doing' => ['label' => 'Đang làm', 'color' => '#D97706', 'bg' => '#FFFBEB', 'tasks' => []],
-            'review' => ['label' => 'Đang review', 'color' => '#2563EB', 'bg' => '#EFF6FF', 'tasks' => []],
+            'review' => ['label' => 'Chờ đánh giá', 'color' => '#2563EB', 'bg' => '#EFF6FF', 'tasks' => []],
             'done' => ['label' => 'Hoàn thành', 'color' => '#16A34A', 'bg' => '#F0FDF4', 'tasks' => []],
         ];
 
@@ -528,6 +693,21 @@ class DashboardController extends Controller
                 ->sortByDesc('created_at')
                 ->values();
 
+            $isOverdue = ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast());
+            $isDueSoon = false;
+            $daysLeft = null;
+            if (!$isOverdue && $status !== 'Hoàn thành' && $t->deadline) {
+                $deadlineEnd = Carbon::parse($t->deadline)->endOfDay();
+                if ($deadlineEnd->isFuture()) {
+                    $daysLeft = (int) Carbon::now()->startOfDay()->diffInDays($deadlineEnd->copy()->startOfDay(), false);
+                    if ($daysLeft <= 3 && $daysLeft >= 0) {
+                        $isDueSoon = true;
+                    }
+                }
+            }
+
+            $isAssignedToDeptHead = $isDeptHeadAssignee($t);
+
             $mapped = [
                 'id' => $t->id,
                 'code' => 'WH-' . str_pad($t->id, 3, '0', STR_PAD_LEFT),
@@ -540,6 +720,7 @@ class DashboardController extends Controller
                 'assignee' => $assignees->isNotEmpty() ? $this->cleanVietnameseText($assignees->pluck('name')->join(', ')) : ($user ? $this->cleanVietnameseText($user->name) : 'Chưa giao'),
                 'assignee_id' => $t->assigned_to,
                 'assigned_by' => $t->assigned_by,
+                'is_assigned_to_dept_head' => $isAssignedToDeptHead,
                 'lead' => $lead ? $this->cleanVietnameseText($lead->name) : 'Chua co',
                 'lead_id' => $lead?->id,
                 'collaborators' => $assignees
@@ -559,8 +740,10 @@ class DashboardController extends Controller
                     ? max(0, (int) Carbon::now()->diffInMinutes($t->acceptance_deadline, false))
                     : null,
                 'status' => $status,
-                'is_overdue' => ($status === 'Quá hạn') || ($status !== 'Hoàn thành' && $t->deadline && Carbon::parse($t->deadline)->endOfDay()->isPast()),
-                'progress' => $t->progress ?? ($status === 'Hoàn thành' ? 100 : ($status === 'Đang làm' ? 65 : ($status === 'Đang review' ? 80 : 0))),
+                'is_overdue' => $isOverdue,
+                'is_due_soon' => $isDueSoon,
+                'days_left' => $daysLeft,
+                'progress' => $t->progress ?? ($status === 'Hoàn thành' ? 100 : ($status === 'Đang làm' ? 65 : ($status === 'Chờ đánh giá' ? 80 : 0))),
                 'is_proposal' => (bool) $t->is_proposal,
                 'proposal_step' => (int) $t->proposal_step,
                 'assignee_ids' => $assignees->pluck('id')->toArray(),
@@ -588,10 +771,17 @@ class DashboardController extends Controller
             $mappedTasksList[] = $mapped;
 
             if (in_array($status, ['Chờ xử lý', 'Todo'], true)) {
-                $cols['pending']['tasks'][] = $mapped;
+                if ($currentUser->isDirector()) {
+                    // Đối với Giám đốc/Lãnh đạo: Chỉ hiển thị các công việc giao cho Trưởng phòng nhận việc ở cột này
+                    if ($isAssignedToDeptHead) {
+                        $cols['pending']['tasks'][] = $mapped;
+                    }
+                } else {
+                    $cols['pending']['tasks'][] = $mapped;
+                }
             } elseif ($status === 'Đang làm') {
                 $cols['doing']['tasks'][] = $mapped;
-            } elseif ($status === 'Đang review') {
+            } elseif ($status === 'Chờ đánh giá') {
                 $cols['review']['tasks'][] = $mapped;
             } elseif ($status === 'Hoàn thành') {
                 $cols['done']['tasks'][] = $mapped;
@@ -624,7 +814,13 @@ class DashboardController extends Controller
             ->values();
 
         if ($currentUser->isDirector()) {
-            $allUsers = User::with(['department', 'role'])->orderBy('role_id')->orderBy('name')->get();
+            $allUsers = User::with(['department', 'role'])
+                ->where('role_id', '!=', User::ROLE_EMPLOYEE)
+                ->where('id', '!=', $currentUser->id)
+                ->orderBy('department_id')
+                ->orderBy('role_id')
+                ->orderBy('name')
+                ->get();
             $roleVariant = 'director';
         } elseif ($currentUser->isLeader()) {
             $allUsers = User::with(['department', 'role'])
@@ -638,15 +834,30 @@ class DashboardController extends Controller
             $roleVariant = 'employee';
         }
 
+        $approvers = User::with(['department', 'role'])
+            ->whereIn('role_id', [
+                User::ROLE_ADMIN,
+                User::ROLE_MANAGER,
+                User::ROLE_DEPT_HEAD_BIZ,
+                User::ROLE_DEPT_DEP_BIZ,
+                User::ROLE_DEPT_HEAD_TEL,
+                User::ROLE_DEPT_HEAD_GEN,
+            ])
+            ->where('is_active', true)
+            ->where('id', '!=', $currentUser->id)
+            ->orderBy('role_id')
+            ->orderBy('name')
+            ->get();
+
         if ($currentUser->isDirector()) {
-            return view('admin.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
+            return view('admin.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'approvers', 'roleVariant', 'globalMetrics'));
         }
 
         if ($currentUser->isLeader()) {
-            return view('manager.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
+            return view('manager.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'approvers', 'roleVariant', 'globalMetrics'));
         }
 
-        return view('employee.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'roleVariant', 'globalMetrics'));
+        return view('employee.tasks', compact('viewType', 'filter', 'cols', 'mappedTasksList', 'projectGroups', 'allUsers', 'approvers', 'roleVariant', 'globalMetrics'));
     }
 
     public function saveTask(Request $request)
@@ -668,6 +879,7 @@ class DashboardController extends Controller
             'deadline' => 'required|date',
             'assigned_to' => 'nullable|array',
             'assigned_to.*' => 'integer|exists:users,id',
+            'approver_id' => 'nullable|integer|exists:users,id',
             'priority' => 'nullable|string|in:Thấp,Trung bình,Cao',
             'status' => 'nullable|string|max:50',
             'attachments'   => 'nullable|array|max:5',
@@ -679,21 +891,39 @@ class DashboardController extends Controller
         $successMessage = 'Tạo công việc thành công!';
 
         $isProposal = $request->input('is_proposal') == 1 || $currentUser->isEmployee();
-        
+        $approver = null;
+
         if ($isProposal) {
             $assignedToIds = [$currentUser->id];
             $status = 'Chờ xử lý';
-            $proposalStep = $currentUser->isEmployee() ? 1 : 2;
-            $successMessage = $currentUser->isEmployee() 
-                ? 'Đã gửi đề xuất công việc để quản lý xem xét!' 
-                : 'Đã gửi đề xuất công việc lên cấp trên thành công!';
+            $approverId = $request->input('approver_id');
+            $approver = $approverId ? User::find($approverId) : null;
+
+            if ($approver) {
+                $proposalStep = $approver->isDirector() ? 2 : 1;
+                $successMessage = 'Đã gửi đề xuất công việc trực tiếp cho ' . $approver->name . ' (' . $approver->role_display_name . ') xem xét!';
+            } else {
+                $proposalStep = $currentUser->isEmployee() ? 1 : 2;
+                $successMessage = $currentUser->isEmployee() 
+                    ? 'Đã gửi đề xuất công việc để quản lý xem xét!' 
+                    : 'Đã gửi đề xuất công việc lên cấp trên thành công!';
+            }
         } else {
             $proposalStep = 1;
             if ($currentUser->isDirector()) {
                 if (empty($assignedToIds)) {
-                    return back()->withInput()->with('error', 'Vui lòng chọn người phụ trách công việc.');
+                    return back()->withInput()->with('error', 'Vui lòng chọn Trưởng phòng / Trưởng đơn vị phụ trách công việc.');
                 }
-                $successMessage = 'Đã giao công việc cấp công ty thành công!';
+
+                $employeeAssignee = User::whereIn('id', $assignedToIds)
+                    ->where('role_id', User::ROLE_EMPLOYEE)
+                    ->first();
+
+                if ($employeeAssignee) {
+                    return back()->withInput()->with('error', 'Lãnh đạo không trực tiếp giao việc cho nhân viên. Vui lòng chọn Trưởng phòng/Quản lý đơn vị để phân công lại.');
+                }
+
+                $successMessage = 'Đã giao công việc cho Trưởng phòng đơn vị thành công!';
             } elseif ($currentUser->isLeader()) {
                 if (empty($assignedToIds)) {
                     return back()->withInput()->with('error', 'Vui lòng chọn nhân viên trong phòng.');
@@ -710,42 +940,106 @@ class DashboardController extends Controller
                 }
 
                 $status = in_array($status, ['Chờ xử lý', 'Đang làm'], true) ? $status : 'Chờ xử lý';
-                $successMessage = 'Đã giao công việc cho nhân viên trong phòng!';
+                $successMessage = 'Đã bàn giao công việc trong phòng thành công!';
             }
         }
 
-        $primaryAssignee = $assignedToIds[0] ?? $currentUser->id;
         $task = Task::create([
             'task_name' => $request->task_name,
             'description' => $request->description,
             'assigned_by' => $currentUser->id,
-            'assigned_to' => $primaryAssignee,
+            'assigned_to' => $assignedToIds[0] ?? $currentUser->id,
             'deadline' => $request->deadline,
             'priority' => $priority,
+            'acceptance_deadline' => Carbon::now()->addHours(24),
+            'is_acceptance_expired' => false,
             'status' => $status,
-            'progress' => $status === 'Hoàn thành' ? 100 : 0,
+            'progress' => $request->input('progress', 0),
             'is_proposal' => $isProposal,
             'proposal_step' => $proposalStep,
         ]);
 
         $task->assignees()->sync($assignedToIds);
 
+        // Xử lý tệp đính kèm
         if ($request->hasFile('attachments')) {
-            $this->handleFileUploads($request->file('attachments'), $task);
+            foreach ($request->file('attachments') as $file) {
+                if ($file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $extension    = strtolower($file->getClientOriginalExtension());
+                    $storedName   = time() . '_' . uniqid() . '.' . $extension;
+                    $directory    = 'tasks/' . $task->id;
+
+                    $storedPath   = $file->storeAs($directory, $storedName, 'public');
+
+                    Document::create([
+                        'task_id'   => $task->id,
+                        'user_id'   => $currentUser->id,
+                        'file_name' => $originalName,
+                        'file_path' => $storedPath,
+                        'file_type' => $extension,
+                        'disk'      => 'public',
+                    ]);
+                }
+            }
         }
 
-        foreach ($assignedToIds as $assignedTo) {
-            if ((int) $assignedTo === (int) $currentUser->id) {
-                continue;
+        if ($isProposal) {
+            if ($approver) {
+                Notification::create([
+                    'user_id' => $approver->id,
+                    'task_id' => $task->id,
+                    'title' => 'Đề xuất công việc mới từ nhân viên',
+                    'message' => $currentUser->name . ($currentUser->department ? ' (' . ($currentUser->department->TENPHONG ?? $currentUser->department->name) . ')' : '') . ' đã gửi đề xuất công việc: "' . $task->task_name . '" trực tiếp cho bạn xem xét.',
+                    'is_read' => false,
+                ]);
+            } else {
+                if ($proposalStep === 1 && $currentUser->department_id) {
+                    $leaders = User::where('department_id', $currentUser->department_id)
+                        ->whereIn('role_id', [User::ROLE_DEPT_HEAD_BIZ, User::ROLE_DEPT_DEP_BIZ, User::ROLE_DEPT_HEAD_TEL, User::ROLE_DEPT_HEAD_GEN])
+                        ->get();
+                    foreach ($leaders as $ldr) {
+                        Notification::create([
+                            'user_id' => $ldr->id,
+                            'task_id' => $task->id,
+                            'title' => 'Đề xuất công việc mới từ nhân viên',
+                            'message' => $currentUser->name . ' đã gửi đề xuất công việc: "' . $task->task_name . '" để bạn xem xét.',
+                            'is_read' => false,
+                        ]);
+                    }
+                } elseif ($proposalStep === 2) {
+                    $directors = User::whereIn('role_id', [User::ROLE_ADMIN, User::ROLE_MANAGER])->get();
+                    foreach ($directors as $dir) {
+                        Notification::create([
+                            'user_id' => $dir->id,
+                            'task_id' => $task->id,
+                            'title' => 'Đề xuất công việc mới cần phê duyệt',
+                            'message' => $currentUser->name . ' đã gửi đề xuất công việc: "' . $task->task_name . '" lên Ban Giám đốc.',
+                            'is_read' => false,
+                        ]);
+                    }
+                }
             }
+        } else {
+            foreach ($assignedToIds as $assignedTo) {
+                if ((int) $assignedTo === (int) $currentUser->id) {
+                    continue;
+                }
 
-            Notification::create([
-                'user_id' => $assignedTo,
-                'task_id' => $task->id,
-                'title' => 'Bạn vừa được giao công việc mới',
-                'message' => 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name,
-                'is_read' => false,
-            ]);
+                $notifTitle = $currentUser->isDirector() 
+                    ? 'Lãnh đạo giao công việc mới cho phòng ban' 
+                    : 'Bạn vừa được giao công việc mới';
+                $notifMsg = 'WH-' . str_pad($task->id, 3, '0', STR_PAD_LEFT) . ': ' . $task->task_name
+                    . ($currentUser->isDirector() ? ' (Người giao: Lãnh đạo ' . $currentUser->name . '). Vui lòng tiếp nhận và phân công lại cho nhân viên xử lý.' : '');
+
+                Notification::create([
+                    'user_id' => $assignedTo,
+                    'task_id' => $task->id,
+                    'title' => $notifTitle,
+                    'message' => $notifMsg,
+                    'is_read' => false,
+                ]);
+            }
         }
 
         event(new TaskCreated($task));
@@ -868,19 +1162,37 @@ class DashboardController extends Controller
             'proposal_step' => 2,
         ]);
 
+        $directors = User::whereIn('role_id', [User::ROLE_ADMIN, User::ROLE_MANAGER])->get();
+        foreach ($directors as $director) {
+            Notification::create([
+                'user_id' => $director->id,
+                'task_id' => $task->id,
+                'title' => 'Trưởng phòng chuyển tiếp đề xuất công việc',
+                'message' => $currentUser->name . ' đã chuyển tiếp đề xuất "' . $task->task_name . '" lên Ban Giám đốc phê duyệt.',
+                'is_read' => false,
+            ]);
+        }
+
         return redirect()->route('dashboard.tasks', ['mode' => 'proposal', 'view' => 'list'])->with('success', 'Đã chuyển tiếp đề xuất lên Ban Giám đốc phê duyệt.');
     }
 
     public function approveProposal(Request $request, $id)
     {
         $currentUser = Auth::user();
-        if (!$currentUser->isDirector()) {
+        if (!$currentUser->isDirector() && !$currentUser->isLeader()) {
             abort(403, 'Bạn không có quyền phê duyệt đề xuất này.');
         }
 
         $task = Task::findOrFail($id);
         if (!$task->is_proposal) {
             return back()->with('error', 'Công việc này không phải là đề xuất.');
+        }
+
+        if ($currentUser->isLeader() && !$currentUser->isDirector()) {
+            $proposer = User::find($task->assigned_by);
+            if ($proposer && (int) $proposer->department_id !== (int) $currentUser->department_id && (int) $task->assigned_to !== (int) $currentUser->id) {
+                abort(403, 'Trưởng phòng chỉ có thể phê duyệt đề xuất của nhân viên trong phòng.');
+            }
         }
 
         $proposerId = $task->assigned_by ?? $currentUser->id;
@@ -893,6 +1205,14 @@ class DashboardController extends Controller
         ]);
 
         $task->assignees()->sync([$proposerId]);
+
+        Notification::create([
+            'user_id' => $proposerId,
+            'task_id' => $task->id,
+            'title' => 'Đề xuất công việc đã được phê duyệt',
+            'message' => $currentUser->name . ' đã phê duyệt đề xuất "' . $task->task_name . '". Công việc đã được chuyển thành nhiệm vụ chính thức cho bạn thực hiện.',
+            'is_read' => false,
+        ]);
 
         return redirect()->route('dashboard.tasks', ['mode' => 'proposal', 'view' => 'list'])->with('success', 'Đã duyệt đề xuất và giao việc lại cho người đề xuất.');
     }
@@ -962,7 +1282,7 @@ class DashboardController extends Controller
 
         if ($search !== '') {
             $employeeId = null;
-            if (preg_match('/^NV0*(\d+)$/i', $search, $matches)) {
+            if (preg_match('/^(?:NV|ID)?\s*[-#:]?\s*0*(\d+)$/i', $search, $matches)) {
                 $employeeId = (int) $matches[1];
             } elseif (ctype_digit($search)) {
                 $employeeId = (int) $search;
@@ -979,9 +1299,17 @@ class DashboardController extends Controller
         }
 
         if (!empty($deptFilter) && $deptFilter != 'Tất cả phòng ban') {
-            $query->whereHas('department', function ($q) use ($deptFilter) {
-                $q->where('TENPHONG', $deptFilter);
-            });
+            if (is_numeric($deptFilter)) {
+                $query->where(function ($q) use ($deptFilter) {
+                    $q->where('department_id', (int) $deptFilter)
+                      ->orWhereHas('department', fn ($sub) => $sub->where('id', (int) $deptFilter));
+                });
+            } else {
+                $query->whereHas('department', function ($q) use ($deptFilter) {
+                    $q->where('TENPHONG', $deptFilter)
+                      ->orWhere('name', $deptFilter);
+                });
+            }
         }
 
         $usersList = $query
@@ -1185,13 +1513,37 @@ class DashboardController extends Controller
             ? round((($tasksThisMonth - $tasksPreviousMonth) / $tasksPreviousMonth) * 100)
             : ($tasksThisMonth > 0 ? 100 : 0);
 
-        $lineData = collect(range(6, 0))->map(function (int $daysAgo) use ($today, $allTasks, $isDone) {
+        $lineData = collect(range(6, 0))->map(function (int $daysAgo) use ($today, $allTasks, $isDone, $isOverdue) {
             $date = $today->copy()->subDays($daysAgo);
 
             return [
-                'label' => $date->format('d/m'),
-                'assigned' => $allTasks->filter(fn (Task $task) => $task->created_at && $task->created_at->isSameDay($date))->count(),
+                'label'     => $date->format('d/m'),
+                'assigned'  => $allTasks->filter(fn (Task $task) => $task->created_at && $task->created_at->isSameDay($date))->count(),
                 'completed' => $allTasks->filter(fn (Task $task) => $isDone($task) && $task->updated_at && $task->updated_at->isSameDay($date))->count(),
+                'overdue'   => $allTasks->filter(fn (Task $task) => !$isDone($task) && $task->deadline && Carbon::parse($task->deadline)->isSameDay($date) && Carbon::parse($task->deadline)->lt($today))->count(),
+            ];
+        })->values();
+
+        // Build multi-week data for chart navigation (week index 0 = current week)
+        // Covers 8 past weeks + current week + 3 future weeks = 12 weeks total
+        $weekStartMonday = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $lineDataWeeks = collect(range(-8, 3))->map(function (int $weekOffset) use ($weekStartMonday, $allTasks, $isDone, $today) {
+            $weekStart = $weekStartMonday->copy()->addWeeks($weekOffset);
+            $days = collect(range(0, 6))->map(function (int $dayOffset) use ($weekStart, $allTasks, $isDone, $today) {
+                $date = $weekStart->copy()->addDays($dayOffset);
+                return [
+                    'label'     => $date->format('d/m'),
+                    'date'      => $date->format('Y-m-d'),
+                    'assigned'  => $allTasks->filter(fn (Task $t) => $t->created_at && $t->created_at->isSameDay($date))->count(),
+                    'completed' => $allTasks->filter(fn (Task $t) => $isDone($t) && $t->updated_at && $t->updated_at->isSameDay($date))->count(),
+                    'overdue'   => $allTasks->filter(fn (Task $t) => !$isDone($t) && $t->deadline && Carbon::parse($t->deadline)->isSameDay($date) && Carbon::parse($t->deadline)->lt($today))->count(),
+                ];
+            })->values();
+
+            return [
+                'weekOffset' => $weekOffset,
+                'label'      => $weekStart->format('d/m') . ' – ' . $weekStart->copy()->endOfWeek(Carbon::SUNDAY)->format('d/m/Y'),
+                'days'       => $days,
             ];
         })->values();
 
@@ -1297,6 +1649,7 @@ class DashboardController extends Controller
             'doneRate',
             'overdueRate',
             'lineData',
+            'lineDataWeeks',
             'departmentData',
             'perfData',
             'pieData',
@@ -1327,16 +1680,31 @@ class DashboardController extends Controller
             ->where('is_read', false)
             ->count();
 
-        $notifications = Notification::where('user_id', Auth::id())
+        $userId = Auth::id();
+
+        $notifications = Notification::where('user_id', $userId)
+            ->with(['task.assignees'])
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function ($n) {
+            ->map(function ($n) use ($userId) {
                 $title = $this->cleanVietnameseText($n->title);
                 $message = $this->cleanVietnameseText($n->message);
+                $task = $n->task;
+                $canAccept = false;
+
+                if ($task) {
+                    $isAssignee = ((int)$task->assigned_to === (int)$userId)
+                        || ($task->assignees && $task->assignees->contains('id', $userId));
+                    $isPendingAccept = in_array($task->status, ['Chờ xử lý', 'Todo'], true);
+                    $canAccept = $isAssignee && $isPendingAccept;
+                }
 
                 return [
                     'id' => $n->id,
                     'task_id' => $n->task_id,
+                    'task_name' => $task ? $this->cleanVietnameseText($task->task_name) : null,
+                    'task_status' => $task ? $task->status : null,
+                    'can_accept' => $canAccept,
                     'type' => $this->notificationType($n, $title),
                     'title' => $title,
                     'desc' => $message,

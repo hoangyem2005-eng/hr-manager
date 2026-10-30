@@ -250,7 +250,7 @@
                                         >
                                             <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                             <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
-                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            <option value="Chờ đánh giá" {{ $task['status'] === 'Chờ đánh giá' ? 'selected' : '' }}>Chờ đánh giá</option>
                                             @if(!$isEmployee || $task['status'] === 'Hoàn thành')
                                                 <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }} {{ $isEmployee ? 'disabled' : '' }}>Hoàn thành</option>
                                             @endif
@@ -325,7 +325,7 @@
                                         >
                                             <option value="Chờ xử lý" {{ $task['status'] === 'Chờ xử lý' ? 'selected' : '' }}>Chờ xử lý</option>
                                             <option value="Đang làm" {{ $task['status'] === 'Đang làm' ? 'selected' : '' }}>Đang làm</option>
-                                            <option value="Đang review" {{ $task['status'] === 'Đang review' ? 'selected' : '' }}>Đang review</option>
+                                            <option value="Chờ đánh giá" {{ $task['status'] === 'Chờ đánh giá' ? 'selected' : '' }}>Chờ đánh giá</option>
                                             @if(!$isEmployee || $task['status'] === 'Hoàn thành')
                                                 <option value="Hoàn thành" {{ $task['status'] === 'Hoàn thành' ? 'selected' : '' }} {{ $isEmployee ? 'disabled' : '' }}>Hoàn thành</option>
                                             @endif
@@ -423,7 +423,7 @@
                         <select name="status" id="task-status" class="w-full px-4 py-3 border border-gray-200 rounded-[8px] text-sm outline-none bg-white focus:border-[color:var(--accent)]" style="--accent: {{ $page['accent'] }}">
                             <option value="Chờ xử lý">Chờ xử lý</option>
                             <option value="Đang làm">Đang làm</option>
-                            <option value="Đang review">Đang review</option>
+                            <option value="Chờ đánh giá">Chờ đánh giá</option>
                             <option value="Hoàn thành">Hoàn thành</option>
                         </select>
                     @elseif($isManager)
@@ -618,7 +618,33 @@
             }
         }
 
-        const openModal = () => modal.classList.remove('hidden');
+        const updateTaskFormSubmitVisibility = () => {
+            if (!submitBtn) return;
+            const taskName = (form.querySelector('input[name="task_name"]')?.value || '').trim();
+            const deadline = (form.querySelector('input[name="deadline"]')?.value || '').trim();
+            const isProposal = document.getElementById('form-is-proposal')?.value === '1';
+
+            let isValid = taskName.length > 0 && deadline.length > 0;
+            @if(!$isEmployee)
+                if (isValid && !isProposal) {
+                    const checkedCount = form.querySelectorAll('input[name="assigned_to[]"]:checked').length;
+                    isValid = checkedCount > 0;
+                }
+            @endif
+
+            submitBtn.style.display = isValid ? 'inline-block' : 'none';
+        };
+
+        if (form) {
+            form.addEventListener('input', updateTaskFormSubmitVisibility);
+            form.addEventListener('change', updateTaskFormSubmitVisibility);
+            form.addEventListener('keyup', updateTaskFormSubmitVisibility);
+        }
+
+        const openModal = () => {
+            modal.classList.remove('hidden');
+            updateTaskFormSubmitVisibility();
+        };
         const closeModal = () => modal.classList.add('hidden');
 
         // Reset form to Create mode
@@ -637,6 +663,7 @@
             if (statusSelect) statusSelect.value = 'Chờ xử lý';
             const editAttachContainer = document.getElementById('edit-attachments-container');
             if (editAttachContainer) editAttachContainer.classList.add('hidden');
+            updateTaskFormSubmitVisibility();
         };
 
         if (openBtn) {
@@ -669,7 +696,7 @@
             if (statusSelect) {
                 if (statusSelect.tagName === 'SELECT') {
                     if (label.includes('Đang làm')) statusSelect.value = 'Đang làm';
-                    else if (label.includes('Đang review') && Array.from(statusSelect.options).some(option => option.value === 'Đang review')) statusSelect.value = 'Đang review';
+                    else if (label.includes('Chờ đánh giá') && Array.from(statusSelect.options).some(option => option.value === 'Chờ đánh giá')) statusSelect.value = 'Chờ đánh giá';
                     else if (label.includes('Hoàn thành') && Array.from(statusSelect.options).some(option => option.value === 'Hoàn thành')) statusSelect.value = 'Hoàn thành';
                     else statusSelect.value = 'Chờ xử lý';
                 } else {
@@ -688,7 +715,7 @@
         const employeeProgressByStatus = {
             'Chờ xử lý': 0,
             'Đang làm': 50,
-            'Đang review': 80,
+            'Chờ đánh giá': 80,
             'Hoàn thành': 100,
         };
 
